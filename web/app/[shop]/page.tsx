@@ -528,7 +528,7 @@ export default function ShopPage() {
                         (e.currentTarget.style.background = theme.primary)
                       }
                     >
-                      {isContactPrice ? "Inquire" : (isService ? "Contact" : "Order Now")}
+                      {isContactPrice ? "Inquire" : (isService ? "Book Now" : "Buy Now")}
                     </button>
                   </div>
                 </div>
@@ -589,7 +589,7 @@ export default function ShopPage() {
                 <div className="flex items-start justify-between mb-5">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      {inquiryForm.priceType === "contact" ? "Get a Quote" : (isService ? "Contact Seller" : "Place Order")}
+                      {inquiryForm.priceType === "contact" ? "Get a Quote" : (isService ? "Book Service" : "Buy Item")}
                     </h3>
                     <p className="text-sm text-gray-400 mt-0.5">
                       {inquiryForm.productName}
@@ -680,7 +680,7 @@ export default function ShopPage() {
                         Sending...
                       </span>
                     ) : (
-                      inquiryForm.priceType === "contact" ? "Send Inquiry" : (isService ? "Send Inquiry" : "Place Order")
+                      inquiryForm.priceType === "contact" ? "Send Inquiry" : (isService ? "Send Inquiry" : "Send Order")
                     )}
                   </button>
                 </div>
