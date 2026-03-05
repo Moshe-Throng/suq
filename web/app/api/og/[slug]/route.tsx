@@ -1,6 +1,16 @@
 import { ImageResponse } from "next/og";
 import { getServerClient } from "@/lib/supabase";
 
+const TEMPLATE_COLORS: Record<string, { primary: string; light: string }> = {
+  clean: { primary: "#7C3AED", light: "#8B5CF6" },
+  bold: { primary: "#06B6D4", light: "#22D3EE" },
+  ethiopian: { primary: "#B45309", light: "#D97706" },
+  fresh: { primary: "#0D9488", light: "#14B8A6" },
+  minimal: { primary: "#374151", light: "#6B7280" },
+  warm: { primary: "#EA580C", light: "#F97316" },
+};
+
+// Legacy fallback
 const THEMES: Record<string, { primary: string; light: string }> = {
   teal: { primary: "#0D9488", light: "#14B8A6" },
   purple: { primary: "#7C3AED", light: "#8B5CF6" },
@@ -19,7 +29,7 @@ export async function GET(
 
   const { data: shop } = await supabase
     .from("suq_shops")
-    .select("id, shop_name, shop_slug, theme_color, description")
+    .select("id, shop_name, shop_slug, template_style, theme_color, shop_type, description")
     .eq("shop_slug", slug)
     .single();
 
@@ -33,8 +43,17 @@ export async function GET(
     .eq("shop_id", shop.id)
     .eq("is_active", true);
 
-  const productCount = count || 0;
-  const theme = THEMES[shop.theme_color || "teal"] || THEMES.teal;
+  const itemCount = count || 0;
+
+  // Prefer template_style, fallback to theme_color
+  const colors = TEMPLATE_COLORS[shop.template_style || "clean"]
+    || THEMES[shop.theme_color || "teal"]
+    || TEMPLATE_COLORS.clean;
+
+  const isService = shop.shop_type === "service";
+  const itemLabel = itemCount === 1
+    ? (isService ? "service" : "item")
+    : (isService ? "services" : "items");
 
   return new ImageResponse(
     (
@@ -46,7 +65,7 @@ export async function GET(
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.light} 100%)`,
+          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.light} 100%)`,
           fontFamily: "sans-serif",
           position: "relative",
         }}
@@ -127,11 +146,11 @@ export async function GET(
             background: "rgba(255,255,255,0.95)",
             fontSize: "20px",
             fontWeight: 600,
-            color: theme.primary,
+            color: colors.primary,
           }}
         >
-          {productCount > 0
-            ? `Browse ${productCount} product${productCount !== 1 ? "s" : ""}`
+          {itemCount > 0
+            ? `Browse ${itemCount} ${itemLabel}`
             : "Shop on Suq"}
         </div>
 

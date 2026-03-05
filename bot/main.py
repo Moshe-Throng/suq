@@ -57,9 +57,9 @@ logger = logging.getLogger("suq")
 
 COMMANDS_EN = [
     BotCommand("start", "Main menu"),
-    BotCommand("add", "Add a new product"),
-    BotCommand("products", "View your products"),
-    BotCommand("orders", "View open orders"),
+    BotCommand("add", "Add a product or service"),
+    BotCommand("products", "View your items"),
+    BotCommand("orders", "View inquiries"),
     BotCommand("shop", "Your shop link"),
     BotCommand("language", "Change language"),
     BotCommand("help", "List commands"),

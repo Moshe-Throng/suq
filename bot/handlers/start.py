@@ -1,17 +1,28 @@
 """
 Handlers for /start, /help, /language, /shop.
-Onboarding flow: language → role → shop name → theme color → done.
+Onboarding flow: language → type → shop name → category → template style → done.
 """
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
 from bot.db.supabase_client import (
-    run_sync, get_shop, create_shop, catalog_link, slugify, update_shop_theme,
+    run_sync, get_shop, create_shop, catalog_link, slugify,
+    update_shop_theme, update_shop_template,
 )
 from bot.strings.lang import s, set_lang, seed_lang
 
-# Theme palette — matches Tailwind color names for the web catalog
+# Template styles — controls both marketing images and web catalog
+TEMPLATES = {
+    "clean":    {"emoji": "✨", "label_attr": "TMPL_CLEAN",    "hex": "#7C3AED"},
+    "bold":     {"emoji": "⚡", "label_attr": "TMPL_BOLD",     "hex": "#06B6D4"},
+    "ethiopian":{"emoji": "🇪🇹", "label_attr": "TMPL_ETHIOPIAN","hex": "#B45309"},
+    "fresh":    {"emoji": "🌿", "label_attr": "TMPL_FRESH",    "hex": "#0D9488"},
+    "minimal":  {"emoji": "◻️", "label_attr": "TMPL_MINIMAL",  "hex": "#374151"},
+    "warm":     {"emoji": "🌅", "label_attr": "TMPL_WARM",     "hex": "#EA580C"},
+}
+
+# Legacy theme palette (for backward compat with existing shops)
 THEMES = {
     "teal":    {"emoji": "🟢", "label": "Teal",    "hex": "#0D9488"},
     "purple":  {"emoji": "🟣", "label": "Purple",  "hex": "#7C3AED"},
@@ -20,6 +31,32 @@ THEMES = {
     "emerald": {"emoji": "💚", "label": "Emerald", "hex": "#059669"},
     "gold":    {"emoji": "🟡", "label": "Gold",    "hex": "#B45309"},
 }
+
+# Categories per business type
+PRODUCT_CATEGORIES = [
+    ("food",        "CAT_FOOD"),
+    ("fashion",     "CAT_FASHION"),
+    ("electronics", "CAT_ELECTRONICS"),
+    ("beauty",      "CAT_BEAUTY"),
+    ("handmade",    "CAT_HANDMADE"),
+    ("coffee",      "CAT_COFFEE"),
+    ("home",        "CAT_HOME"),
+    ("other",       "CAT_OTHER"),
+]
+
+SERVICE_CATEGORIES = [
+    ("salon",    "CAT_SALON"),
+    ("photo",    "CAT_PHOTO"),
+    ("tutoring", "CAT_TUTORING"),
+    ("design",   "CAT_DESIGN"),
+    ("repair",   "CAT_REPAIR"),
+    ("fitness",  "CAT_FITNESS"),
+    ("events",   "CAT_EVENTS"),
+    ("other",    "CAT_OTHER"),
+]
+
+
+# ── /start ───────────────────────────────────────────────────
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -44,6 +81,9 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 
+# ── Language ─────────────────────────────────────────────────
+
+
 async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle lang_am / lang_en callback."""
     query = update.callback_query
@@ -59,28 +99,31 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await _send_seller_menu_from_query(query, user.id, shop)
         return
 
+    # New user → show business type selection (skip role picker)
     keyboard = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton(t.BTN_SELLER, callback_data="role_seller"),
-            InlineKeyboardButton(t.BTN_BUYER, callback_data="role_buyer"),
+            InlineKeyboardButton(t.BTN_TYPE_PRODUCT, callback_data="type_product"),
+            InlineKeyboardButton(t.BTN_TYPE_SERVICE, callback_data="type_service"),
         ]
     ])
     await query.edit_message_text(
-        f"{t.LANG_CHANGED}\n\n{t.WELCOME}\n\n{t.ASK_ROLE}",
+        f"{t.LANG_CHANGED}\n\n{t.WELCOME}",
         reply_markup=keyboard,
     )
 
 
-async def role_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle role_seller / role_buyer callback."""
+# ── Business type ────────────────────────────────────────────
+
+
+async def type_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle type_product / type_service callback."""
     query = update.callback_query
     await query.answer()
     user = query.from_user
     t = s(user.id)
 
-    if query.data == "role_buyer":
-        await query.edit_message_text(t.BUYER_WELCOME)
-        return
+    shop_type = query.data.replace("type_", "")  # "product" or "service"
+    context.user_data["pending_shop_type"] = shop_type
 
     shop = await run_sync(get_shop, user.id)
     if shop:
@@ -94,8 +137,39 @@ async def role_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     context.user_data["awaiting_shop_name"] = True
 
 
+# ── Legacy role callback (backward compat) ───────────────────
+
+
+async def role_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle role_seller / role_buyer callback (legacy)."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    if query.data == "role_buyer":
+        await query.edit_message_text(t.BUYER_WELCOME)
+        return
+
+    # Treat as product seller
+    context.user_data["pending_shop_type"] = "product"
+    shop = await run_sync(get_shop, user.id)
+    if shop:
+        link = catalog_link(shop["shop_slug"])
+        await query.edit_message_text(
+            t.SHOP_EXISTS.format(name=shop["shop_name"], link=link)
+        )
+        return
+
+    await query.edit_message_text(t.ASK_SHOP_NAME)
+    context.user_data["awaiting_shop_name"] = True
+
+
+# ── Shop name → category ────────────────────────────────────
+
+
 async def shop_name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle shop name text → show theme picker."""
+    """Handle shop name text → show category picker."""
     if not context.user_data.get("awaiting_shop_name"):
         return
 
@@ -112,31 +186,108 @@ async def shop_name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await update.message.reply_text(t.SHOP_NAME_INVALID)
         return
 
-    # Store name temporarily, show theme picker
     context.user_data["pending_shop_name"] = name
     context.user_data.pop("awaiting_shop_name", None)
 
-    # Build theme picker grid (2×3)
-    keys = list(THEMES.keys())
+    # Show category picker based on business type
+    shop_type = context.user_data.get("pending_shop_type", "product")
+    cats = SERVICE_CATEGORIES if shop_type == "service" else PRODUCT_CATEGORIES
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(
+            getattr(t, attr, key.title()),
+            callback_data=f"cat_{key}",
+        )]
+        for key, attr in cats
+    ])
+
+    await update.message.reply_text(t.ASK_CATEGORY, reply_markup=keyboard)
+
+
+# ── Category → template style ───────────────────────────────
+
+
+async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle cat_* callback → show template picker."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    category = query.data.replace("cat_", "")
+    context.user_data["pending_category"] = category
+
+    # Show template style picker (2×3 grid)
+    keys = list(TEMPLATES.keys())
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                f"{THEMES[k]['emoji']} {THEMES[k]['label']}",
-                callback_data=f"theme_{k}",
+                f"{TEMPLATES[k]['emoji']} {getattr(t, TEMPLATES[k]['label_attr'], k.title())}",
+                callback_data=f"tmpl_{k}",
             )
             for k in keys[i:i+2]
         ]
         for i in range(0, len(keys), 2)
     ])
 
-    await update.message.reply_text(
-        t.ASK_THEME_COLOR,
-        reply_markup=keyboard,
-    )
+    await query.edit_message_text(t.ASK_TEMPLATE, reply_markup=keyboard)
+
+
+# ── Template → create shop ───────────────────────────────────
+
+
+async def template_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle tmpl_* callback → create shop."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    template = query.data.replace("tmpl_", "")
+    name = context.user_data.pop("pending_shop_name", None)
+    shop_type = context.user_data.pop("pending_shop_type", "product")
+    category = context.user_data.pop("pending_category", None)
+
+    if not name:
+        await query.edit_message_text(t.ERROR)
+        return
+
+    from bot.strings.lang import get_lang
+    lang = get_lang(user.id)
+
+    # Map template to a legacy theme_color for backward compat
+    tmpl_to_theme = {
+        "clean": "purple", "bold": "teal", "ethiopian": "gold",
+        "fresh": "teal", "minimal": "teal", "warm": "orange",
+    }
+
+    try:
+        shop = await run_sync(
+            create_shop, user.id, user.username, name, lang,
+            theme_color=tmpl_to_theme.get(template, "teal"),
+            shop_type=shop_type,
+            category=category,
+            template_style=template,
+        )
+        link = catalog_link(shop["shop_slug"])
+        item_type = t.SHOP_CREATED_SERVICE if shop_type == "service" else t.SHOP_CREATED_PRODUCT
+        tmpl_info = TEMPLATES.get(template, TEMPLATES["clean"])
+        await query.edit_message_text(
+            f"{tmpl_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link, item_type=item_type)}"
+        )
+        await _send_seller_menu_from_query(query, user.id, shop)
+    except Exception as e:
+        if "duplicate" in str(e).lower() or "unique" in str(e).lower():
+            await query.edit_message_text(t.SHOP_NAME_TAKEN)
+        else:
+            await query.edit_message_text(t.ERROR)
+
+
+# ── Legacy theme callback (for old onboarding buttons) ───────
 
 
 async def theme_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle theme_{color} callback → create shop."""
+    """Handle theme_{color} callback → create shop (legacy flow)."""
     query = update.callback_query
     await query.answer()
     user = query.from_user
@@ -152,12 +303,23 @@ async def theme_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     from bot.strings.lang import get_lang
     lang = get_lang(user.id)
 
+    # Map old theme to new template
+    theme_to_tmpl = {
+        "teal": "fresh", "purple": "clean", "rose": "warm",
+        "orange": "warm", "emerald": "fresh", "gold": "ethiopian",
+    }
+
     try:
-        shop = await run_sync(create_shop, user.id, user.username, name, lang, theme)
+        shop = await run_sync(
+            create_shop, user.id, user.username, name, lang,
+            theme_color=theme,
+            template_style=theme_to_tmpl.get(theme, "clean"),
+        )
         link = catalog_link(shop["shop_slug"])
         theme_info = THEMES.get(theme, THEMES["teal"])
+        item_type = getattr(t, "SHOP_CREATED_PRODUCT", "product")
         await query.edit_message_text(
-            f"{theme_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link)}"
+            f"{theme_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link, item_type=item_type)}"
         )
         await _send_seller_menu_from_query(query, user.id, shop)
     except Exception as e:
@@ -167,13 +329,16 @@ async def theme_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await query.edit_message_text(t.ERROR)
 
 
+# ── Commands ─────────────────────────────────────────────────
+
+
 async def shop_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /shop — show shop link."""
     user = update.effective_user
     t = s(user.id)
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await update.message.reply_text(t.ASK_ROLE)
+        await update.message.reply_text(t.ASK_SHOP_TYPE)
         return
     link = catalog_link(shop["shop_slug"])
     await update.message.reply_text(f"🔗 {link}")
@@ -202,15 +367,26 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 # ── Internal helpers ─────────────────────────────────────────
 
 
-def _seller_keyboard(t):
-    """Build the 3x2 seller dashboard keyboard."""
+def _seller_keyboard(t, shop: dict | None = None):
+    """Build the 3x2 seller dashboard keyboard, adapted to shop type."""
+    shop_type = (shop or {}).get("shop_type", "product")
+
+    if shop_type == "service":
+        add_btn = getattr(t, "BTN_ADD_SERVICE", t.BTN_ADD_PRODUCT)
+        list_btn = getattr(t, "BTN_MY_SERVICES", t.BTN_MY_PRODUCTS)
+    else:
+        add_btn = t.BTN_ADD_PRODUCT
+        list_btn = t.BTN_MY_PRODUCTS
+
+    inq_btn = getattr(t, "BTN_INQUIRIES", t.BTN_MY_ORDERS)
+
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton(t.BTN_ADD_PRODUCT, callback_data="menu_add"),
-            InlineKeyboardButton(t.BTN_MY_PRODUCTS, callback_data="menu_products"),
+            InlineKeyboardButton(add_btn, callback_data="menu_add"),
+            InlineKeyboardButton(list_btn, callback_data="menu_products"),
         ],
         [
-            InlineKeyboardButton(t.BTN_MY_ORDERS, callback_data="menu_orders"),
+            InlineKeyboardButton(inq_btn, callback_data="menu_orders"),
             InlineKeyboardButton(t.BTN_SHOP_LINK, callback_data="menu_shop_link"),
         ],
         [
@@ -225,7 +401,7 @@ async def _send_seller_menu(update: Update, user_id: int, shop: dict) -> None:
     link = catalog_link(shop["shop_slug"])
     await update.message.reply_text(
         f"🏪 {shop['shop_name']}\n{link}",
-        reply_markup=_seller_keyboard(t),
+        reply_markup=_seller_keyboard(t, shop),
     )
 
 
@@ -234,5 +410,5 @@ async def _send_seller_menu_from_query(query, user_id: int, shop: dict) -> None:
     link = catalog_link(shop["shop_slug"])
     await query.message.reply_text(
         f"🏪 {shop['shop_name']}\n{link}",
-        reply_markup=_seller_keyboard(t),
+        reply_markup=_seller_keyboard(t, shop),
     )

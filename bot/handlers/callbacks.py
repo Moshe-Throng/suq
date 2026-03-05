@@ -8,13 +8,19 @@ from telegram.ext import ContextTypes
 
 from bot.handlers.start import (
     language_callback, role_callback, shop_handler, theme_callback,
+    type_callback, category_callback, template_callback,
     _send_seller_menu_from_query,
 )
 from bot.handlers.products import list_products_callback, delete_product_callback
-from bot.handlers.orders import list_orders_callback, order_action_callback
+from bot.handlers.orders import (
+    list_orders_callback, order_action_callback, inquiry_seen_callback,
+)
 from bot.handlers.settings import (
     settings_menu, settings_change_theme, settings_theme_selected,
     settings_ask_desc, settings_ask_logo, share_shop_card,
+    settings_change_template, settings_template_selected,
+    settings_change_category, settings_category_selected,
+    settings_change_type, settings_type_selected,
 )
 from bot.db.supabase_client import run_sync, get_shop, catalog_link
 from bot.strings.lang import s
@@ -29,15 +35,39 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if data.startswith("lang_"):
         await language_callback(update, context)
 
-    # Role selection
+    # Business type selection (new onboarding)
+    elif data.startswith("type_"):
+        await type_callback(update, context)
+
+    # Category selection (onboarding)
+    elif data.startswith("cat_"):
+        await category_callback(update, context)
+
+    # Template style selection (onboarding)
+    elif data.startswith("tmpl_"):
+        await template_callback(update, context)
+
+    # Role selection (legacy)
     elif data.startswith("role_"):
         await role_callback(update, context)
 
-    # Theme color selection (onboarding)
+    # Theme color selection (legacy onboarding)
     elif data.startswith("theme_"):
         await theme_callback(update, context)
 
-    # Settings: theme change (post-onboarding)
+    # Settings: template change
+    elif data.startswith("settmpl_"):
+        await settings_template_selected(update, context)
+
+    # Settings: category change
+    elif data.startswith("setcat_"):
+        await settings_category_selected(update, context)
+
+    # Settings: type change
+    elif data.startswith("settype_"):
+        await settings_type_selected(update, context)
+
+    # Settings: theme change (legacy)
     elif data.startswith("settheme_"):
         await settings_theme_selected(update, context)
 
@@ -65,6 +95,15 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     # ── Settings sub-menu ────────────────────────────────────
 
+    elif data == "settings_template":
+        await settings_change_template(update, context)
+
+    elif data == "settings_category":
+        await settings_change_category(update, context)
+
+    elif data == "settings_type":
+        await settings_change_type(update, context)
+
     elif data == "settings_theme":
         await settings_change_theme(update, context)
 
@@ -81,10 +120,13 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if shop:
             await _send_seller_menu_from_query(query, user.id, shop)
 
-    # ── Products & Orders ────────────────────────────────────
+    # ── Products & Inquiries ─────────────────────────────────
 
     elif data.startswith("del_product_"):
         await delete_product_callback(update, context)
+
+    elif data.startswith("inq_seen_"):
+        await inquiry_seen_callback(update, context)
 
     elif data.startswith("order_"):
         await order_action_callback(update, context)

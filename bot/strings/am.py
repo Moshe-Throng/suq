@@ -8,24 +8,70 @@ LANG_PROMPT = "ቋንቋ ይምረጡ:"
 LANG_CHANGED = "ቋንቋ ወደ አማርኛ ተቀይሯል"
 
 WELCOME = (
-    "እንኳን ወደ ሱቅ በደህና መጡ!\n\n"
-    "የቴሌግራም ቻናልዎን ወደ ፕሮፌሽናል መደብር ይቀይሩ።\n\n"
-    "ምርቶችን ያክሉ፣ ቆንጆ የማስታወቂያ ምስሎችን ያግኙ፣ እና ትዕዛዞችን ያስተዳድሩ — ሁሉም ከዚህ ቦት።"
+    "🏪 እንኳን ወደ ሱቅ በደህና መጡ!\n\n"
+    "ቴሌግራምዎን ወደ ቆንጆ ሱቅ ይቀይሩ — ነጻ።\n\n"
+    "ምን ዓይነት ንግድ ነዎት?"
 )
 
+# Legacy
 ASK_ROLE = "ምን ማድረግ ይፈልጋሉ?"
 BTN_SELLER = "ሻጭ ነኝ"
 BTN_BUYER = "ገዢ ነኝ"
 
 # ══════════════════════════════════════════════════════════════
+# BUSINESS TYPE
+# ══════════════════════════════════════════════════════════════
+
+ASK_SHOP_TYPE = "ምን ዓይነት ንግድ ነዎት?"
+BTN_TYPE_PRODUCT = "🛍 ምርቶችን እሸጣለሁ"
+BTN_TYPE_SERVICE = "💼 አገልግሎት እሰጣለሁ"
+
+# ══════════════════════════════════════════════════════════════
+# CATEGORIES
+# ══════════════════════════════════════════════════════════════
+
+ASK_CATEGORY = "ምድብዎን ይምረጡ:"
+
+CAT_FOOD = "ምግብ እና ዳቦ ቤት"
+CAT_FASHION = "ፋሽን እና ልብስ"
+CAT_ELECTRONICS = "ኤሌክትሮኒክስ"
+CAT_BEAUTY = "ውበት እና መዋቢያ"
+CAT_HANDMADE = "እጅ ስራ"
+CAT_COFFEE = "ቡና እና ቅመማ ቅመም"
+CAT_HOME = "ቤት እና ዕቃ"
+CAT_OTHER = "ሌላ"
+
+CAT_SALON = "ውበት እና ሳሎን"
+CAT_PHOTO = "ፎቶግራፊ እና ቪዲዮ"
+CAT_TUTORING = "ትምህርት"
+CAT_DESIGN = "ዲዛይን እና ፈጠራ"
+CAT_REPAIR = "ጥገና እና ቴክኒክ"
+CAT_FITNESS = "ጤና እና ፊትነስ"
+CAT_EVENTS = "ዝግጅት እና ኬተሪንግ"
+
+# ══════════════════════════════════════════════════════════════
+# TEMPLATE STYLE
+# ══════════════════════════════════════════════════════════════
+
+ASK_TEMPLATE = "ለሱቅዎ እና ምስሎች ዘይቤ ይምረጡ:"
+TMPL_CLEAN = "✨ ንጹህ"
+TMPL_BOLD = "⚡ ደፋር"
+TMPL_ETHIOPIAN = "🇪🇹 ኢትዮጵያ"
+TMPL_FRESH = "🌿 ትኩስ"
+TMPL_MINIMAL = "◻️ ቀላል"
+TMPL_WARM = "🌅 ሞቅ"
+
+# ══════════════════════════════════════════════════════════════
 # SHOP SETUP
 # ══════════════════════════════════════════════════════════════
 
-ASK_SHOP_NAME = "ሱቅዎን እናዘጋጅ!\n\nየሱቅዎ ስም ምንድን ነው?"
+ASK_SHOP_NAME = "የንግድዎ ስም ምንድን ነው?"
 ASK_THEME_COLOR = "ለሱቅዎ የቀለም ዘይቤ ይምረጡ:"
 SHOP_NAME_TAKEN = "ያ ስም ተወስዷል። ሌላ ይሞክሩ።"
 SHOP_NAME_INVALID = "የሱቅ ስም ከ2-30 ፊደላት መሆን አለበት።"
-SHOP_CREATED = "ሱቅዎ \"{name}\" ዝግጁ ነው!\n\nየካታሎግ ሊንክ:\n{link}\n\nይህን ለገዢዎችዎ ያጋሩ።"
+SHOP_CREATED = "ሱቅዎ \"{name}\" ዝግጁ ነው!\n\nየካታሎግ ሊንክ:\n{link}\n\nአሁን ፎቶ ይላኩ የመጀመሪያ {item_type}ዎን ለመጨመር።"
+SHOP_CREATED_PRODUCT = "ምርት"
+SHOP_CREATED_SERVICE = "አገልግሎት"
 SHOP_EXISTS = "ሱቅ አለዎት: \"{name}\"\n\nካታሎግ: {link}"
 
 # ══════════════════════════════════════════════════════════════
@@ -37,11 +83,36 @@ ASK_PRODUCT_NAME = "የምርቱ ስም ምንድን ነው?"
 ASK_PRODUCT_PRICE = "ዋጋ በብር? (ቁጥር ብቻ)"
 PRICE_INVALID = "እባክዎ ትክክለኛ ቁጥር ያስገቡ።"
 ASK_PRODUCT_DESC = "አጭር መግለጫ (አማራጭ — /skip ለመዝለል)።"
-PRODUCT_SAVED = "ምርት \"{name}\" ተቀምጧል! ({price} ብር)\n\nየማስታወቂያ ምስሎች እየተዘጋጁ ነው..."
-PRODUCT_IMAGES_READY = "የ\"{name}\" ማስታወቂያ ምስሎች ዝግጁ ናቸው!\n\nበቻናሎችዎ ላይ ያጋሩ።"
+PRODUCT_SAVED = "✨ \"{name}\" ተጨምሯል! ({price_display})\n\nየማስታወቂያ ምስሎች እየተዘጋጁ ነው..."
+PRODUCT_IMAGES_READY = "📸 4 ምስሎች ለ\"{name}\" ዝግጁ ናቸው!\n\nያስቀምጡ እና በቻናሎችዎ ላይ ያጋሩ።\nሌላ ለመጨመር ፎቶ ይላኩ።"
 NO_PRODUCTS = "ምንም ምርቶች የሉም። /add ይጠቀሙ።"
 PRODUCT_DELETED = "ምርት \"{name}\" ተሰርዟል።"
 PRODUCT_LIST_HEADER = "ምርቶችዎ:"
+
+# ══════════════════════════════════════════════════════════════
+# SERVICES
+# ══════════════════════════════════════════════════════════════
+
+ASK_SERVICE_PHOTO = "የስራዎን ፎቶ ይላኩ — ፖርትፎሊዮ፣ ቅድመ/ድህረ ምስል፣ ወይም የስራ ቦታዎ።"
+ASK_SERVICE_NAME = "የአገልግሎቱ ስም ምንድን ነው?"
+ASK_SERVICE_PRICE = "የመነሻ ዋጋ በብር? (ቁጥር ብቻ)"
+ASK_SERVICE_DESC = "አጭር የአገልግሎት መግለጫ (አማራጭ — /skip ለመዝለል)።"
+NO_SERVICES = "ምንም አገልግሎቶች የሉም። /add ይጠቀሙ።"
+SERVICE_DELETED = "አገልግሎት \"{name}\" ተሰርዟል።"
+SERVICE_LIST_HEADER = "አገልግሎቶችዎ:"
+
+# ══════════════════════════════════════════════════════════════
+# PRICE TYPE
+# ══════════════════════════════════════════════════════════════
+
+ASK_PRICE_TYPE = "ዋጋው እንዴት ነው?"
+BTN_PRICE_FIXED = "💰 ቋሚ ዋጋ"
+BTN_PRICE_STARTING = "📊 ጀምሮ"
+BTN_PRICE_CONTACT = "💬 ለዋጋ ያግኙን"
+
+PRICE_DISPLAY_FIXED = "{price} ብር"
+PRICE_DISPLAY_STARTING = "ጀምሮ {price} ብር"
+PRICE_DISPLAY_CONTACT = "ለዋጋ ያግኙን"
 
 # ══════════════════════════════════════════════════════════════
 # ORDERS
@@ -72,17 +143,22 @@ BUYER_ASK_NOTE = "ለሻጩ ማስታወሻ? (/skip ለመዝለል)"
 # ══════════════════════════════════════════════════════════════
 
 BTN_ADD_PRODUCT = "ምርት ጨምር"
+BTN_ADD_SERVICE = "አገልግሎት ጨምር"
 BTN_MY_PRODUCTS = "ምርቶቼ"
-BTN_MY_ORDERS = "ትዕዛዞች"
+BTN_MY_SERVICES = "አገልግሎቶቼ"
+BTN_INQUIRIES = "ጥያቄዎች"
 BTN_SHOP_LINK = "የሱቅ ሊንክ"
 BTN_SETTINGS = "ቅንብሮች"
+
+# Legacy
+BTN_MY_ORDERS = "ትዕዛዞች"
 
 HELP = (
     "የሱቅ ትዕዛዞች:\n\n"
     "/start — ዋና ምናሌ\n"
-    "/add — አዲስ ምርት ጨምር\n"
-    "/products — ምርቶችዎን ይመልከቱ\n"
-    "/orders — ክፍት ትዕዛዞች\n"
+    "/add — ምርት ወይም አገልግሎት ጨምር\n"
+    "/products — ዝርዝሮችዎን ይመልከቱ\n"
+    "/orders — ጥያቄዎች\n"
     "/shop — የሱቅ ሊንክ\n"
     "/language — ቋንቋ ቀይር\n"
     "/help — ይህ መልዕክት"
@@ -97,6 +173,16 @@ BTN_REJECT = "❌ ውድቅ"
 BTN_COMPLETE = "✅ ተጠናቋል"
 
 # ══════════════════════════════════════════════════════════════
+# INQUIRIES
+# ══════════════════════════════════════════════════════════════
+
+NEW_INQUIRY = "📩 አዲስ ጥያቄ!\n\n{item} — {price_display}\n👤 {buyer}{details}"
+NO_INQUIRIES = "አዲስ ጥያቄዎች የሉም።"
+INQUIRY_LIST_HEADER = "አዲስ ጥያቄዎች:"
+BTN_MARK_SEEN = "✅ ታይቷል"
+INQUIRY_MARKED_SEEN = "ጥያቄው ታይቷል ተብሎ ምልክት ተደርጓል።"
+
+# ══════════════════════════════════════════════════════════════
 # MISC
 # ══════════════════════════════════════════════════════════════
 
@@ -106,10 +192,18 @@ BTN_COMPLETE = "✅ ተጠናቋል"
 
 BTN_SHARE_SHOP = "ሱቅ ያጋሩ"
 SETTINGS_MENU = "ምን ማስቀየር ይፈልጋሉ?"
-BTN_CHANGE_THEME = "ቀለም ቀይር"
+BTN_CHANGE_TEMPLATE = "ዘይቤ ቀይር"
+BTN_CHANGE_CATEGORY = "ምድብ ቀይር"
+BTN_CHANGE_TYPE = "ዓይነት ቀይር"
 BTN_EDIT_DESC = "መግለጫ አርትዕ"
 BTN_CHANGE_LOGO = "ሎጎ ቀይር"
 BTN_BACK_MENU = "ወደ ምናሌ"
+TEMPLATE_UPDATED = "ዘይቤ ተቀይሯል!"
+CATEGORY_UPDATED = "ምድብ ተቀይሯል!"
+TYPE_UPDATED = "የንግድ ዓይነት ተቀይሯል!"
+
+# Legacy
+BTN_CHANGE_THEME = "ቀለም ቀይር"
 
 ASK_DESCRIPTION = "ለሱቅዎ አጭር መግለጫ ይላኩ (ከ120 ፊደላት በታች)።\n\nለማስወገድ /skip ይላኩ።"
 DESC_SAVED = "መግለጫ ተዘምኗል!"
@@ -120,7 +214,7 @@ ASK_LOGO = "ለሱቅዎ ሎጎ ፎቶ ይላኩ።\n\nለማስወገድ /skip 
 LOGO_SAVED = "ሎጎ ተዘምኗል!"
 LOGO_REMOVED = "ሎጎ ተወግዷል።"
 
-THEME_UPDATED = "ቀለም ተቀይሯል!"
+THEME_UPDATED = "ቀለም ተቀይሯል!"  # legacy
 
 SHARE_CARD_CAPTION = "ይህን ለገዢዎችዎ እና በማህበራዊ ሚዲያ ላይ ያጋሩ!"
 

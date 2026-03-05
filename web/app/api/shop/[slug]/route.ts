@@ -11,7 +11,7 @@ export async function GET(
   // Get shop
   const { data: shop, error: shopErr } = await supabase
     .from("suq_shops")
-    .select("id, shop_name, shop_slug, telegram_username, theme_color, description, logo_file_id, logo_url")
+    .select("id, shop_name, shop_slug, telegram_username, theme_color, template_style, shop_type, category, phone, location_text, description, logo_file_id, logo_url")
     .eq("shop_slug", slug)
     .single();
 
@@ -44,7 +44,7 @@ export async function GET(
   // Get active products
   const { data: products } = await supabase
     .from("suq_products")
-    .select("id, name, description, price, photo_url, photo_file_id")
+    .select("id, name, description, price, price_type, listing_type, photo_url, photo_file_id")
     .eq("shop_id", shop.id)
     .eq("is_active", true)
     .order("sort_order");

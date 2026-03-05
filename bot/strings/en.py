@@ -8,24 +8,73 @@ LANG_PROMPT = "Choose your language:"
 LANG_CHANGED = "Language set to English"
 
 WELCOME = (
-    "Welcome to Suq!\n\n"
-    "Turn your Telegram channel into a professional storefront.\n\n"
-    "Add products, get beautiful marketing images, and manage orders — all from this bot."
+    "🏪 Welcome to Suq!\n\n"
+    "Turn your Telegram into a beautiful shop — free.\n\n"
+    "What type of business are you?"
 )
 
+# Legacy (kept for backward compat)
 ASK_ROLE = "What would you like to do?"
 BTN_SELLER = "I'm a Seller"
 BTN_BUYER = "I'm a Buyer"
 
 # ══════════════════════════════════════════════════════════════
+# BUSINESS TYPE
+# ══════════════════════════════════════════════════════════════
+
+ASK_SHOP_TYPE = "What type of business are you?"
+BTN_TYPE_PRODUCT = "🛍 I sell products"
+BTN_TYPE_SERVICE = "💼 I offer services"
+
+# ══════════════════════════════════════════════════════════════
+# CATEGORIES
+# ══════════════════════════════════════════════════════════════
+
+ASK_CATEGORY = "Pick your category:"
+
+# Product categories
+CAT_FOOD = "Food & Bakery"
+CAT_FASHION = "Fashion & Clothing"
+CAT_ELECTRONICS = "Electronics"
+CAT_BEAUTY = "Beauty & Cosmetics"
+CAT_HANDMADE = "Handmade & Crafts"
+CAT_COFFEE = "Coffee & Spices"
+CAT_HOME = "Home & Furniture"
+CAT_OTHER = "Other"
+
+# Service categories
+CAT_SALON = "Beauty & Salon"
+CAT_PHOTO = "Photography & Video"
+CAT_TUTORING = "Tutoring & Education"
+CAT_DESIGN = "Design & Creative"
+CAT_REPAIR = "Repair & Technical"
+CAT_FITNESS = "Health & Fitness"
+CAT_EVENTS = "Events & Catering"
+# CAT_OTHER shared with products
+
+# ══════════════════════════════════════════════════════════════
+# TEMPLATE STYLE
+# ══════════════════════════════════════════════════════════════
+
+ASK_TEMPLATE = "Pick a style for your shop and images:"
+TMPL_CLEAN = "✨ Clean"
+TMPL_BOLD = "⚡ Bold"
+TMPL_ETHIOPIAN = "🇪🇹 Ethiopian"
+TMPL_FRESH = "🌿 Fresh"
+TMPL_MINIMAL = "◻️ Minimal"
+TMPL_WARM = "🌅 Warm"
+
+# ══════════════════════════════════════════════════════════════
 # SHOP SETUP
 # ══════════════════════════════════════════════════════════════
 
-ASK_SHOP_NAME = "Let's set up your shop!\n\nWhat's your shop name?"
-ASK_THEME_COLOR = "Pick a color theme for your shop:"
+ASK_SHOP_NAME = "What's your business name?"
+ASK_THEME_COLOR = "Pick a color theme for your shop:"  # legacy
 SHOP_NAME_TAKEN = "That name is already taken. Try another one."
 SHOP_NAME_INVALID = "Shop name must be 2-30 characters, letters and numbers only."
-SHOP_CREATED = "Your shop \"{name}\" is ready!\n\nYour catalog link:\n{link}\n\nShare this with your buyers."
+SHOP_CREATED = "Your shop \"{name}\" is ready!\n\nYour catalog link:\n{link}\n\nNow send me a photo to add your first {item_type}."
+SHOP_CREATED_PRODUCT = "product"
+SHOP_CREATED_SERVICE = "service"
 SHOP_EXISTS = "You already have a shop: \"{name}\"\n\nCatalog: {link}"
 
 # ══════════════════════════════════════════════════════════════
@@ -37,11 +86,36 @@ ASK_PRODUCT_NAME = "What's the product name?"
 ASK_PRODUCT_PRICE = "Price in Birr? (numbers only)"
 PRICE_INVALID = "Please enter a valid number for the price."
 ASK_PRODUCT_DESC = "Short description (optional — send /skip to skip)."
-PRODUCT_SAVED = "Product \"{name}\" saved! ({price} Birr)\n\nGenerating marketing images..."
-PRODUCT_IMAGES_READY = "Here are your marketing images for \"{name}\"!\n\nShare these on your channels."
+PRODUCT_SAVED = "✨ \"{name}\" added! ({price_display})\n\nGenerating marketing images..."
+PRODUCT_IMAGES_READY = "📸 4 images ready for \"{name}\"!\n\nSave them and share on your channels.\nAdd another? Just send a photo."
 NO_PRODUCTS = "You have no products yet. Use /add to add one."
 PRODUCT_DELETED = "Product \"{name}\" deleted."
 PRODUCT_LIST_HEADER = "Your products:"
+
+# ══════════════════════════════════════════════════════════════
+# SERVICES
+# ══════════════════════════════════════════════════════════════
+
+ASK_SERVICE_PHOTO = "Send a photo that shows your work — a portfolio shot, a before/after, or your workspace."
+ASK_SERVICE_NAME = "What's the service name?"
+ASK_SERVICE_PRICE = "Starting price in Birr? (numbers only)"
+ASK_SERVICE_DESC = "Short description of the service (optional — send /skip to skip)."
+NO_SERVICES = "You have no services yet. Use /add to add one."
+SERVICE_DELETED = "Service \"{name}\" deleted."
+SERVICE_LIST_HEADER = "Your services:"
+
+# ══════════════════════════════════════════════════════════════
+# PRICE TYPE
+# ══════════════════════════════════════════════════════════════
+
+ASK_PRICE_TYPE = "How is this priced?"
+BTN_PRICE_FIXED = "💰 Fixed Price"
+BTN_PRICE_STARTING = "📊 Starting From"
+BTN_PRICE_CONTACT = "💬 Contact for Pricing"
+
+PRICE_DISPLAY_FIXED = "{price} Birr"
+PRICE_DISPLAY_STARTING = "Starting from {price} Birr"
+PRICE_DISPLAY_CONTACT = "Contact for pricing"
 
 # ══════════════════════════════════════════════════════════════
 # ORDERS
@@ -72,17 +146,22 @@ BUYER_ASK_NOTE = "Any notes for the seller? (send /skip to skip)"
 # ══════════════════════════════════════════════════════════════
 
 BTN_ADD_PRODUCT = "Add Product"
+BTN_ADD_SERVICE = "Add Service"
 BTN_MY_PRODUCTS = "My Products"
-BTN_MY_ORDERS = "Orders"
+BTN_MY_SERVICES = "My Services"
+BTN_INQUIRIES = "Inquiries"
 BTN_SHOP_LINK = "Shop Link"
 BTN_SETTINGS = "Settings"
+
+# Legacy
+BTN_MY_ORDERS = "Orders"
 
 HELP = (
     "Suq Commands:\n\n"
     "/start — Main menu\n"
-    "/add — Add a new product\n"
-    "/products — View your products\n"
-    "/orders — View open orders\n"
+    "/add — Add a product or service\n"
+    "/products — View your items\n"
+    "/orders — View inquiries\n"
     "/shop — Your shop link\n"
     "/language — Change language\n"
     "/help — This message"
@@ -97,15 +176,33 @@ BTN_REJECT = "❌ Reject"
 BTN_COMPLETE = "✅ Complete"
 
 # ══════════════════════════════════════════════════════════════
+# INQUIRIES (new system replacing orders)
+# ══════════════════════════════════════════════════════════════
+
+NEW_INQUIRY = "📩 New inquiry!\n\n{item} — {price_display}\n👤 {buyer}{details}"
+NO_INQUIRIES = "No new inquiries."
+INQUIRY_LIST_HEADER = "New inquiries:"
+BTN_MARK_SEEN = "✅ Mark as Seen"
+INQUIRY_MARKED_SEEN = "Inquiry marked as seen."
+
+# ══════════════════════════════════════════════════════════════
 # SETTINGS
 # ══════════════════════════════════════════════════════════════
 
 BTN_SHARE_SHOP = "Share Shop"
 SETTINGS_MENU = "What would you like to change?"
-BTN_CHANGE_THEME = "Change Theme"
+BTN_CHANGE_TEMPLATE = "Change Style"
+BTN_CHANGE_CATEGORY = "Change Category"
+BTN_CHANGE_TYPE = "Change Type"
 BTN_EDIT_DESC = "Edit Description"
 BTN_CHANGE_LOGO = "Change Logo"
 BTN_BACK_MENU = "Back to Menu"
+TEMPLATE_UPDATED = "Template style updated!"
+CATEGORY_UPDATED = "Category updated!"
+TYPE_UPDATED = "Business type updated!"
+
+# Legacy
+BTN_CHANGE_THEME = "Change Theme"
 
 ASK_DESCRIPTION = "Send a short description or tagline for your shop (max 120 chars).\n\nSend /skip to remove it."
 DESC_SAVED = "Description updated!"
@@ -116,7 +213,7 @@ ASK_LOGO = "Send a photo for your shop logo.\n\nSend /skip to remove it."
 LOGO_SAVED = "Logo updated!"
 LOGO_REMOVED = "Logo removed."
 
-THEME_UPDATED = "Theme color updated!"
+THEME_UPDATED = "Theme color updated!"  # legacy
 
 SHARE_CARD_CAPTION = "Share this with your buyers and on social media!"
 

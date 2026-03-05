@@ -1,5 +1,5 @@
 """
-Settings handler — shop customization (theme, description, logo, share card).
+Settings handler — shop customization (template, category, type, description, logo, share card).
 """
 
 import io
@@ -9,10 +9,11 @@ from telegram.ext import ContextTypes
 
 from bot.db.supabase_client import (
     run_sync, get_shop, update_shop_theme, update_shop_description,
-    update_shop_logo, get_product_count, catalog_link,
+    update_shop_logo, update_shop_template, update_shop_type, update_shop_category,
+    get_product_count, catalog_link,
 )
 from bot.strings.lang import s
-from bot.handlers.start import THEMES
+from bot.handlers.start import TEMPLATES, THEMES, PRODUCT_CATEGORIES, SERVICE_CATEGORIES
 
 
 # ── Settings Menu ────────────────────────────────────────────
@@ -30,20 +31,25 @@ async def settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await query.edit_message_text(t.ERROR)
         return
 
-    theme_key = shop.get("theme_color", "teal")
-    theme_info = THEMES.get(theme_key, THEMES["teal"])
+    tmpl_key = shop.get("template_style", "clean")
+    tmpl_info = TEMPLATES.get(tmpl_key, TEMPLATES["clean"])
+    tmpl_label = getattr(t, tmpl_info["label_attr"], tmpl_key.title())
     desc = shop.get("description") or "—"
     logo = "✅" if shop.get("logo_file_id") else "—"
+    category = shop.get("category", "—")
+    shop_type = shop.get("shop_type", "product")
 
     header = (
         f"⚙️ {shop['shop_name']}\n\n"
-        f"🎨 {theme_info['emoji']} {theme_info['label']}\n"
+        f"🎨 {tmpl_info['emoji']} {tmpl_label}\n"
+        f"📂 {category.title() if category != '—' else '—'}\n"
         f"📝 {desc}\n"
         f"🖼 Logo: {logo}"
     )
 
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"🎨 {t.BTN_CHANGE_THEME}", callback_data="settings_theme")],
+        [InlineKeyboardButton(f"🎨 {t.BTN_CHANGE_TEMPLATE}", callback_data="settings_template")],
+        [InlineKeyboardButton(f"📂 {t.BTN_CHANGE_CATEGORY}", callback_data="settings_category")],
         [InlineKeyboardButton(f"📝 {t.BTN_EDIT_DESC}", callback_data="settings_desc")],
         [InlineKeyboardButton(f"🖼 {t.BTN_CHANGE_LOGO}", callback_data="settings_logo")],
         [InlineKeyboardButton(f"← {t.BTN_BACK_MENU}", callback_data="settings_back")],
@@ -52,33 +58,142 @@ async def settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await query.edit_message_text(header, reply_markup=keyboard)
 
 
-# ── Theme Change ─────────────────────────────────────────────
+# ── Template Style Change ────────────────────────────────────
 
 
-async def settings_change_theme(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Show theme picker (reused from onboarding)."""
+async def settings_change_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show template style picker."""
     query = update.callback_query
     await query.answer()
     user = query.from_user
     t = s(user.id)
 
-    keys = list(THEMES.keys())
+    keys = list(TEMPLATES.keys())
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                f"{THEMES[k]['emoji']} {THEMES[k]['label']}",
-                callback_data=f"settheme_{k}",
+                f"{TEMPLATES[k]['emoji']} {getattr(t, TEMPLATES[k]['label_attr'], k.title())}",
+                callback_data=f"settmpl_{k}",
             )
             for k in keys[i:i + 2]
         ]
         for i in range(0, len(keys), 2)
     ])
 
-    await query.edit_message_text(t.ASK_THEME_COLOR, reply_markup=keyboard)
+    await query.edit_message_text(t.ASK_TEMPLATE, reply_markup=keyboard)
+
+
+async def settings_template_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Apply the selected template style."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    template = query.data.replace("settmpl_", "")
+    shop = await run_sync(get_shop, user.id)
+    if not shop:
+        await query.edit_message_text(t.ERROR)
+        return
+
+    await run_sync(update_shop_template, shop["id"], template)
+    tmpl_info = TEMPLATES.get(template, TEMPLATES["clean"])
+    await query.edit_message_text(f"{tmpl_info['emoji']} {t.TEMPLATE_UPDATED}")
+
+
+# ── Category Change ──────────────────────────────────────────
+
+
+async def settings_change_category(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show category picker based on shop type."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    shop = await run_sync(get_shop, user.id)
+    if not shop:
+        await query.edit_message_text(t.ERROR)
+        return
+
+    shop_type = shop.get("shop_type", "product")
+    cats = SERVICE_CATEGORIES if shop_type == "service" else PRODUCT_CATEGORIES
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(
+            getattr(t, attr, key.title()),
+            callback_data=f"setcat_{key}",
+        )]
+        for key, attr in cats
+    ])
+
+    await query.edit_message_text(t.ASK_CATEGORY, reply_markup=keyboard)
+
+
+async def settings_category_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Apply the selected category."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    category = query.data.replace("setcat_", "")
+    shop = await run_sync(get_shop, user.id)
+    if not shop:
+        await query.edit_message_text(t.ERROR)
+        return
+
+    await run_sync(update_shop_category, shop["id"], category)
+    await query.edit_message_text(f"✅ {t.CATEGORY_UPDATED}")
+
+
+# ── Type Change ──────────────────────────────────────────────
+
+
+async def settings_change_type(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show business type picker."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(t.BTN_TYPE_PRODUCT, callback_data="settype_product"),
+            InlineKeyboardButton(t.BTN_TYPE_SERVICE, callback_data="settype_service"),
+        ]
+    ])
+
+    await query.edit_message_text(t.ASK_SHOP_TYPE, reply_markup=keyboard)
+
+
+async def settings_type_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Apply the selected business type."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    shop_type = query.data.replace("settype_", "")
+    shop = await run_sync(get_shop, user.id)
+    if not shop:
+        await query.edit_message_text(t.ERROR)
+        return
+
+    await run_sync(update_shop_type, shop["id"], shop_type)
+    await query.edit_message_text(f"✅ {t.TYPE_UPDATED}")
+
+
+# ── Legacy Theme Change ──────────────────────────────────────
+
+
+async def settings_change_theme(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show theme picker (legacy — redirects to template)."""
+    await settings_change_template(update, context)
 
 
 async def settings_theme_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Apply the selected theme color."""
+    """Apply the selected theme color (legacy)."""
     query = update.callback_query
     await query.answer()
     user = query.from_user
@@ -132,7 +247,7 @@ async def settings_recv_desc(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     if len(text) > 120:
         await update.message.reply_text(t.DESC_INVALID)
-        return True  # Keep awaiting
+        return True
 
     context.user_data.pop("awaiting_description", None)
     await run_sync(update_shop_description, shop["id"], text)
@@ -171,7 +286,6 @@ async def settings_recv_logo(update: Update, context: ContextTypes.DEFAULT_TYPE)
     photo = update.message.photo[-1]
     file_id = photo.file_id
 
-    # Resolve to CDN URL
     logo_url = None
     try:
         pf = await context.bot.get_file(file_id)
@@ -219,9 +333,10 @@ async def share_shop_card(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     product_count = await run_sync(get_product_count, shop["id"])
 
-    # Get theme hex color
-    theme_key = shop.get("theme_color", "teal")
-    theme_hex = THEMES.get(theme_key, THEMES["teal"])["hex"]
+    # Use template style hex color
+    tmpl_key = shop.get("template_style", "clean")
+    tmpl_info = TEMPLATES.get(tmpl_key, TEMPLATES["clean"])
+    theme_hex = tmpl_info["hex"]
 
     # Load logo if set
     logo_bytes = None

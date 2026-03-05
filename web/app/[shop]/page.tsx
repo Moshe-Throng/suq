@@ -9,7 +9,9 @@ interface Product {
   id: string;
   name: string;
   description: string | null;
-  price: number;
+  price: number | null;
+  price_type: string | null;
+  listing_type: string | null;
   photo_url: string | null;
   photo_file_id: string | null;
 }
@@ -20,15 +22,21 @@ interface Shop {
   shop_slug: string;
   telegram_username: string | null;
   theme_color: string | null;
+  template_style: string | null;
+  shop_type: string | null;
+  category: string | null;
+  phone: string | null;
+  location_text: string | null;
   description: string | null;
   logo_url: string | null;
   logo_file_id: string | null;
 }
 
-interface OrderForm {
+interface InquiryForm {
   productId: string;
   productName: string;
-  price: number;
+  price: number | null;
+  priceType: string;
 }
 
 interface ThemeColors {
@@ -42,20 +50,10 @@ interface ThemeColors {
   gradientCard: string;
 }
 
-/* ─── Theme Palette Map ─────────────────────────────────── */
+/* ─── Template Style Palette Map ──────────────────────────── */
 
-const THEMES: Record<string, ThemeColors> = {
-  teal: {
-    primary: "#0D9488",
-    primaryDark: "#0F766E",
-    accent: "#5EEAD4",
-    bgSoft: "#CCFBF1",
-    bgSubtle: "#F0FDFA",
-    ring: "#99F6E4",
-    gradient: "linear-gradient(135deg, #0D9488 0%, #14B8A6 50%, #2DD4BF 100%)",
-    gradientCard: "linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)",
-  },
-  purple: {
+const TEMPLATE_THEMES: Record<string, ThemeColors> = {
+  clean: {
     primary: "#7C3AED",
     primaryDark: "#6D28D9",
     accent: "#A78BFA",
@@ -65,6 +63,62 @@ const THEMES: Record<string, ThemeColors> = {
     gradient: "linear-gradient(135deg, #7C3AED 0%, #8B5CF6 50%, #A78BFA 100%)",
     gradientCard: "linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)",
   },
+  bold: {
+    primary: "#06B6D4",
+    primaryDark: "#0891B2",
+    accent: "#67E8F9",
+    bgSoft: "#CFFAFE",
+    bgSubtle: "#ECFEFF",
+    ring: "#A5F3FC",
+    gradient: "linear-gradient(135deg, #164E63 0%, #0E7490 50%, #06B6D4 100%)",
+    gradientCard: "linear-gradient(135deg, #ECFEFF 0%, #CFFAFE 100%)",
+  },
+  ethiopian: {
+    primary: "#B45309",
+    primaryDark: "#92400E",
+    accent: "#FCD34D",
+    bgSoft: "#FEF3C7",
+    bgSubtle: "#FFFBEB",
+    ring: "#FDE68A",
+    gradient: "linear-gradient(135deg, #B45309 0%, #D97706 50%, #F59E0B 100%)",
+    gradientCard: "linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)",
+  },
+  fresh: {
+    primary: "#0D9488",
+    primaryDark: "#0F766E",
+    accent: "#5EEAD4",
+    bgSoft: "#CCFBF1",
+    bgSubtle: "#F0FDFA",
+    ring: "#99F6E4",
+    gradient: "linear-gradient(135deg, #0D9488 0%, #14B8A6 50%, #2DD4BF 100%)",
+    gradientCard: "linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)",
+  },
+  minimal: {
+    primary: "#374151",
+    primaryDark: "#1F2937",
+    accent: "#9CA3AF",
+    bgSoft: "#F3F4F6",
+    bgSubtle: "#F9FAFB",
+    ring: "#D1D5DB",
+    gradient: "linear-gradient(135deg, #374151 0%, #4B5563 50%, #6B7280 100%)",
+    gradientCard: "linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%)",
+  },
+  warm: {
+    primary: "#EA580C",
+    primaryDark: "#C2410C",
+    accent: "#FDBA74",
+    bgSoft: "#FFEDD5",
+    bgSubtle: "#FFF7ED",
+    ring: "#FED7AA",
+    gradient: "linear-gradient(135deg, #EA580C 0%, #F97316 50%, #FB923C 100%)",
+    gradientCard: "linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)",
+  },
+};
+
+// Legacy theme_color fallback
+const LEGACY_THEMES: Record<string, ThemeColors> = {
+  teal: TEMPLATE_THEMES.fresh,
+  purple: TEMPLATE_THEMES.clean,
   rose: {
     primary: "#E11D48",
     primaryDark: "#BE123C",
@@ -75,37 +129,24 @@ const THEMES: Record<string, ThemeColors> = {
     gradient: "linear-gradient(135deg, #E11D48 0%, #F43F5E 50%, #FB7185 100%)",
     gradientCard: "linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)",
   },
-  orange: {
-    primary: "#EA580C",
-    primaryDark: "#C2410C",
-    accent: "#FDBA74",
-    bgSoft: "#FFEDD5",
-    bgSubtle: "#FFF7ED",
-    ring: "#FED7AA",
-    gradient: "linear-gradient(135deg, #EA580C 0%, #F97316 50%, #FB923C 100%)",
-    gradientCard: "linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)",
-  },
-  emerald: {
-    primary: "#059669",
-    primaryDark: "#047857",
-    accent: "#6EE7B7",
-    bgSoft: "#D1FAE5",
-    bgSubtle: "#ECFDF5",
-    ring: "#A7F3D0",
-    gradient: "linear-gradient(135deg, #059669 0%, #10B981 50%, #34D399 100%)",
-    gradientCard: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)",
-  },
-  gold: {
-    primary: "#B45309",
-    primaryDark: "#92400E",
-    accent: "#FCD34D",
-    bgSoft: "#FEF3C7",
-    bgSubtle: "#FFFBEB",
-    ring: "#FDE68A",
-    gradient: "linear-gradient(135deg, #B45309 0%, #D97706 50%, #F59E0B 100%)",
-    gradientCard: "linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)",
-  },
+  orange: TEMPLATE_THEMES.warm,
+  emerald: TEMPLATE_THEMES.fresh,
+  gold: TEMPLATE_THEMES.ethiopian,
 };
+
+/* ─── Price helpers ───────────────────────────────────────── */
+
+function formatPrice(price: number | null, priceType: string | null): string {
+  if (priceType === "contact" || price === null) return "Contact";
+  if (priceType === "starting_from") return `From ${price.toLocaleString()} Birr`;
+  return `${price.toLocaleString()} Birr`;
+}
+
+function formatPriceLong(price: number | null, priceType: string | null): string {
+  if (priceType === "contact" || price === null) return "Contact for pricing";
+  if (priceType === "starting_from") return `Starting from ${price.toLocaleString()} Birr`;
+  return `${price.toLocaleString()} Birr`;
+}
 
 /* ─── Component ─────────────────────────────────────────── */
 
@@ -118,18 +159,24 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Order modal
-  const [orderForm, setOrderForm] = useState<OrderForm | null>(null);
+  // Inquiry modal
+  const [inquiryForm, setInquiryForm] = useState<InquiryForm | null>(null);
   const [buyerName, setBuyerName] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
-  const [buyerNote, setBuyerNote] = useState("");
+  const [buyerMessage, setBuyerMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const theme = useMemo(() => {
+    // Prefer template_style, fallback to theme_color
+    if (shop?.template_style && TEMPLATE_THEMES[shop.template_style]) {
+      return TEMPLATE_THEMES[shop.template_style];
+    }
     const key = shop?.theme_color || "teal";
-    return THEMES[key] || THEMES.teal;
-  }, [shop?.theme_color]);
+    return LEGACY_THEMES[key] || TEMPLATE_THEMES.clean;
+  }, [shop?.template_style, shop?.theme_color]);
+
+  const isService = shop?.shop_type === "service";
 
   useEffect(() => {
     async function load() {
@@ -148,8 +195,8 @@ export default function ShopPage() {
     load();
   }, [slug]);
 
-  async function submitOrder() {
-    if (!orderForm || !buyerName.trim()) return;
+  async function submitInquiry() {
+    if (!inquiryForm || !buyerName.trim()) return;
     setSubmitting(true);
     try {
       const res = await fetch("/api/order", {
@@ -157,20 +204,20 @@ export default function ShopPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shop_id: shop!.id,
-          product_id: orderForm.productId,
+          product_id: inquiryForm.productId,
           buyer_name: buyerName.trim(),
           buyer_phone: buyerPhone.trim() || undefined,
-          note: buyerNote.trim() || undefined,
+          message: buyerMessage.trim() || undefined,
         }),
       });
       if (res.ok) {
-        setOrderSuccess(true);
+        setSubmitSuccess(true);
         setTimeout(() => {
-          setOrderForm(null);
-          setOrderSuccess(false);
+          setInquiryForm(null);
+          setSubmitSuccess(false);
           setBuyerName("");
           setBuyerPhone("");
-          setBuyerNote("");
+          setBuyerMessage("");
         }, 2500);
       }
     } catch {
@@ -222,7 +269,10 @@ export default function ShopPage() {
     );
   }
 
-  const productCount = products.length;
+  const itemCount = products.length;
+  const itemLabel = isService
+    ? (itemCount === 1 ? "service" : "services")
+    : (itemCount === 1 ? "item" : "items");
 
   /* ─── Main render ───────────────────────────────────── */
   return (
@@ -329,7 +379,17 @@ export default function ShopPage() {
             </p>
           )}
 
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            {/* Category badge */}
+            {shop.category && (
+              <span
+                className="inline-flex items-center text-xs px-2.5 py-0.5 rounded-full"
+                style={{ background: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.9)" }}
+              >
+                {shop.category.charAt(0).toUpperCase() + shop.category.slice(1)}
+              </span>
+            )}
+
             {shop.telegram_username && (
               <a
                 href={`https://t.me/${shop.telegram_username}`}
@@ -346,10 +406,27 @@ export default function ShopPage() {
                 @{shop.telegram_username}
               </a>
             )}
+
+            {shop.phone && (
+              <a
+                href={`tel:${shop.phone}`}
+                className="inline-flex items-center gap-1 text-sm"
+                style={{ color: "rgba(255,255,255,0.8)" }}
+              >
+                📱 {shop.phone}
+              </a>
+            )}
+
             <span style={{ color: "rgba(255,255,255,0.5)" }} className="text-sm">
-              {productCount} {productCount === 1 ? "product" : "products"}
+              {itemCount} {itemLabel}
             </span>
           </div>
+
+          {shop.location_text && (
+            <p className="mt-1 text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
+              📍 {shop.location_text}
+            </p>
+          )}
         </div>
 
         {/* Bottom curve */}
@@ -362,7 +439,7 @@ export default function ShopPage() {
 
       {/* ═══ Products Grid ═══ */}
       <main className="max-w-2xl mx-auto px-4 pb-8 -mt-4 relative z-10">
-        {productCount === 0 ? (
+        {itemCount === 0 ? (
           <div className="text-center py-20">
             <div
               className="w-20 h-20 mx-auto mb-5 rounded-full flex items-center justify-center"
@@ -372,83 +449,91 @@ export default function ShopPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">No products yet</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">
+              No {isService ? "services" : "products"} yet
+            </h2>
             <p className="text-gray-400 text-sm">Check back soon!</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {products.map((p, idx) => (
-              <div
-                key={p.id}
-                className="product-card bg-white rounded-2xl overflow-hidden card-enter"
-                style={{
-                  animationDelay: `${idx * 0.06}s`,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
-                }}
-              >
-                {/* Photo */}
-                <div className="relative aspect-square bg-gray-50 overflow-hidden">
-                  {p.photo_url ? (
-                    <img
-                      src={p.photo_url}
-                      alt={p.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
+            {products.map((p, idx) => {
+              const priceDisplay = formatPrice(p.price, p.price_type);
+              const isContactPrice = p.price_type === "contact" || p.price === null;
+
+              return (
+                <div
+                  key={p.id}
+                  className="product-card bg-white rounded-2xl overflow-hidden card-enter"
+                  style={{
+                    animationDelay: `${idx * 0.06}s`,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+                  }}
+                >
+                  {/* Photo */}
+                  <div className="relative aspect-square bg-gray-50 overflow-hidden">
+                    {p.photo_url ? (
+                      <img
+                        src={p.photo_url}
+                        alt={p.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div
+                        className="w-full h-full flex items-center justify-center"
+                        style={{ background: theme.gradientCard }}
+                      >
+                        <svg className="w-12 h-12 opacity-30" style={{ color: theme.primary }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21z" />
+                        </svg>
+                      </div>
+                    )}
+                    {/* Price badge */}
                     <div
-                      className="w-full h-full flex items-center justify-center"
-                      style={{ background: theme.gradientCard }}
+                      className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg text-xs font-bold text-white"
+                      style={{
+                        background: isContactPrice ? "#374151" : theme.primary,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                      }}
                     >
-                      <svg className="w-12 h-12 opacity-30" style={{ color: theme.primary }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21z" />
-                      </svg>
+                      {priceDisplay}
                     </div>
-                  )}
-                  {/* Price badge */}
-                  <div
-                    className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg text-xs font-bold text-white"
-                    style={{
-                      background: theme.primary,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                    }}
-                  >
-                    {p.price.toLocaleString()} Birr
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-3">
+                    <h2 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
+                      {p.name}
+                    </h2>
+                    {p.description && (
+                      <p className="text-gray-400 text-xs mt-1 line-clamp-2 leading-relaxed">
+                        {p.description}
+                      </p>
+                    )}
+                    <button
+                      onClick={() =>
+                        setInquiryForm({
+                          productId: p.id,
+                          productName: p.name,
+                          price: p.price,
+                          priceType: p.price_type || "fixed",
+                        })
+                      }
+                      className="w-full mt-3 py-2 rounded-xl text-white text-sm font-semibold transition-all active:scale-95"
+                      style={{ background: theme.primary }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.background = theme.primaryDark)
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = theme.primary)
+                      }
+                    >
+                      {isContactPrice ? "Inquire" : (isService ? "Contact" : "Order Now")}
+                    </button>
                   </div>
                 </div>
-
-                {/* Info */}
-                <div className="p-3">
-                  <h2 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
-                    {p.name}
-                  </h2>
-                  {p.description && (
-                    <p className="text-gray-400 text-xs mt-1 line-clamp-2 leading-relaxed">
-                      {p.description}
-                    </p>
-                  )}
-                  <button
-                    onClick={() =>
-                      setOrderForm({
-                        productId: p.id,
-                        productName: p.name,
-                        price: p.price,
-                      })
-                    }
-                    className="w-full mt-3 py-2 rounded-xl text-white text-sm font-semibold transition-all active:scale-95"
-                    style={{ background: theme.primary }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = theme.primaryDark)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = theme.primary)
-                    }
-                  >
-                    Order Now
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
@@ -463,12 +548,12 @@ export default function ShopPage() {
         </div>
       </footer>
 
-      {/* ═══ Order Modal ═══ */}
-      {orderForm && (
+      {/* ═══ Inquiry Modal ═══ */}
+      {inquiryForm && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setOrderForm(null);
+            if (e.target === e.currentTarget) setInquiryForm(null);
           }}
         >
           {/* Backdrop */}
@@ -481,7 +566,7 @@ export default function ShopPage() {
               <div className="w-10 h-1 rounded-full bg-gray-200" />
             </div>
 
-            {orderSuccess ? (
+            {submitSuccess ? (
               /* ── Success State ── */
               <div className="p-8 text-center">
                 <div
@@ -492,32 +577,32 @@ export default function ShopPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Order placed!</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Inquiry sent!</h3>
                 <p className="text-gray-400 text-sm mt-1">
                   The seller will be notified on Telegram.
                 </p>
               </div>
             ) : (
-              /* ── Order Form ── */
+              /* ── Inquiry Form ── */
               <div className="p-6">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-5">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Place Order
+                      {inquiryForm.priceType === "contact" ? "Get a Quote" : (isService ? "Contact Seller" : "Place Order")}
                     </h3>
                     <p className="text-sm text-gray-400 mt-0.5">
-                      {orderForm.productName}
+                      {inquiryForm.productName}
                       <span
                         className="ml-2 font-semibold"
                         style={{ color: theme.primary }}
                       >
-                        {orderForm.price.toLocaleString()} Birr
+                        {formatPriceLong(inquiryForm.price, inquiryForm.priceType)}
                       </span>
                     </p>
                   </div>
                   <button
-                    onClick={() => setOrderForm(null)}
+                    onClick={() => setInquiryForm(null)}
                     className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors -mt-1"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -559,9 +644,9 @@ export default function ShopPage() {
                   />
 
                   <textarea
-                    placeholder="Note for the seller (optional)"
-                    value={buyerNote}
-                    onChange={(e) => setBuyerNote(e.target.value)}
+                    placeholder="Message (optional)"
+                    value={buyerMessage}
+                    onChange={(e) => setBuyerMessage(e.target.value)}
                     rows={2}
                     className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none resize-none transition-shadow"
                     onFocus={(e) =>
@@ -571,7 +656,7 @@ export default function ShopPage() {
                   />
 
                   <button
-                    onClick={submitOrder}
+                    onClick={submitInquiry}
                     disabled={!buyerName.trim() || submitting}
                     className="w-full py-3.5 rounded-xl text-white text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
@@ -595,15 +680,26 @@ export default function ShopPage() {
                         Sending...
                       </span>
                     ) : (
-                      "Place Order"
+                      inquiryForm.priceType === "contact" ? "Send Inquiry" : (isService ? "Send Inquiry" : "Place Order")
                     )}
                   </button>
                 </div>
 
                 {/* Telegram hint */}
-                <p className="text-center text-xs text-gray-300 mt-4">
-                  Your order will be sent to the seller via Telegram
-                </p>
+                {shop.telegram_username && (
+                  <p className="text-center text-xs text-gray-300 mt-4">
+                    Or message directly on{" "}
+                    <a
+                      href={`https://t.me/${shop.telegram_username}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                      style={{ color: theme.primary }}
+                    >
+                      Telegram
+                    </a>
+                  </p>
+                )}
               </div>
             )}
           </div>

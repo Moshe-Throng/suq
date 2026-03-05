@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerClient } from "@/lib/supabase";
 
+function formatPrice(price: number | null, priceType: string): string {
+  if (priceType === "contact" || price === null) return "Contact for pricing";
+  if (priceType === "starting_from") return `From ${price.toLocaleString()} Birr`;
+  return `${price.toLocaleString()} Birr`;
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { shop_id, product_id, buyer_name, buyer_phone, note } = body;
+  const { shop_id, product_id, buyer_name, buyer_phone, note, message } = body;
 
   if (!shop_id || !product_id || !buyer_name) {
     return NextResponse.json(
@@ -17,7 +23,7 @@ export async function POST(req: NextRequest) {
   // Validate product belongs to shop
   const { data: product } = await supabase
     .from("suq_products")
-    .select("id, name, price")
+    .select("id, name, price, price_type, listing_type")
     .eq("id", product_id)
     .eq("shop_id", shop_id)
     .eq("is_active", true)
@@ -27,7 +33,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 
-  // Create order
+  const inquiryMessage = message || note || null;
+
+  // Create inquiry (stored in suq_orders table)
   const { data: order, error: orderErr } = await supabase
     .from("suq_orders")
     .insert({
@@ -35,14 +43,15 @@ export async function POST(req: NextRequest) {
       product_id,
       buyer_name,
       buyer_phone: buyer_phone || null,
-      note: note || null,
+      note: inquiryMessage,
+      message: inquiryMessage,
       status: "new",
     })
     .select()
     .single();
 
   if (orderErr) {
-    return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create inquiry" }, { status: 500 });
   }
 
   // Notify seller via Telegram bot
@@ -54,11 +63,12 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (shop) {
-      const noteText = note ? `\n📝 ${note}` : "";
+      const priceDisplay = formatPrice(product.price, product.price_type || "fixed");
       const phoneText = buyer_phone ? `\n📱 ${buyer_phone}` : "";
+      const noteText = inquiryMessage ? `\n📝 ${inquiryMessage}` : "";
       const text =
-        `📦 New order!\n\n` +
-        `${product.name} — ${product.price.toLocaleString()} Birr\n` +
+        `📩 New inquiry!\n\n` +
+        `${product.name} — ${priceDisplay}\n` +
         `👤 ${buyer_name}${phoneText}${noteText}`;
 
       const botToken = process.env.BOT_TOKEN;
@@ -74,8 +84,7 @@ export async function POST(req: NextRequest) {
               reply_markup: {
                 inline_keyboard: [
                   [
-                    { text: "✅ Accept", callback_data: `order_accept_${order.id}` },
-                    { text: "❌ Reject", callback_data: `order_reject_${order.id}` },
+                    { text: "✅ Mark as Seen", callback_data: `inq_seen_${order.id}` },
                   ],
                 ],
               },
@@ -85,7 +94,7 @@ export async function POST(req: NextRequest) {
       }
     }
   } catch {
-    // Non-fatal — order is already saved
+    // Non-fatal — inquiry is already saved
   }
 
   return NextResponse.json({ success: true, order_id: order.id });

@@ -87,7 +87,9 @@ def get_shop_by_slug(slug: str) -> dict | None:
 
 
 def create_shop(telegram_id: int, username: str | None, shop_name: str,
-                lang: str = "am", theme_color: str = "teal") -> dict:
+                lang: str = "am", theme_color: str = "teal",
+                shop_type: str = "product", category: str | None = None,
+                template_style: str = "clean") -> dict:
     """Create a new shop. Returns the created row."""
     slug = slugify(shop_name)
     existing = get_shop_by_slug(slug)
@@ -97,21 +99,47 @@ def create_shop(telegram_id: int, username: str | None, shop_name: str,
             suffix += 1
         slug = f"{slug}-{suffix}"
 
-    result = get_client().table("suq_shops").insert({
+    data = {
         "telegram_id": telegram_id,
         "telegram_username": username,
         "shop_name": shop_name,
         "shop_slug": slug,
         "language": lang,
         "theme_color": theme_color,
-    }).execute()
+        "shop_type": shop_type,
+        "template_style": template_style,
+    }
+    if category:
+        data["category"] = category
+    result = get_client().table("suq_shops").insert(data).execute()
     return result.data[0]
 
 
 def update_shop_theme(shop_id: str, theme_color: str) -> None:
-    """Update a shop's theme color."""
+    """Update a shop's theme color (legacy)."""
     get_client().table("suq_shops").update(
         {"theme_color": theme_color}
+    ).eq("id", shop_id).execute()
+
+
+def update_shop_template(shop_id: str, template_style: str) -> None:
+    """Update a shop's template style."""
+    get_client().table("suq_shops").update(
+        {"template_style": template_style}
+    ).eq("id", shop_id).execute()
+
+
+def update_shop_type(shop_id: str, shop_type: str) -> None:
+    """Update a shop's business type."""
+    get_client().table("suq_shops").update(
+        {"shop_type": shop_type}
+    ).eq("id", shop_id).execute()
+
+
+def update_shop_category(shop_id: str, category: str) -> None:
+    """Update a shop's category."""
+    get_client().table("suq_shops").update(
+        {"category": category}
     ).eq("id", shop_id).execute()
 
 
@@ -146,11 +174,14 @@ def slug_available(slug: str) -> bool:
 # ── Product operations ───────────────────────────────────────
 
 
-def get_products(shop_id: str, active_only: bool = True) -> list[dict]:
-    """Get all products for a shop."""
+def get_products(shop_id: str, active_only: bool = True,
+                 listing_type: str | None = None) -> list[dict]:
+    """Get all products for a shop, optionally filtered by listing_type."""
     q = get_client().table("suq_products").select("*").eq("shop_id", shop_id)
     if active_only:
         q = q.eq("is_active", True)
+    if listing_type:
+        q = q.eq("listing_type", listing_type)
     result = q.order("sort_order").execute()
     return result.data
 
@@ -161,14 +192,19 @@ def get_product(product_id: str) -> dict | None:
     return result.data[0] if result.data else None
 
 
-def create_product(shop_id: str, name: str, price: int, photo_file_id: str | None = None,
-                   photo_url: str | None = None, description: str | None = None) -> dict:
-    """Create a new product."""
+def create_product(shop_id: str, name: str, price: int | None = None,
+                   photo_file_id: str | None = None, photo_url: str | None = None,
+                   description: str | None = None, listing_type: str = "product",
+                   price_type: str = "fixed") -> dict:
+    """Create a new product or service listing."""
     data = {
         "shop_id": shop_id,
         "name": name,
-        "price": price,
+        "listing_type": listing_type,
+        "price_type": price_type,
     }
+    if price is not None:
+        data["price"] = price
     if photo_file_id:
         data["photo_file_id"] = photo_file_id
     if photo_url:
@@ -228,3 +264,57 @@ def update_order_status(order_id: str, status: str) -> dict:
         {"status": status}
     ).eq("id", order_id).execute()
     return result.data[0] if result.data else {}
+
+
+# ── Inquiry operations (simplified orders) ──────────────────
+
+
+def create_inquiry(shop_id: str, product_id: str,
+                   buyer_name: str | None = None,
+                   buyer_phone: str | None = None,
+                   message: str | None = None) -> dict:
+    """Create a new inquiry (simplified order)."""
+    data = {
+        "shop_id": shop_id,
+        "product_id": product_id,
+        "status": "new",
+    }
+    if buyer_name:
+        data["buyer_name"] = buyer_name
+    if buyer_phone:
+        data["buyer_phone"] = buyer_phone
+    if message:
+        data["message"] = message
+        data["note"] = message  # backward compat
+    result = get_client().table("suq_orders").insert(data).execute()
+    return result.data[0]
+
+
+def get_inquiries(shop_id: str, status: str = "new") -> list[dict]:
+    """Get inquiries for a shop by status, with item details."""
+    result = get_client().table("suq_orders").select(
+        "*, suq_products(name, price, price_type, listing_type)"
+    ).eq("shop_id", shop_id).eq("status", status).order(
+        "created_at", desc=True
+    ).execute()
+    return result.data
+
+
+def mark_inquiry_seen(inquiry_id: str) -> dict:
+    """Mark an inquiry as seen."""
+    result = get_client().table("suq_orders").update(
+        {"status": "seen"}
+    ).eq("id", inquiry_id).execute()
+    return result.data[0] if result.data else {}
+
+
+# ── Price formatting ─────────────────────────────────────────
+
+
+def format_price(price: int | None, price_type: str = "fixed") -> str:
+    """Format price for display based on price_type."""
+    if price_type == "contact" or price is None:
+        return "Contact for pricing"
+    if price_type == "starting_from":
+        return f"Starting from {price:,} Birr"
+    return f"{price:,} Birr"

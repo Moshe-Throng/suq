@@ -1,6 +1,7 @@
 """
-Order management for sellers.
-Handles order notifications, accept/reject/complete callbacks.
+Inquiry/order management for sellers.
+Handles inquiry notifications and mark-as-seen callbacks.
+Keeps legacy order_action_callback for backward compat.
 """
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -8,12 +9,20 @@ from telegram.ext import ContextTypes
 
 from bot.db.supabase_client import (
     run_sync, get_shop, get_orders, get_product, update_order_status,
+    get_inquiries, mark_inquiry_seen, format_price,
 )
 from bot.strings.lang import s
 
 
+def _inquiry_button(t, inquiry_id: str) -> InlineKeyboardMarkup:
+    """Build Mark as Seen button."""
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(t.BTN_MARK_SEEN, callback_data=f"inq_seen_{inquiry_id}")]
+    ])
+
+
 def _order_buttons(t, order_id: str) -> InlineKeyboardMarkup:
-    """Build Accept/Reject buttons in the user's language."""
+    """Build Accept/Reject buttons (legacy)."""
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton(t.BTN_ACCEPT, callback_data=f"order_accept_{order_id}"),
@@ -22,8 +31,11 @@ def _order_buttons(t, order_id: str) -> InlineKeyboardMarkup:
     ])
 
 
+# ── List inquiries ───────────────────────────────────────────
+
+
 async def list_orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /orders — list open orders for the seller."""
+    """Handle /orders — list new inquiries for the seller."""
     user = update.effective_user
     t = s(user.id)
 
@@ -32,29 +44,37 @@ async def list_orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_text(t.ERROR)
         return
 
-    orders = await run_sync(get_orders, shop["id"], "new")
-    if not orders:
-        await update.message.reply_text(t.NO_ORDERS)
+    inquiries = await run_sync(get_inquiries, shop["id"], "new")
+    if not inquiries:
+        await update.message.reply_text(
+            getattr(t, "NO_INQUIRIES", t.NO_ORDERS)
+        )
         return
 
-    await update.message.reply_text(t.ORDER_LIST_HEADER)
-    for order in orders:
-        product_name = order.get("suq_products", {}).get("name", "?")
-        price = order.get("suq_products", {}).get("price", 0)
-        buyer = order.get("buyer_name", "—")
-        note = order.get("note", "")
+    await update.message.reply_text(
+        getattr(t, "INQUIRY_LIST_HEADER", t.ORDER_LIST_HEADER)
+    )
+    for inq in inquiries:
+        item = inq.get("suq_products") or {}
+        item_name = item.get("name", "?")
+        price_display = format_price(item.get("price"), item.get("price_type", "fixed"))
+        buyer = inq.get("buyer_name", "—")
+        msg = inq.get("message") or inq.get("note", "")
+        phone = inq.get("buyer_phone", "")
 
-        text = f"📦 {product_name} — {price:,} Birr\n👤 {buyer}"
-        if note:
-            text += f"\n📝 {note}"
+        text = f"📩 {item_name} — {price_display}\n👤 {buyer}"
+        if phone:
+            text += f"\n📱 {phone}"
+        if msg:
+            text += f"\n📝 {msg}"
 
         await update.message.reply_text(
-            text, reply_markup=_order_buttons(t, order["id"])
+            text, reply_markup=_inquiry_button(t, inq["id"])
         )
 
 
 async def list_orders_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle menu_orders callback."""
+    """Handle menu_orders callback — list inquiries."""
     query = update.callback_query
     await query.answer()
     user = query.from_user
@@ -65,25 +85,55 @@ async def list_orders_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.edit_message_text(t.ERROR)
         return
 
-    orders = await run_sync(get_orders, shop["id"], "new")
-    if not orders:
-        await query.edit_message_text(t.NO_ORDERS)
+    inquiries = await run_sync(get_inquiries, shop["id"], "new")
+    if not inquiries:
+        await query.edit_message_text(
+            getattr(t, "NO_INQUIRIES", t.NO_ORDERS)
+        )
         return
 
-    await query.edit_message_text(t.ORDER_LIST_HEADER)
-    for order in orders:
-        product_name = order.get("suq_products", {}).get("name", "?")
-        price = order.get("suq_products", {}).get("price", 0)
-        buyer = order.get("buyer_name", "—")
-        note = order.get("note", "")
+    await query.edit_message_text(
+        getattr(t, "INQUIRY_LIST_HEADER", t.ORDER_LIST_HEADER)
+    )
+    for inq in inquiries:
+        item = inq.get("suq_products") or {}
+        item_name = item.get("name", "?")
+        price_display = format_price(item.get("price"), item.get("price_type", "fixed"))
+        buyer = inq.get("buyer_name", "—")
+        msg = inq.get("message") or inq.get("note", "")
+        phone = inq.get("buyer_phone", "")
 
-        text = f"📦 {product_name} — {price:,} Birr\n👤 {buyer}"
-        if note:
-            text += f"\n📝 {note}"
+        text = f"📩 {item_name} — {price_display}\n👤 {buyer}"
+        if phone:
+            text += f"\n📱 {phone}"
+        if msg:
+            text += f"\n📝 {msg}"
 
         await query.message.reply_text(
-            text, reply_markup=_order_buttons(t, order["id"])
+            text, reply_markup=_inquiry_button(t, inq["id"])
         )
+
+
+# ── Inquiry actions ──────────────────────────────────────────
+
+
+async def inquiry_seen_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle inq_seen_{id} — mark inquiry as seen."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    inquiry_id = query.data.replace("inq_seen_", "")
+    await run_sync(mark_inquiry_seen, inquiry_id)
+
+    await query.edit_message_reply_markup(reply_markup=None)
+    await query.message.reply_text(
+        getattr(t, "INQUIRY_MARKED_SEEN", "Inquiry marked as seen.")
+    )
+
+
+# ── Legacy order actions (backward compat) ───────────────────
 
 
 async def order_action_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -156,27 +206,37 @@ async def order_action_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 pass
 
 
-async def notify_seller_new_order(bot, shop: dict, order: dict, product: dict) -> None:
-    """Send new order notification to the seller (called from web API or buyer flow)."""
+# ── Notification (called from web API) ───────────────────────
+
+
+async def notify_seller_new_inquiry(bot, shop: dict, order: dict, product: dict) -> None:
+    """Send new inquiry notification to the seller."""
     from bot.strings.lang import s as get_strings
     t = get_strings(shop["telegram_id"])
 
     buyer = order.get("buyer_name", "—")
-    note_text = ""
-    if order.get("note"):
-        note_text = f"\n📝 {order['note']}"
-    if order.get("buyer_phone"):
-        note_text += f"\n📱 {order['buyer_phone']}"
+    price_display = format_price(product.get("price"), product.get("price_type", "fixed"))
 
-    text = t.NEW_ORDER.format(
+    details = ""
+    if order.get("buyer_phone"):
+        details += f"\n📱 {order['buyer_phone']}"
+    if order.get("message") or order.get("note"):
+        msg = order.get("message") or order.get("note", "")
+        details += f"\n📝 {msg}"
+
+    text = getattr(t, "NEW_INQUIRY", t.NEW_ORDER).format(
+        item=product["name"],
+        price_display=price_display,
+        buyer=buyer,
+        details=details,
+        # Legacy placeholders for backward compat
         product=product["name"],
         qty=order.get("quantity", 1),
-        buyer=buyer,
-        note=note_text,
+        note=details,
     )
 
     await bot.send_message(
         chat_id=shop["telegram_id"],
         text=text,
-        reply_markup=_order_buttons(t, order["id"]),
+        reply_markup=_inquiry_button(t, order["id"]),
     )
