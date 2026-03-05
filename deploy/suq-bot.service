@@ -1,0 +1,15 @@
+[Unit]
+Description=Suq Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/suq
+EnvironmentFile=/root/suq/.env
+ExecStart=/root/suq/venv/bin/python -m bot.main
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
