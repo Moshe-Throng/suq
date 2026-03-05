@@ -8,7 +8,7 @@ LANG_PROMPT = "Choose your language:"
 LANG_CHANGED = "Language set to English"
 
 WELCOME = (
-    "🏪 Welcome to Suq!\n\n"
+    "🏪 Welcome to Souk.et!\n\n"
     "Turn your Telegram into a beautiful shop — free.\n\n"
     "What type of business are you?"
 )
@@ -135,7 +135,7 @@ BUYER_ORDER_COMPLETED = "Your order for \"{product}\" is complete!"
 # BUYER FLOW
 # ══════════════════════════════════════════════════════════════
 
-BUYER_WELCOME = "Welcome to Suq!\n\nBrowse shops by visiting their catalog links, or search below."
+BUYER_WELCOME = "Welcome to Souk.et!\n\nBrowse shops by visiting their catalog links, or search below."
 BUYER_ORDER_PLACED = "Your order has been placed! The seller will be notified."
 BUYER_ASK_NAME = "Your name for the order?"
 BUYER_ASK_PHONE = "Phone number (optional — send /skip):"
@@ -157,7 +157,7 @@ BTN_SETTINGS = "Settings"
 BTN_MY_ORDERS = "Orders"
 
 HELP = (
-    "Suq Commands:\n\n"
+    "Souk.et Commands:\n\n"
     "/start — Main menu\n"
     "/add — Add a product or service\n"
     "/products — View your items\n"

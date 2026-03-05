@@ -17,12 +17,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .single();
 
   if (!shop) {
-    return { title: "Shop not found — Suq" };
+    return { title: "Shop not found — souk.et" };
   }
 
-  const title = `${shop.shop_name} — Suq`;
+  const title = `${shop.shop_name} — souk.et`;
   const description =
-    shop.description || `Browse products from ${shop.shop_name} on Suq`;
+    shop.description || `Browse products from ${shop.shop_name} on souk.et`;
   const ogUrl = `/api/og/${shop.shop_slug}`;
 
   return {

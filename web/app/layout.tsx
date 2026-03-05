@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Suq — Shop on Telegram",
-  description: "Browse products from Telegram sellers",
+  title: "souk.et — Your shop, made beautiful",
+  description: "Turn your Telegram into a beautiful shop — free",
 };
 
 export default function RootLayout({

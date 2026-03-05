@@ -219,7 +219,7 @@ def _watermark(img: Image.Image, shop_slug: str = "") -> Image.Image:
     draw = ImageDraw.Draw(img)
     w, h = img.size
 
-    text = f"suq.shop/{shop_slug}" if shop_slug else "suq.shop"
+    text = f"souk.et/{shop_slug}" if shop_slug else "souk.et"
     font_size = max(12, int(w * 0.018))
     font = _f_sans(font_size)
 
@@ -879,7 +879,7 @@ def generate_shop_card(
 
     # Footer
     f_footer = _f_sans_bold(18)
-    _center(draw, "Powered by Suq", f_footer, H - 70, W, (255, 255, 255, 100))
+    _center(draw, "Powered by souk.et", f_footer, H - 70, W, (255, 255, 255, 100))
 
     buf = io.BytesIO()
     img.save(buf, "PNG", optimize=True)

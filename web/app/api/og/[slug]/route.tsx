@@ -151,7 +151,7 @@ export async function GET(
         >
           {itemCount > 0
             ? `Browse ${itemCount} ${itemLabel}`
-            : "Shop on Suq"}
+            : "Shop on souk.et"}
         </div>
 
         <p
@@ -162,7 +162,7 @@ export async function GET(
             color: "rgba(255,255,255,0.45)",
           }}
         >
-          Powered by Suq
+          Powered by souk.et
         </p>
       </div>
     ),
