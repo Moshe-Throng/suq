@@ -327,6 +327,16 @@ async def delete_product_callback(update: Update, context: ContextTypes.DEFAULT_
         await query.edit_message_text(t.ERROR)
 
 
+async def _start_fallback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle /start mid-conversation — cancel flow and go to main menu."""
+    for key in ("shop_id", "product_name", "product_price", "photo_file_id",
+                "listing_type", "price_type"):
+        context.user_data.pop(key, None)
+    from bot.handlers.start import start_handler
+    await start_handler(update, context)
+    return ConversationHandler.END
+
+
 # ── Build the ConversationHandler ────────────────────────────
 
 
@@ -346,7 +356,7 @@ def build_add_product_conv() -> ConversationHandler:
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
-            CommandHandler("start", cancel),
+            CommandHandler("start", _start_fallback),
         ],
         per_message=False,
         conversation_timeout=300,
