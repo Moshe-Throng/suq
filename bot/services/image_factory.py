@@ -28,6 +28,28 @@ CREAM = (252, 249, 243)
 BLACK = (20, 20, 20)
 DARK_BG = (18, 18, 24)
 BRAND_PURPLE = (110, 60, 180)
+
+# ── Color key → hex (for template_style DB field) ────────────
+
+COLOR_HEX: dict[str, str] = {
+    "purple":    "#7C3AED",
+    "blue":      "#2563EB",
+    "cyan":      "#06B6D4",
+    "teal":      "#0D9488",
+    "green":     "#059669",
+    "orange":    "#EA580C",
+    "red":       "#E11D48",
+    "amber":     "#D97706",
+    "charcoal":  "#374151",
+    "brown":     "#92400E",
+    # legacy style name fallbacks
+    "clean":     "#7C3AED",
+    "bold":      "#06B6D4",
+    "minimal":   "#374151",
+    "ethiopian": "#92400E",
+    "fresh":     "#0D9488",
+    "warm":      "#EA580C",
+}
 NEON_CYAN = (0, 230, 255)
 NEON_PINK = (255, 50, 150)
 GOLD = (200, 165, 75)
@@ -255,12 +277,13 @@ def _draw_eth_pattern(draw, x0, y0, x1, y1, color1, color2, cell=12):
 
 
 def _style_clean_white(photo: Image.Image, name: str, price_display: str, desc: str | None,
-                       w: int, h: int, shop_slug: str, price_type: str = "fixed") -> Image.Image:
+                       w: int, h: int, shop_slug: str, price_type: str = "fixed",
+                       accent_rgb: tuple = BRAND_PURPLE) -> Image.Image:
     img = Image.new("RGB", (w, h), CREAM)
     draw = ImageDraw.Draw(img)
     pad = int(w * 0.06)
 
-    draw.rectangle([(0, 0), (w, 4)], fill=BRAND_PURPLE)
+    draw.rectangle([(0, 0), (w, 4)], fill=accent_rgb)
 
     is_tall = h > w
     photo_h = int(h * 0.58) if not is_tall else int(h * 0.50)
@@ -288,7 +311,7 @@ def _style_clean_white(photo: Image.Image, name: str, price_display: str, desc: 
             ty += int(h * 0.03)
 
         f_price = _f_sans_bold(int(w * 0.040))
-        draw.text((tx, h - pad - int(w * 0.06)), price_display, fill=BRAND_PURPLE, font=f_price)
+        draw.text((tx, h - pad - int(w * 0.06)), price_display, fill=accent_rgb, font=f_price)
     else:
         img.paste(fitted, (pad, pad + 10))
         y = pad + 10 + photo_h + int(h * 0.03)
@@ -302,7 +325,7 @@ def _style_clean_white(photo: Image.Image, name: str, price_display: str, desc: 
             y = _text_block(draw, desc, f_desc, pad, y, w - pad * 2, SUBTLE_GRAY, max_lines=2)
 
         f_price = _f_sans_bold(int(w * 0.060))
-        draw.text((pad, h - pad - int(w * 0.08)), price_display, fill=BRAND_PURPLE, font=f_price)
+        draw.text((pad, h - pad - int(w * 0.08)), price_display, fill=accent_rgb, font=f_price)
 
     return img
 
@@ -695,6 +718,13 @@ TEMPLATE_TO_STYLE = {
 DEFAULT_STYLE = "clean_white"
 
 
+def _resolve_accent(template_style: str | None) -> tuple:
+    """Resolve a template_style key to an RGB accent tuple."""
+    hex_color = COLOR_HEX.get(template_style or "purple", "#7C3AED")
+    hx = hex_color.lstrip("#")
+    return tuple(int(hx[i:i + 2], 16) for i in (0, 2, 4))
+
+
 def generate_single(
     product_name: str,
     price: int | None = None,
@@ -711,13 +741,9 @@ def generate_single(
     photo = _load_photo(photo_bytes)
     w, h = FORMATS[fmt]
 
-    # Resolve template_style to internal style
-    if template_style:
-        style = TEMPLATE_TO_STYLE.get(template_style, style)
-    style_fn = STYLES.get(style, STYLES[DEFAULT_STYLE])
-
+    accent_rgb = _resolve_accent(template_style)
     pd = _price_text(price, price_type)
-    img = style_fn(photo, product_name, pd, description, w, h, shop_slug, price_type)
+    img = _style_clean_white(photo, product_name, pd, description, w, h, shop_slug, price_type, accent_rgb)
     if watermark:
         img = _watermark(img, shop_slug)
 
@@ -744,16 +770,12 @@ def generate_all(
     """
     photo = _load_photo(photo_bytes)
 
-    # Resolve template_style to internal style
-    if template_style:
-        style = TEMPLATE_TO_STYLE.get(template_style, style)
-    style_fn = STYLES.get(style, STYLES[DEFAULT_STYLE])
-
+    accent_rgb = _resolve_accent(template_style)
     pd = _price_text(price, price_type)
     results = {}
 
     for fmt_name, (w, h) in FORMATS.items():
-        img = style_fn(photo, product_name, pd, description, w, h, shop_slug, price_type)
+        img = _style_clean_white(photo, product_name, pd, description, w, h, shop_slug, price_type, accent_rgb)
         if watermark:
             img = _watermark(img, shop_slug)
         buf = io.BytesIO()

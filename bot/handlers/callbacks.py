@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 
 from bot.handlers.start import (
     language_callback, role_callback, shop_handler, theme_callback,
-    type_callback, category_callback, template_callback,
+    type_callback, category_callback, template_callback, color_callback, location_callback,
     _send_seller_menu_from_query,
 )
 from bot.handlers.products import list_products_callback, delete_product_callback
@@ -19,6 +19,8 @@ from bot.handlers.settings import (
     settings_menu, settings_change_theme, settings_theme_selected,
     settings_ask_desc, settings_ask_logo, share_shop_card,
     settings_change_template, settings_template_selected,
+    settings_change_color, settings_color_selected,
+    settings_change_location, settings_location_selected,
     settings_change_category, settings_category_selected,
     settings_change_type, settings_type_selected,
 )
@@ -43,9 +45,17 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     elif data.startswith("cat_"):
         await category_callback(update, context)
 
-    # Template style selection (onboarding)
+    # Brand color selection (onboarding)
+    elif data.startswith("color_"):
+        await color_callback(update, context)
+
+    # Template style selection (legacy onboarding — re-routes to color_callback)
     elif data.startswith("tmpl_"):
-        await template_callback(update, context)
+        await color_callback(update, context)
+
+    # Location selection (onboarding)
+    elif data.startswith("loc_"):
+        await location_callback(update, context)
 
     # Role selection (legacy)
     elif data.startswith("role_"):
@@ -55,9 +65,17 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     elif data.startswith("theme_"):
         await theme_callback(update, context)
 
-    # Settings: template change
+    # Settings: color change
+    elif data.startswith("setcolor_"):
+        await settings_color_selected(update, context)
+
+    # Settings: template change (legacy — re-routes to color)
     elif data.startswith("settmpl_"):
-        await settings_template_selected(update, context)
+        await settings_color_selected(update, context)
+
+    # Settings: location change
+    elif data.startswith("setloc_"):
+        await settings_location_selected(update, context)
 
     # Settings: category change
     elif data.startswith("setcat_"):
@@ -95,8 +113,14 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     # ── Settings sub-menu ────────────────────────────────────
 
+    elif data == "settings_color":
+        await settings_change_color(update, context)
+
     elif data == "settings_template":
         await settings_change_template(update, context)
+
+    elif data == "settings_location":
+        await settings_change_location(update, context)
 
     elif data == "settings_category":
         await settings_change_category(update, context)

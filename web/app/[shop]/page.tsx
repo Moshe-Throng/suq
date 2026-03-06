@@ -50,88 +50,48 @@ interface ThemeColors {
   gradientCard: string;
 }
 
-/* ─── Template Style Palette Map ──────────────────────────── */
+/* ─── Color Palette Map ────────────────────────────────────── */
+
+function buildTheme(
+  primary: string, primaryDark: string, accent: string,
+  bgSoft: string, bgSubtle: string, ring: string
+): ThemeColors {
+  return {
+    primary, primaryDark, accent, bgSoft, bgSubtle, ring,
+    gradient: `linear-gradient(135deg, ${primaryDark} 0%, ${primary} 100%)`,
+    gradientCard: `linear-gradient(135deg, ${bgSubtle} 0%, ${bgSoft} 100%)`,
+  };
+}
 
 const TEMPLATE_THEMES: Record<string, ThemeColors> = {
-  clean: {
-    primary: "#7C3AED",
-    primaryDark: "#6D28D9",
-    accent: "#A78BFA",
-    bgSoft: "#EDE9FE",
-    bgSubtle: "#F5F3FF",
-    ring: "#C4B5FD",
-    gradient: "linear-gradient(135deg, #7C3AED 0%, #8B5CF6 50%, #A78BFA 100%)",
-    gradientCard: "linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)",
-  },
-  bold: {
-    primary: "#06B6D4",
-    primaryDark: "#0891B2",
-    accent: "#67E8F9",
-    bgSoft: "#CFFAFE",
-    bgSubtle: "#ECFEFF",
-    ring: "#A5F3FC",
-    gradient: "linear-gradient(135deg, #164E63 0%, #0E7490 50%, #06B6D4 100%)",
-    gradientCard: "linear-gradient(135deg, #ECFEFF 0%, #CFFAFE 100%)",
-  },
-  ethiopian: {
-    primary: "#B45309",
-    primaryDark: "#92400E",
-    accent: "#FCD34D",
-    bgSoft: "#FEF3C7",
-    bgSubtle: "#FFFBEB",
-    ring: "#FDE68A",
-    gradient: "linear-gradient(135deg, #B45309 0%, #D97706 50%, #F59E0B 100%)",
-    gradientCard: "linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)",
-  },
-  fresh: {
-    primary: "#0D9488",
-    primaryDark: "#0F766E",
-    accent: "#5EEAD4",
-    bgSoft: "#CCFBF1",
-    bgSubtle: "#F0FDFA",
-    ring: "#99F6E4",
-    gradient: "linear-gradient(135deg, #0D9488 0%, #14B8A6 50%, #2DD4BF 100%)",
-    gradientCard: "linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)",
-  },
-  minimal: {
-    primary: "#374151",
-    primaryDark: "#1F2937",
-    accent: "#9CA3AF",
-    bgSoft: "#F3F4F6",
-    bgSubtle: "#F9FAFB",
-    ring: "#D1D5DB",
-    gradient: "linear-gradient(135deg, #374151 0%, #4B5563 50%, #6B7280 100%)",
-    gradientCard: "linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%)",
-  },
-  warm: {
-    primary: "#EA580C",
-    primaryDark: "#C2410C",
-    accent: "#FDBA74",
-    bgSoft: "#FFEDD5",
-    bgSubtle: "#FFF7ED",
-    ring: "#FED7AA",
-    gradient: "linear-gradient(135deg, #EA580C 0%, #F97316 50%, #FB923C 100%)",
-    gradientCard: "linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)",
-  },
+  // 10 color options
+  purple:   buildTheme("#7C3AED","#6D28D9","#A78BFA","#EDE9FE","#F5F3FF","#C4B5FD"),
+  blue:     buildTheme("#2563EB","#1D4ED8","#93C5FD","#DBEAFE","#EFF6FF","#BFDBFE"),
+  cyan:     buildTheme("#06B6D4","#0891B2","#67E8F9","#CFFAFE","#ECFEFF","#A5F3FC"),
+  teal:     buildTheme("#0D9488","#0F766E","#5EEAD4","#CCFBF1","#F0FDFA","#99F6E4"),
+  green:    buildTheme("#059669","#047857","#6EE7B7","#D1FAE5","#ECFDF5","#A7F3D0"),
+  orange:   buildTheme("#EA580C","#C2410C","#FDBA74","#FFEDD5","#FFF7ED","#FED7AA"),
+  red:      buildTheme("#E11D48","#BE123C","#FDA4AF","#FFE4E6","#FFF1F2","#FECDD3"),
+  amber:    buildTheme("#D97706","#B45309","#FCD34D","#FEF3C7","#FFFBEB","#FDE68A"),
+  charcoal: buildTheme("#374151","#1F2937","#9CA3AF","#F3F4F6","#F9FAFB","#D1D5DB"),
+  brown:    buildTheme("#92400E","#78350F","#D97706","#FEF3C7","#FFFBEB","#FDE68A"),
+  // legacy style name aliases
+  clean:    buildTheme("#7C3AED","#6D28D9","#A78BFA","#EDE9FE","#F5F3FF","#C4B5FD"),
+  bold:     buildTheme("#06B6D4","#0891B2","#67E8F9","#CFFAFE","#ECFEFF","#A5F3FC"),
+  minimal:  buildTheme("#374151","#1F2937","#9CA3AF","#F3F4F6","#F9FAFB","#D1D5DB"),
+  ethiopian:buildTheme("#92400E","#78350F","#D97706","#FEF3C7","#FFFBEB","#FDE68A"),
+  fresh:    buildTheme("#0D9488","#0F766E","#5EEAD4","#CCFBF1","#F0FDFA","#99F6E4"),
+  warm:     buildTheme("#EA580C","#C2410C","#FDBA74","#FFEDD5","#FFF7ED","#FED7AA"),
 };
 
 // Legacy theme_color fallback
 const LEGACY_THEMES: Record<string, ThemeColors> = {
-  teal: TEMPLATE_THEMES.fresh,
-  purple: TEMPLATE_THEMES.clean,
-  rose: {
-    primary: "#E11D48",
-    primaryDark: "#BE123C",
-    accent: "#FDA4AF",
-    bgSoft: "#FFE4E6",
-    bgSubtle: "#FFF1F2",
-    ring: "#FECDD3",
-    gradient: "linear-gradient(135deg, #E11D48 0%, #F43F5E 50%, #FB7185 100%)",
-    gradientCard: "linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)",
-  },
-  orange: TEMPLATE_THEMES.warm,
-  emerald: TEMPLATE_THEMES.fresh,
-  gold: TEMPLATE_THEMES.ethiopian,
+  teal: TEMPLATE_THEMES.teal,
+  purple: TEMPLATE_THEMES.purple,
+  rose: TEMPLATE_THEMES.red,
+  orange: TEMPLATE_THEMES.orange,
+  emerald: TEMPLATE_THEMES.green,
+  gold: TEMPLATE_THEMES.amber,
 };
 
 /* ─── Price helpers ───────────────────────────────────────── */

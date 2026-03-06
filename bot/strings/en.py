@@ -53,9 +53,12 @@ CAT_EVENTS = "Events & Catering"
 # CAT_OTHER shared with products
 
 # ══════════════════════════════════════════════════════════════
-# TEMPLATE STYLE
+# COLOR PICKER (replaces named template styles)
 # ══════════════════════════════════════════════════════════════
 
+ASK_COLOR = "🎨 Pick your brand color:"
+
+# Legacy (kept for backward compat)
 ASK_TEMPLATE = "Pick a style for your shop and images:"
 TMPL_CLEAN = "✨ Clean"
 TMPL_BOLD = "⚡ Bold"
@@ -63,6 +66,14 @@ TMPL_ETHIOPIAN = "🇪🇹 Ethiopian"
 TMPL_FRESH = "🌿 Fresh"
 TMPL_MINIMAL = "◻️ Minimal"
 TMPL_WARM = "🌅 Warm"
+
+# ══════════════════════════════════════════════════════════════
+# LOCATION
+# ══════════════════════════════════════════════════════════════
+
+ASK_LOCATION = "📍 Where is your shop? (optional — tap an area or skip)"
+BTN_LOCATION_SKIP = "⏭ Skip"
+LOCATION_UPDATED = "📍 Location updated!"
 
 # ══════════════════════════════════════════════════════════════
 # SHOP SETUP
@@ -192,12 +203,15 @@ INQUIRY_MARKED_SEEN = "Inquiry marked as seen."
 BTN_SHARE_SHOP = "Share Shop"
 SETTINGS_MENU = "What would you like to change?"
 BTN_CHANGE_TEMPLATE = "Change Style"
+BTN_CHANGE_COLOR = "Brand Color 🎨"
+BTN_CHANGE_LOCATION = "Location 📍"
 BTN_CHANGE_CATEGORY = "Change Category"
 BTN_CHANGE_TYPE = "Change Type"
 BTN_EDIT_DESC = "Edit Description"
 BTN_CHANGE_LOGO = "Change Logo"
 BTN_BACK_MENU = "Back to Menu"
 TEMPLATE_UPDATED = "Template style updated!"
+COLOR_UPDATED = "Brand color updated!"
 CATEGORY_UPDATED = "Category updated!"
 TYPE_UPDATED = "Business type updated!"
 

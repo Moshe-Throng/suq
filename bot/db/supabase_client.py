@@ -89,7 +89,8 @@ def get_shop_by_slug(slug: str) -> dict | None:
 def create_shop(telegram_id: int, username: str | None, shop_name: str,
                 lang: str = "am", theme_color: str = "teal",
                 shop_type: str = "product", category: str | None = None,
-                template_style: str = "clean") -> dict:
+                template_style: str = "purple",
+                location_text: str | None = None) -> dict:
     """Create a new shop. Returns the created row."""
     slug = slugify(shop_name)
     existing = get_shop_by_slug(slug)
@@ -111,6 +112,8 @@ def create_shop(telegram_id: int, username: str | None, shop_name: str,
     }
     if category:
         data["category"] = category
+    if location_text:
+        data["location_text"] = location_text
     result = get_client().table("suq_shops").insert(data).execute()
     return result.data[0]
 
@@ -140,6 +143,13 @@ def update_shop_category(shop_id: str, category: str) -> None:
     """Update a shop's category."""
     get_client().table("suq_shops").update(
         {"category": category}
+    ).eq("id", shop_id).execute()
+
+
+def update_shop_location(shop_id: str, location_text: str | None) -> None:
+    """Update a shop's location text. Pass None to remove."""
+    get_client().table("suq_shops").update(
+        {"location_text": location_text}
     ).eq("id", shop_id).execute()
 
 

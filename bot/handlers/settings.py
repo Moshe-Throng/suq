@@ -10,10 +10,13 @@ from telegram.ext import ContextTypes
 from bot.db.supabase_client import (
     run_sync, get_shop, update_shop_theme, update_shop_description,
     update_shop_logo, update_shop_template, update_shop_type, update_shop_category,
-    get_product_count, catalog_link,
+    update_shop_location, get_product_count, catalog_link,
 )
 from bot.strings.lang import s
-from bot.handlers.start import TEMPLATES, THEMES, PRODUCT_CATEGORIES, SERVICE_CATEGORIES
+from bot.handlers.start import (
+    COLORS, TEMPLATES, THEMES, LOCATION_AREAS, LOCATION_MAP,
+    PRODUCT_CATEGORIES, SERVICE_CATEGORIES, _location_keyboard,
+)
 
 
 # ── Settings Menu ────────────────────────────────────────────
@@ -31,24 +34,30 @@ async def settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await query.edit_message_text(t.ERROR)
         return
 
-    tmpl_key = shop.get("template_style", "clean")
-    tmpl_info = TEMPLATES.get(tmpl_key, TEMPLATES["clean"])
-    tmpl_label = getattr(t, tmpl_info["label_attr"], tmpl_key.title())
+    color_key = shop.get("template_style", "purple")
+    color_info = COLORS.get(color_key) or TEMPLATES.get(color_key) or COLORS["purple"]
+    color_emoji = color_info.get("emoji", "🎨")
+    color_label = color_info.get("label") or color_key.title()
     desc = shop.get("description") or "—"
     logo = "✅" if shop.get("logo_file_id") else "—"
     category = shop.get("category", "—")
-    shop_type = shop.get("shop_type", "product")
+    location = shop.get("location_text") or "—"
 
     header = (
         f"⚙️ {shop['shop_name']}\n\n"
-        f"🎨 {tmpl_info['emoji']} {tmpl_label}\n"
+        f"{color_emoji} {color_label}\n"
         f"📂 {category.title() if category != '—' else '—'}\n"
+        f"📍 {location}\n"
         f"📝 {desc}\n"
         f"🖼 Logo: {logo}"
     )
 
+    btn_color = getattr(t, "BTN_CHANGE_COLOR", "Brand Color 🎨")
+    btn_location = getattr(t, "BTN_CHANGE_LOCATION", "Location 📍")
+
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"🎨 {t.BTN_CHANGE_TEMPLATE}", callback_data="settings_template")],
+        [InlineKeyboardButton(btn_color, callback_data="settings_color")],
+        [InlineKeyboardButton(btn_location, callback_data="settings_location")],
         [InlineKeyboardButton(f"📂 {t.BTN_CHANGE_CATEGORY}", callback_data="settings_category")],
         [InlineKeyboardButton(f"📝 {t.BTN_EDIT_DESC}", callback_data="settings_desc")],
         [InlineKeyboardButton(f"🖼 {t.BTN_CHANGE_LOGO}", callback_data="settings_logo")],
@@ -58,47 +67,106 @@ async def settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await query.edit_message_text(header, reply_markup=keyboard)
 
 
-# ── Template Style Change ────────────────────────────────────
+# ── Brand Color Change ───────────────────────────────────────
 
 
-async def settings_change_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Show template style picker."""
+async def settings_change_color(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show brand color picker."""
     query = update.callback_query
     await query.answer()
     user = query.from_user
     t = s(user.id)
 
-    keys = list(TEMPLATES.keys())
+    keys = list(COLORS.keys())
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                f"{TEMPLATES[k]['emoji']} {getattr(t, TEMPLATES[k]['label_attr'], k.title())}",
-                callback_data=f"settmpl_{k}",
+                f"{COLORS[k]['emoji']} {COLORS[k]['label']}",
+                callback_data=f"setcolor_{k}",
             )
             for k in keys[i:i + 2]
         ]
         for i in range(0, len(keys), 2)
     ])
 
-    await query.edit_message_text(t.ASK_TEMPLATE, reply_markup=keyboard)
+    await query.edit_message_text(
+        getattr(t, "ASK_COLOR", "🎨 Pick your brand color:"),
+        reply_markup=keyboard,
+    )
 
 
-async def settings_template_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Apply the selected template style."""
+async def settings_color_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Apply the selected brand color."""
     query = update.callback_query
     await query.answer()
     user = query.from_user
     t = s(user.id)
 
-    template = query.data.replace("settmpl_", "")
+    color_key = query.data.replace("setcolor_", "").replace("settmpl_", "")
+    # map legacy style names to colors
+    _legacy = {"clean": "purple", "bold": "cyan", "ethiopian": "brown",
+               "fresh": "teal", "minimal": "charcoal", "warm": "orange"}
+    color_key = _legacy.get(color_key, color_key)
+    if color_key not in COLORS:
+        color_key = "purple"
+
     shop = await run_sync(get_shop, user.id)
     if not shop:
         await query.edit_message_text(t.ERROR)
         return
 
-    await run_sync(update_shop_template, shop["id"], template)
-    tmpl_info = TEMPLATES.get(template, TEMPLATES["clean"])
-    await query.edit_message_text(f"{tmpl_info['emoji']} {t.TEMPLATE_UPDATED}")
+    await run_sync(update_shop_template, shop["id"], color_key)
+    color_info = COLORS[color_key]
+    msg = getattr(t, "COLOR_UPDATED", "Brand color updated!")
+    await query.edit_message_text(f"{color_info['emoji']} {msg}")
+
+
+# Legacy aliases
+async def settings_change_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await settings_change_color(update, context)
+
+
+async def settings_template_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await settings_color_selected(update, context)
+
+
+# ── Location Change ──────────────────────────────────────────
+
+
+async def settings_change_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show location picker."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    await query.edit_message_text(
+        getattr(t, "ASK_LOCATION", "📍 Where is your shop? (optional)"),
+        reply_markup=_location_keyboard(t, prefix="setloc_"),
+    )
+
+
+async def settings_location_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Apply the selected location."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    loc_key = query.data.replace("setloc_", "")
+    location_text = None if loc_key == "skip" else LOCATION_MAP.get(loc_key)
+
+    shop = await run_sync(get_shop, user.id)
+    if not shop:
+        await query.edit_message_text(t.ERROR)
+        return
+
+    await run_sync(update_shop_location, shop["id"], location_text)
+    msg = getattr(t, "LOCATION_UPDATED", "📍 Location updated!")
+    if location_text:
+        await query.edit_message_text(f"📍 {location_text} — {msg}")
+    else:
+        await query.edit_message_text(msg)
 
 
 # ── Category Change ──────────────────────────────────────────
@@ -333,10 +401,10 @@ async def share_shop_card(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     product_count = await run_sync(get_product_count, shop["id"])
 
-    # Use template style hex color
-    tmpl_key = shop.get("template_style", "clean")
-    tmpl_info = TEMPLATES.get(tmpl_key, TEMPLATES["clean"])
-    theme_hex = tmpl_info["hex"]
+    # Use brand color hex
+    color_key = shop.get("template_style", "purple")
+    color_info = COLORS.get(color_key) or TEMPLATES.get(color_key) or COLORS["purple"]
+    theme_hex = color_info.get("hex", "#7C3AED")
 
     # Load logo if set
     logo_bytes = None

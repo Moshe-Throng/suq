@@ -12,7 +12,32 @@ from bot.db.supabase_client import (
 )
 from bot.strings.lang import s, set_lang, seed_lang
 
-# Template styles — controls both marketing images and web catalog
+# 10 color options for brand color picker
+COLORS = {
+    "purple":   {"emoji": "🟣", "hex": "#7C3AED", "label": "Purple"},
+    "blue":     {"emoji": "🔵", "hex": "#2563EB", "label": "Blue"},
+    "cyan":     {"emoji": "💠", "hex": "#06B6D4", "label": "Cyan"},
+    "teal":     {"emoji": "🟢", "hex": "#0D9488", "label": "Teal"},
+    "green":    {"emoji": "💚", "hex": "#059669", "label": "Green"},
+    "orange":   {"emoji": "🟠", "hex": "#EA580C", "label": "Orange"},
+    "red":      {"emoji": "🔴", "hex": "#E11D48", "label": "Red"},
+    "amber":    {"emoji": "🟡", "hex": "#D97706", "label": "Amber"},
+    "charcoal": {"emoji": "⚫", "hex": "#374151", "label": "Charcoal"},
+    "brown":    {"emoji": "🟤", "hex": "#92400E", "label": "Brown"},
+}
+
+# Location areas for the optional area picker
+LOCATION_AREAS = [
+    ("bole", "Bole"), ("megenagna", "Megenagna"), ("cmc", "CMC"),
+    ("piazza", "Piazza"), ("merkato", "Merkato"), ("kazanchis", "Kazanchis"),
+    ("sarbet", "Sarbet"), ("mexico", "Mexico"), ("4kilo", "4 Kilo"),
+    ("diredawa", "Dire Dawa"), ("bahirdar", "Bahir Dar"), ("hawassa", "Hawassa"),
+    ("mekelle", "Mekelle"), ("adama", "Adama"), ("jimma", "Jimma"),
+    ("gondar", "Gondar"), ("other", "Other"),
+]
+LOCATION_MAP = {key: name for key, name in LOCATION_AREAS}
+
+# Legacy template styles dict (kept for backward compat)
 TEMPLATES = {
     "clean":    {"emoji": "✨", "label_attr": "TMPL_CLEAN",    "hex": "#7C3AED"},
     "bold":     {"emoji": "⚡", "label_attr": "TMPL_BOLD",     "hex": "#06B6D4"},
@@ -204,11 +229,11 @@ async def shop_name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await update.message.reply_text(t.ASK_CATEGORY, reply_markup=keyboard)
 
 
-# ── Category → template style ───────────────────────────────
+# ── Category → color picker ──────────────────────────────────
 
 
 async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle cat_* callback → show template picker."""
+    """Handle cat_* callback → show brand color picker."""
     query = update.callback_query
     await query.answer()
     user = query.from_user
@@ -217,36 +242,99 @@ async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     category = query.data.replace("cat_", "")
     context.user_data["pending_category"] = category
 
-    # Show template style picker (2×3 grid)
-    keys = list(TEMPLATES.keys())
+    # Show color picker (2 per row, 5 rows)
+    keys = list(COLORS.keys())
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                f"{TEMPLATES[k]['emoji']} {getattr(t, TEMPLATES[k]['label_attr'], k.title())}",
-                callback_data=f"tmpl_{k}",
+                f"{COLORS[k]['emoji']} {COLORS[k]['label']}",
+                callback_data=f"color_{k}",
             )
-            for k in keys[i:i+2]
+            for k in keys[i:i + 2]
         ]
         for i in range(0, len(keys), 2)
     ])
 
-    await query.edit_message_text(t.ASK_TEMPLATE, reply_markup=keyboard)
+    await query.edit_message_text(
+        getattr(t, "ASK_COLOR", "🎨 Pick your brand color:"),
+        reply_markup=keyboard,
+    )
 
 
-# ── Template → create shop ───────────────────────────────────
+# ── Color → location picker ──────────────────────────────────
 
 
-async def template_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle tmpl_* callback → create shop."""
+def _location_keyboard(t, prefix: str = "loc_") -> InlineKeyboardMarkup:
+    """Build the location picker keyboard (3 per row + skip).
+    prefix: 'loc_' for onboarding, 'setloc_' for settings."""
+    rows = []
+    row = []
+    for key, name in LOCATION_AREAS:
+        row.append(InlineKeyboardButton(name, callback_data=f"{prefix}{key}"))
+        if len(row) == 3:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    skip_data = f"{prefix}skip"
+    rows.append([InlineKeyboardButton(
+        getattr(t, "BTN_LOCATION_SKIP", "⏭ Skip"),
+        callback_data=skip_data,
+    )])
+    return InlineKeyboardMarkup(rows)
+
+
+async def color_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle color_* (and legacy tmpl_*) callback → store color, show location picker."""
     query = update.callback_query
     await query.answer()
     user = query.from_user
     t = s(user.id)
 
-    template = query.data.replace("tmpl_", "")
+    data = query.data
+    if data.startswith("color_"):
+        color_key = data.replace("color_", "")
+    else:
+        # Legacy tmpl_* mapping
+        _legacy = {
+            "clean": "purple", "bold": "cyan", "ethiopian": "brown",
+            "fresh": "teal", "minimal": "charcoal", "warm": "orange",
+        }
+        color_key = _legacy.get(data.replace("tmpl_", ""), "purple")
+
+    if color_key not in COLORS:
+        color_key = "purple"
+
+    context.user_data["pending_template_style"] = color_key
+    await query.edit_message_text(
+        getattr(t, "ASK_LOCATION", "📍 Where is your shop? (optional)"),
+        reply_markup=_location_keyboard(t),
+    )
+
+
+# Legacy alias
+async def template_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Legacy handler — delegates to color_callback."""
+    await color_callback(update, context)
+
+
+# ── Location → create shop ───────────────────────────────────
+
+
+async def location_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle loc_* callback → create shop."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    loc_key = query.data.replace("loc_", "")
+    location_text = None if loc_key == "skip" else LOCATION_MAP.get(loc_key)
+
     name = context.user_data.pop("pending_shop_name", None)
     shop_type = context.user_data.pop("pending_shop_type", "product")
     category = context.user_data.pop("pending_category", None)
+    color_key = context.user_data.pop("pending_template_style", "purple")
 
     if not name:
         await query.edit_message_text(t.ERROR)
@@ -255,25 +343,20 @@ async def template_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     from bot.strings.lang import get_lang
     lang = get_lang(user.id)
 
-    # Map template to a legacy theme_color for backward compat
-    tmpl_to_theme = {
-        "clean": "purple", "bold": "teal", "ethiopian": "gold",
-        "fresh": "teal", "minimal": "teal", "warm": "orange",
-    }
-
     try:
         shop = await run_sync(
             create_shop, user.id, user.username, name, lang,
-            theme_color=tmpl_to_theme.get(template, "teal"),
+            theme_color="teal",
             shop_type=shop_type,
             category=category,
-            template_style=template,
+            template_style=color_key,
+            location_text=location_text,
         )
         link = catalog_link(shop["shop_slug"])
         item_type = t.SHOP_CREATED_SERVICE if shop_type == "service" else t.SHOP_CREATED_PRODUCT
-        tmpl_info = TEMPLATES.get(template, TEMPLATES["clean"])
+        color_info = COLORS.get(color_key, COLORS["purple"])
         await query.edit_message_text(
-            f"{tmpl_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link, item_type=item_type)}"
+            f"{color_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link, item_type=item_type)}"
         )
         await _send_seller_menu_from_query(query, user.id, shop)
     except Exception as e:
