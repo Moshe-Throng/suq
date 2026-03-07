@@ -40,7 +40,7 @@ async def settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     color_label = color_info.get("label") or color_key.title()
     desc = shop.get("description") or "—"
     logo = "✅" if shop.get("logo_file_id") else "—"
-    category = shop.get("category", "—")
+    category = shop.get("category") or "—"
     location = shop.get("location_text") or "—"
 
     header = (
