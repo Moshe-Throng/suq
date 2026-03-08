@@ -1,5 +1,5 @@
 """
-Product/service management: add, list, delete items.
+Product/service management: add, list, delete items, /catalog command.
 Uses ConversationHandler for the multi-step add flow.
 """
 
@@ -11,12 +11,19 @@ from telegram.ext import (
 
 from bot.db.supabase_client import (
     run_sync, get_shop, get_products, get_product, create_product, delete_product,
-    format_price,
+    format_price, catalog_link,
 )
 from bot.strings.lang import s
+from bot.services.tag_registry import get_tags_for_category
 
 # Conversation states
-PHOTO, NAME, PRICE_TYPE, PRICE, DESC = range(5)
+PHOTO, NAME, PRICE_TYPE, PRICE, DESC, TAG, STOCK = range(7)
+
+_CLEANUP_KEYS = (
+    "shop_id", "product_name", "product_price", "photo_file_id",
+    "listing_type", "price_type", "product_tag", "product_stock",
+    "product_desc",
+)
 
 
 # ── Entry points ─────────────────────────────────────────────
@@ -143,20 +150,109 @@ async def recv_price(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def recv_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Receive description (or /skip), save item and generate images."""
+    """Receive description (or /skip), then ask for tag."""
     user = update.effective_user
     t = s(user.id)
 
     text = update.message.text.strip()
     desc = None if text.lower() == "/skip" else text
+    context.user_data["product_desc"] = desc
 
-    # Gather data
+    # Show tag picker
+    shop = await run_sync(get_shop, user.id)
+    category = shop.get("category") if shop else None
+    shop_type = context.user_data.get("listing_type", "product")
+    tags = get_tags_for_category(category, shop_type)
+
+    rows = []
+    row = []
+    for key, label in tags:
+        row.append(InlineKeyboardButton(label, callback_data=f"ptag_{key}"))
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    rows.append([InlineKeyboardButton(
+        getattr(t, "BTN_TAG_SKIP", "⏭ Skip"),
+        callback_data="ptag_skip",
+    )])
+
+    keyboard = InlineKeyboardMarkup(rows)
+    await update.message.reply_text(
+        getattr(t, "ASK_TAG", "🏷 Tag this product:"),
+        reply_markup=keyboard,
+    )
+    return TAG
+
+
+async def recv_tag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle tag selection, then ask for stock."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    t = s(user.id)
+
+    tag_key = query.data.replace("ptag_", "")
+    context.user_data["product_tag"] = None if tag_key == "skip" else tag_key
+
+    # Show stock picker
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(
+            getattr(t, "BTN_STOCK_UNLIMITED", "♾ Unlimited"),
+            callback_data="pstock_unlimited",
+        )]
+    ])
+    await query.edit_message_text(
+        getattr(t, "ASK_STOCK", "📦 How many in stock? (type a number, or tap Unlimited)"),
+        reply_markup=keyboard,
+    )
+    return STOCK
+
+
+async def recv_stock_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Receive stock count as text."""
+    user = update.effective_user
+    t = s(user.id)
+
+    text = update.message.text.strip().replace(",", "")
+    try:
+        stock = int(text)
+        if stock < 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        await update.message.reply_text(t.PRICE_INVALID)  # reuse "enter valid number"
+        return STOCK
+
+    context.user_data["product_stock"] = stock
+    return await _save_product(update, context, user)
+
+
+async def recv_stock_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle 'Unlimited' stock button."""
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+
+    context.user_data["product_stock"] = None  # unlimited
+    await query.edit_message_text("♾ Unlimited ✓")
+    return await _save_product(update, context, user, from_query=True)
+
+
+async def _save_product(update, context, user, from_query=False):
+    """Save the product and generate marketing images."""
+    t = s(user.id)
+
+    # Gather all data
     shop_id = context.user_data["shop_id"]
     name = context.user_data["product_name"]
     price = context.user_data.get("product_price")
     price_type = context.user_data.get("price_type", "fixed")
     listing_type = context.user_data.get("listing_type", "product")
     photo_file_id = context.user_data.get("photo_file_id")
+    desc = context.user_data.get("product_desc")
+    tag = context.user_data.get("product_tag")
+    stock = context.user_data.get("product_stock")
 
     # Get shop for slug + template
     shop = await run_sync(get_shop, user.id)
@@ -175,10 +271,12 @@ async def recv_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         create_product, shop_id, name, price,
         photo_file_id=photo_file_id, photo_url=photo_url, description=desc,
         listing_type=listing_type, price_type=price_type,
+        tag=tag, stock=stock,
     )
 
     price_display = format_price(price, price_type)
-    await update.message.reply_text(
+    reply_target = update.callback_query.message if from_query else update.message
+    await reply_target.reply_text(
         t.PRODUCT_SAVED.format(name=name, price_display=price_display)
     )
 
@@ -209,8 +307,8 @@ async def recv_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             )
 
         if media_group:
-            await update.message.reply_media_group(media=media_group)
-            await update.message.reply_text(
+            await reply_target.reply_media_group(media=media_group)
+            await reply_target.reply_text(
                 t.PRODUCT_IMAGES_READY.format(name=name)
             )
     except Exception as e:
@@ -218,8 +316,7 @@ async def recv_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         logging.getLogger("suq").warning(f"Image generation failed: {e}")
 
     # Cleanup
-    for key in ("shop_id", "product_name", "product_price", "photo_file_id",
-                "listing_type", "price_type"):
+    for key in _CLEANUP_KEYS:
         context.user_data.pop(key, None)
 
     return ConversationHandler.END
@@ -229,10 +326,61 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancel the add flow."""
     t = s(update.effective_user.id)
     await update.message.reply_text(t.CANCELLED)
-    for key in ("shop_id", "product_name", "product_price", "photo_file_id",
-                "listing_type", "price_type"):
+    for key in _CLEANUP_KEYS:
         context.user_data.pop(key, None)
     return ConversationHandler.END
+
+
+# ── /catalog command ─────────────────────────────────────────
+
+
+async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /catalog — formatted product list for sharing in chats/channels."""
+    user = update.effective_user
+    t = s(user.id)
+
+    shop = await run_sync(get_shop, user.id)
+    if not shop:
+        await update.message.reply_text(t.ERROR)
+        return
+
+    products = await run_sync(get_products, shop["id"])
+    if not products:
+        await update.message.reply_text(
+            getattr(t, "CATALOG_EMPTY", "No products yet.")
+        )
+        return
+
+    max_items = 10
+    header = getattr(t, "CATALOG_HEADER", "🏪 <b>{shop_name}</b>\n").format(
+        shop_name=shop["shop_name"]
+    )
+    lines = [header]
+
+    for p in products[:max_items]:
+        price_display = format_price(p.get("price"), p.get("price_type", "fixed"))
+        emoji = "💼" if p.get("listing_type") == "service" else "🛍"
+        lines.append(f"{emoji} {p['name']} — {price_display}")
+
+    if len(products) > max_items:
+        more = getattr(t, "CATALOG_MORE", "...and {count} more").format(
+            count=len(products) - max_items
+        )
+        lines.append(f"\n{more}")
+
+    link = catalog_link(shop["shop_slug"])
+    footer = getattr(t, "CATALOG_FOOTER", "\n🔗 <b>Browse full catalog:</b>")
+    lines.append(footer)
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🛍 View Full Catalog", url=link)]
+    ])
+
+    await update.message.reply_text(
+        "\n".join(lines),
+        parse_mode="HTML",
+        reply_markup=keyboard,
+    )
 
 
 # ── List / Delete ────────────────────────────────────────────
@@ -329,8 +477,7 @@ async def delete_product_callback(update: Update, context: ContextTypes.DEFAULT_
 
 async def _start_fallback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle /start mid-conversation — cancel flow and go to main menu."""
-    for key in ("shop_id", "product_name", "product_price", "photo_file_id",
-                "listing_type", "price_type"):
+    for key in _CLEANUP_KEYS:
         context.user_data.pop(key, None)
     from bot.handlers.start import start_handler
     await start_handler(update, context)
@@ -353,6 +500,11 @@ def build_add_product_conv() -> ConversationHandler:
             PRICE_TYPE: [CallbackQueryHandler(recv_price_type, pattern="^ptype_")],
             PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, recv_price)],
             DESC: [MessageHandler(filters.TEXT, recv_desc)],  # Allow /skip
+            TAG: [CallbackQueryHandler(recv_tag, pattern="^ptag_")],
+            STOCK: [
+                CallbackQueryHandler(recv_stock_callback, pattern="^pstock_"),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, recv_stock_text),
+            ],
         },
         fallbacks=[
             CommandHandler("cancel", cancel),

@@ -205,7 +205,8 @@ def get_product(product_id: str) -> dict | None:
 def create_product(shop_id: str, name: str, price: int | None = None,
                    photo_file_id: str | None = None, photo_url: str | None = None,
                    description: str | None = None, listing_type: str = "product",
-                   price_type: str = "fixed") -> dict:
+                   price_type: str = "fixed", tag: str | None = None,
+                   stock: int | None = None) -> dict:
     """Create a new product or service listing."""
     data = {
         "shop_id": shop_id,
@@ -221,8 +222,26 @@ def create_product(shop_id: str, name: str, price: int | None = None,
         data["photo_url"] = photo_url
     if description:
         data["description"] = description
+    if tag:
+        data["tag"] = tag
+    if stock is not None:
+        data["stock"] = stock
     result = get_client().table("suq_products").insert(data).execute()
     return result.data[0]
+
+
+def update_product_tag(product_id: str, tag: str | None) -> None:
+    """Update a product's tag."""
+    get_client().table("suq_products").update(
+        {"tag": tag}
+    ).eq("id", product_id).execute()
+
+
+def update_product_stock(product_id: str, stock: int | None) -> None:
+    """Update a product's stock count. Pass None for unlimited."""
+    get_client().table("suq_products").update(
+        {"stock": stock}
+    ).eq("id", product_id).execute()
 
 
 def delete_product(product_id: str) -> None:

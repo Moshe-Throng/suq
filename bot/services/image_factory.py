@@ -17,6 +17,7 @@ Styles (mapped from template_style):
 """
 
 import io
+from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
@@ -74,6 +75,7 @@ WARM_DARK = (80, 50, 35)
 PEACH_BG = (255, 240, 230)
 
 WIN_FONTS = "C:/Windows/Fonts"
+_CUSTOM_FONTS = str(Path(__file__).parent.parent / "fonts")
 
 # ── Font cache ───────────────────────────────────────────────
 
@@ -81,14 +83,16 @@ _font_cache: dict[tuple, ImageFont.FreeTypeFont] = {}
 
 
 def _load_font(names: list[str], size: int) -> ImageFont.FreeTypeFont:
-    """Cached font loader — Windows + Linux paths."""
+    """Cached font loader — custom fonts → Windows → Linux paths."""
     key = (tuple(names), size)
     if key in _font_cache:
         return _font_cache[key]
     bases = [
+        _CUSTOM_FONTS,
         WIN_FONTS,
         "/usr/share/fonts/truetype/dejavu",
         "/usr/share/fonts/truetype/liberation",
+        "/usr/share/fonts/truetype/google",
     ]
     for name in names:
         for base in bases:
@@ -106,11 +110,21 @@ def _load_font(names: list[str], size: int) -> ImageFont.FreeTypeFont:
     return font
 
 
-# Font presets
-def _f_sans_bold(size): return _load_font(["arialbd.ttf", "calibrib.ttf", "DejaVuSans-Bold.ttf"], size)
-def _f_sans(size): return _load_font(["arial.ttf", "calibri.ttf", "DejaVuSans.ttf"], size)
-def _f_serif_bold(size): return _load_font(["georgiab.ttf", "timesbd.ttf", "DejaVuSerif-Bold.ttf"], size)
-def _f_serif(size): return _load_font(["georgia.ttf", "times.ttf", "DejaVuSerif.ttf"], size)
+# Font presets — try Google Fonts first, fall back to system fonts
+def _f_sans_bold(size): return _load_font(["PlusJakartaSans-Bold.ttf", "DMSans-Bold.ttf", "arialbd.ttf", "calibrib.ttf", "DejaVuSans-Bold.ttf"], size)
+def _f_sans(size): return _load_font(["PlusJakartaSans-Regular.ttf", "DMSans-Regular.ttf", "arial.ttf", "calibri.ttf", "DejaVuSans.ttf"], size)
+def _f_serif_bold(size): return _load_font(["CormorantGaramond-Bold.ttf", "georgiab.ttf", "timesbd.ttf", "DejaVuSerif-Bold.ttf"], size)
+def _f_serif(size): return _load_font(["CormorantGaramond-Regular.ttf", "georgia.ttf", "times.ttf", "DejaVuSerif.ttf"], size)
+
+# Template-specific font presets
+def _f_jakarta_bold(size): return _load_font(["PlusJakartaSans-Bold.ttf", "arialbd.ttf", "DejaVuSans-Bold.ttf"], size)
+def _f_jakarta(size): return _load_font(["PlusJakartaSans-Regular.ttf", "arial.ttf", "DejaVuSans.ttf"], size)
+def _f_dm_bold(size): return _load_font(["DMSans-Bold.ttf", "arialbd.ttf", "DejaVuSans-Bold.ttf"], size)
+def _f_dm(size): return _load_font(["DMSans-Regular.ttf", "arial.ttf", "DejaVuSans.ttf"], size)
+def _f_cormorant_bold(size): return _load_font(["CormorantGaramond-Bold.ttf", "georgiab.ttf", "DejaVuSerif-Bold.ttf"], size)
+def _f_cormorant(size): return _load_font(["CormorantGaramond-Regular.ttf", "georgia.ttf", "DejaVuSerif.ttf"], size)
+def _f_inter_bold(size): return _load_font(["Inter-Bold.ttf", "Inter-SemiBold.ttf", "arialbd.ttf", "DejaVuSans-Bold.ttf"], size)
+def _f_inter(size): return _load_font(["Inter-Regular.ttf", "arial.ttf", "DejaVuSans.ttf"], size)
 
 
 # ── Price text helper ────────────────────────────────────────
@@ -279,53 +293,76 @@ def _draw_eth_pattern(draw, x0, y0, x1, y1, color1, color2, cell=12):
 def _style_clean_white(photo: Image.Image, name: str, price_display: str, desc: str | None,
                        w: int, h: int, shop_slug: str, price_type: str = "fixed",
                        accent_rgb: tuple = BRAND_PURPLE) -> Image.Image:
-    img = Image.new("RGB", (w, h), CREAM)
+    """Light #FAFAFA bg, Plus Jakarta Sans, accent-colored price pill, soft shadow photo."""
+    bg = (250, 250, 250)
+    img = Image.new("RGB", (w, h), bg)
     draw = ImageDraw.Draw(img)
     pad = int(w * 0.06)
 
+    # Accent stripe top
     draw.rectangle([(0, 0), (w, 4)], fill=accent_rgb)
 
     is_tall = h > w
-    photo_h = int(h * 0.58) if not is_tall else int(h * 0.50)
+    photo_h = int(h * 0.55) if not is_tall else int(h * 0.48)
     photo_w = w - pad * 2
     if w > h:
         photo_w = int(w * 0.45)
         photo_h = h - pad * 2
 
     fitted = _fit(photo, photo_w, photo_h)
-    fitted = _round(fitted, 20, CREAM)
+    fitted = _round(fitted, 20, bg)
+    # Add soft shadow behind photo
+    shadowed = _shadow(fitted, offset=6, blur=12, color=(0, 0, 0, 40))
 
-    if w > h:
-        img.paste(fitted, (pad, pad))
-        tx = pad + photo_w + pad
+    if w > h:  # Banner
+        sx = pad - 6
+        sy = pad - 6
+        img.paste(shadowed, (sx, sy))
+        tx = pad + photo_w + pad + 10
         ty = pad + int(h * 0.08)
         text_w = w - tx - pad
 
-        f_name = _f_sans_bold(int(w * 0.038))
+        f_name = _f_jakarta_bold(int(w * 0.038))
         ty = _text_block(draw, name, f_name, tx, ty, text_w, BLACK, max_lines=3)
+        ty += int(h * 0.03)
+
+        # Thin divider line
+        draw.line([(tx, ty), (tx + int(text_w * 0.3), ty)], fill=(220, 220, 220), width=1)
         ty += int(h * 0.04)
 
         if desc:
-            f_desc = _f_sans(int(w * 0.022))
+            f_desc = _f_jakarta(int(w * 0.022))
             ty = _text_block(draw, desc, f_desc, tx, ty, text_w, SUBTLE_GRAY, max_lines=2)
             ty += int(h * 0.03)
 
-        f_price = _f_sans_bold(int(w * 0.040))
-        draw.text((tx, h - pad - int(w * 0.06)), price_display, fill=accent_rgb, font=f_price)
+        # Price pill
+        f_price = _f_jakarta_bold(int(w * 0.036))
+        pw = _text_w(draw, price_display, f_price)
+        pill_y = h - pad - int(w * 0.06)
+        _rr(draw, [tx, pill_y, tx + pw + 28, pill_y + int(w * 0.050)],
+            radius=14, fill=accent_rgb)
+        draw.text((tx + 14, pill_y + 7), price_display, fill=WHITE, font=f_price)
     else:
-        img.paste(fitted, (pad, pad + 10))
+        sx = pad - 6
+        sy = pad + 4
+        img.paste(shadowed, (sx, sy))
         y = pad + 10 + photo_h + int(h * 0.03)
 
-        f_name = _f_sans_bold(int(w * 0.050))
+        f_name = _f_jakarta_bold(int(w * 0.050))
         y = _text_block(draw, name, f_name, pad, y, w - pad * 2, BLACK, max_lines=2)
         y += int(h * 0.01)
 
         if desc:
-            f_desc = _f_sans(int(w * 0.030))
+            f_desc = _f_jakarta(int(w * 0.030))
             y = _text_block(draw, desc, f_desc, pad, y, w - pad * 2, SUBTLE_GRAY, max_lines=2)
 
-        f_price = _f_sans_bold(int(w * 0.060))
-        draw.text((pad, h - pad - int(w * 0.08)), price_display, fill=accent_rgb, font=f_price)
+        # Price pill at bottom
+        f_price = _f_jakarta_bold(int(w * 0.050))
+        pw = _text_w(draw, price_display, f_price)
+        pill_y = h - pad - int(w * 0.09)
+        _rr(draw, [pad, pill_y, pad + pw + 36, pill_y + int(w * 0.070)],
+            radius=16, fill=accent_rgb)
+        draw.text((pad + 18, pill_y + 10), price_display, fill=WHITE, font=f_price)
 
     return img
 
@@ -336,60 +373,80 @@ def _style_clean_white(photo: Image.Image, name: str, price_display: str, desc: 
 
 
 def _style_bold_dark(photo: Image.Image, name: str, price_display: str, desc: str | None,
-                     w: int, h: int, shop_slug: str, price_type: str = "fixed") -> Image.Image:
-    img = Image.new("RGB", (w, h), DARK_BG)
+                     w: int, h: int, shop_slug: str, price_type: str = "fixed",
+                     accent_rgb: tuple = NEON_CYAN) -> Image.Image:
+    """Dark bg, neon accents, dramatic gradient fade on photo."""
+    bg = (10, 10, 15)
+    img = Image.new("RGB", (w, h), bg)
     draw = ImageDraw.Draw(img)
     pad = int(w * 0.06)
 
-    draw.rectangle([(0, 0), (w, 3)], fill=NEON_CYAN)
-    draw.rectangle([(0, h - 3), (w, h)], fill=NEON_PINK)
+    # Accent-colored top bar + secondary bottom bar
+    draw.rectangle([(0, 0), (w, 3)], fill=accent_rgb)
+    secondary = NEON_PINK
+    draw.rectangle([(0, h - 3), (w, h)], fill=secondary)
 
+    # Glow from top
     glow_h = int(h * 0.15)
-    glow = _gradient(w, glow_h, (30, 30, 50), DARK_BG)
+    glow_top = tuple(min(255, c // 3 + 15) for c in accent_rgb)
+    glow = _gradient(w, glow_h, glow_top, bg)
     img.paste(glow, (0, 0))
 
-    if w > h:
+    # Subtle noise texture
+    img = _noise_overlay(img, intensity=5)
+    draw = ImageDraw.Draw(img)
+
+    # Geometric accent lines (top-right corner)
+    line_color = (*accent_rgb[:3],) if len(accent_rgb) == 3 else accent_rgb
+    for i in range(3):
+        offset = i * 18
+        draw.line([(w - 120 + offset, 20), (w - 20, 120 - offset)],
+                  fill=line_color, width=1)
+
+    if w > h:  # Banner
         photo_w = int(w * 0.45)
         photo_h = h - pad * 2 - 20
         fitted = _fit(photo, photo_w, photo_h)
-        fitted = _round(fitted, 16, DARK_BG)
+        fitted = _round(fitted, 16, bg)
         img.paste(fitted, (pad, pad + 10))
 
         tx = pad + photo_w + pad
         text_w = w - tx - pad
 
-        f_name = _f_sans_bold(int(w * 0.04))
+        f_name = _f_dm_bold(int(w * 0.04))
         y = int(h * 0.15)
         y = _text_block(draw, name.upper(), f_name, tx, y, text_w, WHITE, max_lines=2, spacing=1.2)
         y += int(h * 0.06)
 
-        f_price = _f_sans_bold(int(w * 0.050))
-        draw.text((tx, h - pad - int(w * 0.07)), price_display, fill=NEON_CYAN, font=f_price)
+        f_price = _f_dm_bold(int(w * 0.050))
+        draw.text((tx, h - pad - int(w * 0.07)), price_display, fill=accent_rgb, font=f_price)
     else:
         photo_h = int(h * 0.52) if h > w else int(h * 0.55)
         fitted = _fit(photo, w - pad * 2, photo_h)
-        fitted = _round(fitted, 16, DARK_BG)
+        fitted = _round(fitted, 16, bg)
         y_ph = pad + 10
         img.paste(fitted, (pad, y_ph))
 
+        # Gradient fade at bottom of photo
         fade_h = int(photo_h * 0.3)
         for fy in range(fade_h):
+            alpha = int(255 * (fy / fade_h))
             draw.line([(pad, y_ph + photo_h - fade_h + fy),
                        (w - pad, y_ph + photo_h - fade_h + fy)],
-                      fill=(18, 18, 24))
+                      fill=(*bg, alpha) if len(bg) == 3 else bg)
 
         y = y_ph + photo_h + int(h * 0.03)
 
-        f_name = _f_sans_bold(int(w * 0.055))
+        f_name = _f_dm_bold(int(w * 0.055))
         y = _text_block(draw, name.upper(), f_name, pad, y, w - pad * 2, WHITE, max_lines=2, spacing=1.2)
 
-        f_price = _f_sans_bold(int(w * 0.070))
-        draw.text((pad, h - pad - int(w * 0.10)), price_display, fill=NEON_CYAN, font=f_price)
+        f_price = _f_dm_bold(int(w * 0.070))
+        draw.text((pad, h - pad - int(w * 0.10)), price_display, fill=accent_rgb, font=f_price)
 
-        f_cta = _f_sans_bold(int(w * 0.025))
+        f_cta = _f_dm_bold(int(w * 0.025))
         cta = _cta_text(price_type)
         cta_w = _text_w(draw, cta, f_cta)
-        draw.text((w - pad - cta_w, h - pad - int(w * 0.04)), cta, fill=NEON_PINK, font=f_cta)
+        draw.text((w - pad - cta_w, h - pad - int(w * 0.04)), cta, fill=secondary, font=f_cta)
 
     return img
 
@@ -400,20 +457,23 @@ def _style_bold_dark(photo: Image.Image, name: str, price_display: str, desc: st
 
 
 def _style_minimal_line(photo: Image.Image, name: str, price_display: str, desc: str | None,
-                        w: int, h: int, shop_slug: str, price_type: str = "fixed") -> Image.Image:
+                        w: int, h: int, shop_slug: str, price_type: str = "fixed",
+                        accent_rgb: tuple = BRAND_PURPLE) -> Image.Image:
+    """Pure white, thin line border, serif font, generous whitespace. Restraint IS the design."""
     img = Image.new("RGB", (w, h), WHITE)
     draw = ImageDraw.Draw(img)
 
-    border = int(w * 0.03)
-    inner_pad = int(w * 0.06)
+    # 1.5px thin line border with generous margin
+    border = int(w * 0.04)
+    line_color = (190, 190, 190)
     draw.rectangle(
         [(border, border), (w - border, h - border)],
-        outline=(180, 180, 180), width=1,
+        outline=line_color, width=2,
     )
 
-    pad = inner_pad
+    pad = int(w * 0.07)  # More generous whitespace
 
-    if w > h:
+    if w > h:  # Banner
         photo_w = int(w * 0.40)
         photo_h = h - pad * 2 - 20
         fitted = _fit(photo, photo_w, photo_h)
@@ -423,36 +483,35 @@ def _style_minimal_line(photo: Image.Image, name: str, price_display: str, desc:
         text_w = w - tx - pad
         ty = pad + int(h * 0.12)
 
-        f_name = _f_serif_bold(int(w * 0.032))
-        ty = _text_block(draw, name, f_name, tx, ty, text_w, BLACK, max_lines=3)
+        f_name = _f_cormorant_bold(int(w * 0.034))
+        ty = _text_block(draw, name, f_name, tx, ty, text_w, BLACK, max_lines=3, spacing=1.5)
 
         ty += int(h * 0.04)
-        draw.line([(tx, ty), (tx + int(text_w * 0.4), ty)], fill=(200, 200, 200), width=1)
+        draw.line([(tx, ty), (tx + int(text_w * 0.35), ty)], fill=line_color, width=1)
         ty += int(h * 0.06)
 
-        f_price = _f_serif(int(w * 0.032))
+        f_price = _f_cormorant(int(w * 0.032))
         draw.text((tx, ty), price_display, fill=BLACK, font=f_price)
     else:
-        photo_h = int(h * 0.50)
+        photo_h = int(h * 0.48)
         photo_w = w - pad * 2
         fitted = _fit(photo, photo_w, photo_h)
-        img.paste(fitted, (pad, pad + 10))
+        img.paste(fitted, (pad, pad + 14))
 
-        y = pad + photo_h + int(h * 0.04)
+        y = pad + 14 + photo_h + int(h * 0.04)
 
-        f_name = _f_serif_bold(int(w * 0.048))
-        y = _text_block(draw, name, f_name, pad, y, w - pad * 2, BLACK, max_lines=2, spacing=1.4)
+        f_name = _f_cormorant_bold(int(w * 0.050))
+        y = _text_block(draw, name, f_name, pad, y, w - pad * 2, BLACK, max_lines=2, spacing=1.5)
 
-        y += int(h * 0.01)
-        draw.line([(pad, y), (pad + int(w * 0.25), y)], fill=(200, 200, 200), width=1)
+        y += int(h * 0.015)
+        draw.line([(pad, y), (pad + int(w * 0.20), y)], fill=line_color, width=1)
         y += int(h * 0.03)
 
         if desc:
-            f_desc = _f_serif(int(w * 0.028))
-            y = _text_block(draw, desc, f_desc, pad, y, w - pad * 2, SUBTLE_GRAY, max_lines=2)
-            y += int(h * 0.01)
+            f_desc = _f_cormorant(int(w * 0.028))
+            y = _text_block(draw, desc, f_desc, pad, y, w - pad * 2, SUBTLE_GRAY, max_lines=2, spacing=1.5)
 
-        f_price = _f_serif(int(w * 0.050))
+        f_price = _f_cormorant(int(w * 0.050))
         draw.text((pad, h - pad - int(w * 0.07)), price_display, fill=BLACK, font=f_price)
 
     return img
@@ -464,65 +523,72 @@ def _style_minimal_line(photo: Image.Image, name: str, price_display: str, desc:
 
 
 def _style_ethiopian(photo: Image.Image, name: str, price_display: str, desc: str | None,
-                     w: int, h: int, shop_slug: str, price_type: str = "fixed") -> Image.Image:
-    img = Image.new("RGB", (w, h), WARM_CREAM)
+                     w: int, h: int, shop_slug: str, price_type: str = "fixed",
+                     accent_rgb: tuple = WARM_BROWN) -> Image.Image:
+    """Cream bg, Cormorant serif, cross-stitch border pattern, earth tones, gold accents."""
+    cream = (253, 246, 236)
+    img = Image.new("RGB", (w, h), cream)
     draw = ImageDraw.Draw(img)
+
+    # Use accent to derive earth-tone palette
+    price_color = accent_rgb
+    border_gold = GOLD
 
     border_h = int(h * 0.04)
     cell = max(8, int(w * 0.012))
-    _draw_eth_pattern(draw, 0, 0, w, border_h, ETH_BORDER, GOLD, cell)
-    _draw_eth_pattern(draw, 0, h - border_h, w, h, ETH_BORDER, GOLD, cell)
+    _draw_eth_pattern(draw, 0, 0, w, border_h, ETH_BORDER, border_gold, cell)
+    _draw_eth_pattern(draw, 0, h - border_h, w, h, ETH_BORDER, border_gold, cell)
 
     side_w = int(w * 0.025)
-    _draw_eth_pattern(draw, 0, border_h, side_w, h - border_h, ETH_EARTH, WARM_BROWN, cell)
-    _draw_eth_pattern(draw, w - side_w, border_h, w, h - border_h, ETH_EARTH, WARM_BROWN, cell)
+    _draw_eth_pattern(draw, 0, border_h, side_w, h - border_h, ETH_EARTH, accent_rgb, cell)
+    _draw_eth_pattern(draw, w - side_w, border_h, w, h - border_h, ETH_EARTH, accent_rgb, cell)
 
     pad = side_w + int(w * 0.04)
     content_w = w - pad * 2
 
-    if w > h:
+    if w > h:  # Banner
         photo_w = int(w * 0.40)
         photo_h = h - border_h * 2 - int(h * 0.08)
         fitted = _fit(photo, photo_w, photo_h)
-        fitted = _round(fitted, 12, WARM_CREAM)
+        fitted = _round(fitted, 12, cream)
         img.paste(fitted, (pad, border_h + int(h * 0.04)))
 
         tx = pad + photo_w + int(w * 0.04)
         text_w = w - tx - pad
         ty = border_h + int(h * 0.10)
 
-        f_name = _f_serif_bold(int(w * 0.035))
+        f_name = _f_cormorant_bold(int(w * 0.035))
         ty = _text_block(draw, name, f_name, tx, ty, text_w, ETH_DARK, max_lines=2)
         ty += int(h * 0.03)
 
-        draw.rectangle([(tx, ty), (tx + int(text_w * 0.5), ty + 2)], fill=GOLD)
+        draw.rectangle([(tx, ty), (tx + int(text_w * 0.5), ty + 2)], fill=border_gold)
         ty += int(h * 0.06)
 
-        f_price = _f_serif_bold(int(w * 0.038))
-        draw.text((tx, ty), price_display, fill=WARM_BROWN, font=f_price)
+        f_price = _f_cormorant_bold(int(w * 0.038))
+        draw.text((tx, ty), price_display, fill=price_color, font=f_price)
     else:
         photo_h = int(h * 0.48)
         y_start = border_h + int(h * 0.02)
         fitted = _fit(photo, content_w, photo_h)
-        fitted = _round(fitted, 12, WARM_CREAM)
+        fitted = _round(fitted, 12, cream)
         img.paste(fitted, (pad, y_start))
 
         y = y_start + photo_h + int(h * 0.03)
 
-        f_name = _f_serif_bold(int(w * 0.050))
+        f_name = _f_cormorant_bold(int(w * 0.050))
         y = _text_block(draw, name, f_name, pad, y, content_w, ETH_DARK, max_lines=2)
 
         y += int(h * 0.01)
-        draw.rectangle([(pad, y), (pad + int(w * 0.20), y + 3)], fill=GOLD)
+        draw.rectangle([(pad, y), (pad + int(w * 0.20), y + 3)], fill=border_gold)
         y += int(h * 0.025)
 
         if desc:
-            f_desc = _f_serif(int(w * 0.028))
-            y = _text_block(draw, desc, f_desc, pad, y, content_w, WARM_BROWN, max_lines=2)
+            f_desc = _f_cormorant(int(w * 0.028))
+            y = _text_block(draw, desc, f_desc, pad, y, content_w, price_color, max_lines=2)
 
-        f_price = _f_serif_bold(int(w * 0.060))
+        f_price = _f_cormorant_bold(int(w * 0.060))
         draw.text((pad, h - border_h - int(w * 0.10)),
-                  price_display, fill=WARM_BROWN, font=f_price)
+                  price_display, fill=price_color, font=f_price)
 
     return img
 
@@ -533,75 +599,95 @@ def _style_ethiopian(photo: Image.Image, name: str, price_display: str, desc: st
 
 
 def _style_fresh_pop(photo: Image.Image, name: str, price_display: str, desc: str | None,
-                     w: int, h: int, shop_slug: str, price_type: str = "fixed") -> Image.Image:
-    """Vibrant teal gradient bg, bold sans-serif, rounded photo, energetic feel."""
-    img = _gradient(w, h, TEAL_DARK, EMERALD)
+                     w: int, h: int, shop_slug: str, price_type: str = "fixed",
+                     accent_rgb: tuple = TEAL) -> Image.Image:
+    """Dynamic bg from accent color, polaroid-style frame, blob shapes, vibrant."""
+    # Build gradient from accent (darken + lighten)
+    dark = tuple(max(0, c - 60) for c in accent_rgb)
+    light = tuple(min(255, c + 40) for c in accent_rgb)
+    img = _gradient(w, h, dark, light)
     draw = ImageDraw.Draw(img)
     pad = int(w * 0.06)
 
-    # White rounded card in center
-    card_margin = int(w * 0.04)
-    card_radius = 28
+    # Decorative blob circles (8% opacity)
+    img_rgba = img.convert("RGBA")
+    for cx, cy, r in [(int(w * 0.85), int(h * 0.15), int(w * 0.18)),
+                       (int(w * 0.10), int(h * 0.80), int(w * 0.14)),
+                       (int(w * 0.60), int(h * 0.90), int(w * 0.10))]:
+        blob = Image.new("RGBA", (r * 2, r * 2), (0, 0, 0, 0))
+        ImageDraw.Draw(blob).ellipse([(0, 0), (r * 2, r * 2)], fill=(255, 255, 255, 20))
+        img_rgba.paste(blob, (cx - r, cy - r), blob)
+    img = img_rgba.convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    pill_text_color = dark  # Price text on white pill
 
     if w > h:  # Banner
-        # Photo left, text right on gradient
         photo_w = int(w * 0.42)
         photo_h = h - pad * 2
         fitted = _fit(photo, photo_w, photo_h)
-        fitted = _round(fitted, 20, TEAL_DARK)
-        img.paste(fitted, (pad, pad))
+        # Polaroid-style white frame
+        border = int(w * 0.012)
+        frame = Image.new("RGB", (photo_w + border * 2, photo_h + border * 2), WHITE)
+        frame.paste(fitted, (border, border))
+        frame = _round(frame, 16, dark)
+        img.paste(frame, (pad, pad))
 
-        tx = pad + photo_w + pad
+        tx = pad + photo_w + border * 2 + pad
         text_w = w - tx - pad
         ty = pad + int(h * 0.10)
 
-        f_name = _f_sans_bold(int(w * 0.042))
+        f_name = _f_inter_bold(int(w * 0.042))
         ty = _text_block(draw, name, f_name, tx, ty, text_w, WHITE, max_lines=2, spacing=1.2)
         ty += int(h * 0.04)
 
         if desc:
-            f_desc = _f_sans(int(w * 0.022))
-            ty = _text_block(draw, desc, f_desc, tx, ty, text_w, (200, 255, 245), max_lines=2)
+            f_desc = _f_inter(int(w * 0.022))
+            ty = _text_block(draw, desc, f_desc, tx, ty, text_w, (220, 255, 245), max_lines=2)
 
-        # Price in white pill
-        f_price = _f_sans_bold(int(w * 0.038))
+        # Price pill
+        f_price = _f_inter_bold(int(w * 0.038))
         pw = _text_w(draw, price_display, f_price)
         pill_x = tx
         pill_y = h - pad - int(w * 0.07)
         _rr(draw, [pill_x, pill_y, pill_x + pw + 30, pill_y + int(w * 0.055)],
             radius=16, fill=WHITE)
-        draw.text((pill_x + 15, pill_y + 8), price_display, fill=TEAL_DARK, font=f_price)
+        draw.text((pill_x + 15, pill_y + 8), price_display, fill=pill_text_color, font=f_price)
     else:
-        # Photo top with rounded corners
         photo_h = int(h * 0.50)
-        fitted = _fit(photo, w - pad * 2, photo_h)
-        fitted = _round(fitted, 24, TEAL_DARK)
-        img.paste(fitted, (pad, pad + 10))
+        photo_inner_w = w - pad * 2 - int(w * 0.04)
+        fitted = _fit(photo, photo_inner_w, photo_h)
+        # Polaroid frame
+        border = int(w * 0.015)
+        frame = Image.new("RGB", (photo_inner_w + border * 2, photo_h + border * 2), WHITE)
+        frame.paste(fitted, (border, border))
+        frame = _round(frame, 20, dark)
+        fx = (w - frame.width) // 2
+        img.paste(frame, (fx, pad + 10))
 
-        y = pad + 10 + photo_h + int(h * 0.03)
+        y = pad + 10 + frame.height + int(h * 0.03)
 
-        f_name = _f_sans_bold(int(w * 0.055))
+        f_name = _f_inter_bold(int(w * 0.055))
         y = _text_block(draw, name, f_name, pad, y, w - pad * 2, WHITE, max_lines=2, spacing=1.2)
         y += int(h * 0.01)
 
         if desc:
-            f_desc = _f_sans(int(w * 0.028))
-            y = _text_block(draw, desc, f_desc, pad, y, w - pad * 2, (200, 255, 245), max_lines=2)
+            f_desc = _f_inter(int(w * 0.028))
+            y = _text_block(draw, desc, f_desc, pad, y, w - pad * 2, (220, 255, 245), max_lines=2)
 
-        # Price in white pill at bottom
-        f_price = _f_sans_bold(int(w * 0.055))
+        # Price pill
+        f_price = _f_inter_bold(int(w * 0.055))
         pw = _text_w(draw, price_display, f_price)
         pill_x = pad
         pill_y = h - pad - int(w * 0.09)
         _rr(draw, [pill_x, pill_y, pill_x + pw + 40, pill_y + int(w * 0.075)],
             radius=20, fill=WHITE)
-        draw.text((pill_x + 20, pill_y + 10), price_display, fill=TEAL_DARK, font=f_price)
+        draw.text((pill_x + 20, pill_y + 10), price_display, fill=pill_text_color, font=f_price)
 
-        # CTA top-right
-        f_cta = _f_sans_bold(int(w * 0.022))
+        f_cta = _f_inter_bold(int(w * 0.022))
         cta = _cta_text(price_type)
         cta_w = _text_w(draw, cta, f_cta)
-        draw.text((w - pad - cta_w, h - pad - int(w * 0.03)), cta, fill=(200, 255, 245), font=f_cta)
+        draw.text((w - pad - cta_w, h - pad - int(w * 0.03)), cta, fill=(220, 255, 245), font=f_cta)
 
     return img
 
@@ -612,43 +698,47 @@ def _style_fresh_pop(photo: Image.Image, name: str, price_display: str, desc: st
 
 
 def _style_warm_gradient(photo: Image.Image, name: str, price_display: str, desc: str | None,
-                         w: int, h: int, shop_slug: str, price_type: str = "fixed") -> Image.Image:
-    """Warm peach gradient, thick white photo border (polaroid feel), handwritten vibe."""
-    img = _gradient(w, h, PEACH_BG, PEACH)
+                         w: int, h: int, shop_slug: str, price_type: str = "fixed",
+                         accent_rgb: tuple = CORAL) -> Image.Image:
+    """Warm gradient (accent-derived), polaroid frame, grain texture overlay."""
+    # Build warm gradient from accent
+    warm_light = tuple(min(255, c + 80) for c in accent_rgb)
+    warm_bg = tuple(min(255, c + 120) for c in accent_rgb)
+    img = _gradient(w, h, warm_bg, warm_light)
+    # Grain texture
+    img = _noise_overlay(img, intensity=6)
     draw = ImageDraw.Draw(img)
     pad = int(w * 0.06)
+    text_dark = (80, 50, 35)
 
     if w > h:  # Banner
-        # Polaroid-style photo on left
         photo_w = int(w * 0.40)
         photo_h = h - pad * 2 - 30
         fitted = _fit(photo, photo_w, photo_h)
 
-        # White border (polaroid)
+        # Polaroid frame
         border = int(w * 0.015)
         frame_w = photo_w + border * 2
         frame_h = photo_h + border * 2 + int(h * 0.08)
         frame = Image.new("RGB", (frame_w, frame_h), WHITE)
         frame.paste(fitted, (border, border))
-        # Slight rotation would be nice but complex; just shadow
         img.paste(frame, (pad, (h - frame_h) // 2))
 
         tx = pad + frame_w + pad
         text_w = w - tx - pad
         ty = int(h * 0.18)
 
-        f_name = _f_sans_bold(int(w * 0.038))
-        ty = _text_block(draw, name, f_name, tx, ty, text_w, WARM_DARK, max_lines=2)
+        f_name = _f_inter_bold(int(w * 0.038))
+        ty = _text_block(draw, name, f_name, tx, ty, text_w, text_dark, max_lines=2)
         ty += int(h * 0.04)
 
         if desc:
-            f_desc = _f_sans(int(w * 0.020))
+            f_desc = _f_inter(int(w * 0.020))
             ty = _text_block(draw, desc, f_desc, tx, ty, text_w, (120, 80, 50), max_lines=2)
 
-        f_price = _f_sans_bold(int(w * 0.042))
-        draw.text((tx, h - pad - int(w * 0.06)), price_display, fill=CORAL, font=f_price)
+        f_price = _f_inter_bold(int(w * 0.042))
+        draw.text((tx, h - pad - int(w * 0.06)), price_display, fill=accent_rgb, font=f_price)
     else:
-        # Polaroid photo top
         photo_h = int(h * 0.46)
         photo_w_inner = w - pad * 2 - int(w * 0.06)
         fitted = _fit(photo, photo_w_inner, photo_h)
@@ -664,22 +754,21 @@ def _style_warm_gradient(photo: Image.Image, name: str, price_display: str, desc
 
         y = pad + 10 + frame_h + int(h * 0.03)
 
-        f_name = _f_sans_bold(int(w * 0.050))
-        y = _text_block(draw, name, f_name, pad, y, w - pad * 2, WARM_DARK, max_lines=2)
+        f_name = _f_inter_bold(int(w * 0.050))
+        y = _text_block(draw, name, f_name, pad, y, w - pad * 2, text_dark, max_lines=2)
         y += int(h * 0.01)
 
         if desc:
-            f_desc = _f_sans(int(w * 0.028))
+            f_desc = _f_inter(int(w * 0.028))
             y = _text_block(draw, desc, f_desc, pad, y, w - pad * 2, (120, 80, 50), max_lines=2)
 
-        f_price = _f_sans_bold(int(w * 0.060))
-        draw.text((pad, h - pad - int(w * 0.09)), price_display, fill=CORAL, font=f_price)
+        f_price = _f_inter_bold(int(w * 0.060))
+        draw.text((pad, h - pad - int(w * 0.09)), price_display, fill=accent_rgb, font=f_price)
 
-        # CTA
-        f_cta = _f_sans_bold(int(w * 0.023))
+        f_cta = _f_inter_bold(int(w * 0.023))
         cta = _cta_text(price_type)
         cta_w = _text_w(draw, cta, f_cta)
-        draw.text((w - pad - cta_w, h - pad - int(w * 0.035)), cta, fill=WARM_DARK, font=f_cta)
+        draw.text((w - pad - cta_w, h - pad - int(w * 0.035)), cta, fill=text_dark, font=f_cta)
 
     return img
 
@@ -717,6 +806,64 @@ TEMPLATE_TO_STYLE = {
 
 DEFAULT_STYLE = "clean_white"
 
+# Brand color → which template style to render
+COLOR_TO_TEMPLATE: dict[str, str] = {
+    "purple": "clean_white",
+    "blue": "clean_white",
+    "cyan": "bold_dark",
+    "red": "bold_dark",
+    "brown": "ethiopian",
+    "amber": "ethiopian",
+    "teal": "fresh_pop",
+    "green": "fresh_pop",
+    "charcoal": "minimal_line",
+    "orange": "warm_gradient",
+    # Legacy style names
+    "clean": "clean_white",
+    "bold": "bold_dark",
+    "minimal": "minimal_line",
+    "ethiopian": "ethiopian",
+    "fresh": "fresh_pop",
+    "warm": "warm_gradient",
+}
+
+
+def _resolve_style(template_style: str | None) -> str:
+    """Resolve a template_style (color key) to an internal style function name."""
+    return COLOR_TO_TEMPLATE.get(template_style or "purple", DEFAULT_STYLE)
+
+
+def _dominant_color(photo: Image.Image) -> tuple:
+    """Extract dominant color from photo using simple k-means."""
+    small = photo.resize((80, 80), Image.LANCZOS)
+    arr = np.array(small).reshape(-1, 3).astype(np.float32)
+
+    # Simple k-means: 3 clusters, 3 iterations
+    k = 3
+    rng = np.random.RandomState(42)
+    indices = rng.choice(len(arr), k, replace=False)
+    centroids = arr[indices].copy()
+
+    for _ in range(3):
+        dists = np.sqrt(((arr[:, np.newaxis] - centroids[np.newaxis]) ** 2).sum(axis=2))
+        labels = dists.argmin(axis=1)
+        for i in range(k):
+            mask = labels == i
+            if mask.any():
+                centroids[i] = arr[mask].mean(axis=0)
+
+    counts = np.bincount(labels, minlength=k)
+    dominant_idx = counts.argmax()
+    return tuple(int(c) for c in centroids[dominant_idx])
+
+
+def _noise_overlay(img: Image.Image, intensity: int = 8) -> Image.Image:
+    """Add subtle noise/grain texture to an image."""
+    arr = np.array(img).astype(np.int16)
+    noise = np.random.RandomState(0).randint(-intensity, intensity + 1, arr.shape, dtype=np.int16)
+    arr = np.clip(arr + noise, 0, 255).astype(np.uint8)
+    return Image.fromarray(arr)
+
 
 def _resolve_accent(template_style: str | None) -> tuple:
     """Resolve a template_style key to an RGB accent tuple."""
@@ -742,8 +889,11 @@ def generate_single(
     w, h = FORMATS[fmt]
 
     accent_rgb = _resolve_accent(template_style)
+    style_name = _resolve_style(template_style)
+    style_fn = STYLES[style_name]
     pd = _price_text(price, price_type)
-    img = _style_clean_white(photo, product_name, pd, description, w, h, shop_slug, price_type, accent_rgb)
+    img = style_fn(photo, product_name, pd, description, w, h, shop_slug,
+                   price_type=price_type, accent_rgb=accent_rgb)
     if watermark:
         img = _watermark(img, shop_slug)
 
@@ -771,11 +921,14 @@ def generate_all(
     photo = _load_photo(photo_bytes)
 
     accent_rgb = _resolve_accent(template_style)
+    style_name = _resolve_style(template_style)
+    style_fn = STYLES[style_name]
     pd = _price_text(price, price_type)
     results = {}
 
     for fmt_name, (w, h) in FORMATS.items():
-        img = _style_clean_white(photo, product_name, pd, description, w, h, shop_slug, price_type, accent_rgb)
+        img = style_fn(photo, product_name, pd, description, w, h, shop_slug,
+                       price_type=price_type, accent_rgb=accent_rgb)
         if watermark:
             img = _watermark(img, shop_slug)
         buf = io.BytesIO()

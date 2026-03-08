@@ -24,7 +24,7 @@ from telegram.ext import (
 from bot.handlers.start import (
     start_handler, help_handler, language_handler, shop_handler, shop_name_handler,
 )
-from bot.handlers.products import build_add_product_conv, list_products
+from bot.handlers.products import build_add_product_conv, list_products, catalog_command
 from bot.handlers.orders import list_orders
 from bot.handlers.callbacks import callback_router
 from bot.handlers.settings import (
@@ -63,6 +63,7 @@ COMMANDS_EN = [
     BotCommand("shop", "Your shop link"),
     BotCommand("language", "Change language"),
     BotCommand("help", "List commands"),
+    BotCommand("catalog", "Share product catalog"),
 ]
 
 
@@ -96,6 +97,7 @@ def main():
     app.add_handler(CommandHandler("shop", shop_handler))
     app.add_handler(CommandHandler("language", language_handler))
     app.add_handler(CommandHandler("help", help_handler))
+    app.add_handler(CommandHandler("catalog", catalog_command))
 
     # ── Photo handler for logo upload (settings) ──
     async def _photo_handler(update, context):

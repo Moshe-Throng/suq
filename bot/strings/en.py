@@ -238,3 +238,26 @@ SHARE_CARD_CAPTION = "Share this with your buyers and on social media!"
 CANCELLED = "Cancelled."
 ERROR = "Something went wrong. Please try again."
 SKIP = "/skip"
+
+# ══════════════════════════════════════════════════════════════
+# STOCK
+# ══════════════════════════════════════════════════════════════
+
+ASK_STOCK = "📦 How many in stock? (type a number, or tap Unlimited)"
+BTN_STOCK_UNLIMITED = "♾ Unlimited"
+
+# ══════════════════════════════════════════════════════════════
+# PRODUCT TAGS
+# ══════════════════════════════════════════════════════════════
+
+ASK_TAG = "🏷 Tag this product (helps buyers filter):"
+BTN_TAG_SKIP = "⏭ Skip"
+
+# ══════════════════════════════════════════════════════════════
+# CATALOG COMMAND
+# ══════════════════════════════════════════════════════════════
+
+CATALOG_HEADER = "🏪 <b>{shop_name}</b>\n"
+CATALOG_EMPTY = "No products to show yet. Use /add to add your first item."
+CATALOG_FOOTER = "\n🔗 <b>Browse full catalog:</b>"
+CATALOG_MORE = "...and {count} more"

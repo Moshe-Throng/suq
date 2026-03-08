@@ -44,7 +44,7 @@ export async function GET(
   // Get active products
   const { data: products } = await supabase
     .from("suq_products")
-    .select("id, name, description, price, price_type, listing_type, photo_url, photo_file_id")
+    .select("id, name, description, price, price_type, listing_type, photo_url, photo_file_id, tag, stock")
     .eq("shop_id", shop.id)
     .eq("is_active", true)
     .order("sort_order");
