@@ -13,6 +13,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from telegram import BotCommand
+from bot.utils.commands import COMMANDS_AM, set_user_commands
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -55,20 +56,10 @@ logger = logging.getLogger("suq")
 
 # ── Bot menu commands ─────────────────────────────────────────
 
-COMMANDS_EN = [
-    BotCommand("add", "Add a product or service"),
-    BotCommand("products", "View your items"),
-    BotCommand("orders", "View inquiries"),
-    BotCommand("shop", "Your shop link"),
-    BotCommand("catalog", "Share product catalog"),
-    BotCommand("language", "Change language"),
-    BotCommand("help", "List commands"),
-]
-
 
 async def post_init(application) -> None:
-    """Set bot commands after startup."""
-    await application.bot.set_my_commands(COMMANDS_EN)
+    """Set default bot commands (Amharic) for all users after startup."""
+    await application.bot.set_my_commands(COMMANDS_AM)
     logger.info("Bot commands menu set.")
 
 

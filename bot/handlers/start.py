@@ -97,7 +97,10 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     shop = await run_sync(get_shop, user.id)
     if shop:
-        seed_lang(user.id, shop.get("language", "am"))
+        lang = shop.get("language", "am")
+        seed_lang(user.id, lang)
+        from bot.utils.commands import set_user_commands
+        await set_user_commands(context.bot, user.id, lang)
         await _send_seller_menu(update, user.id, shop)
         return
 
@@ -206,6 +209,8 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     user = query.from_user
     lang = query.data.split("_")[1]
     set_lang(user.id, lang)
+    from bot.utils.commands import set_user_commands
+    await set_user_commands(context.bot, user.id, lang)
     t = s(user.id)
 
     shop = await run_sync(get_shop, user.id)
