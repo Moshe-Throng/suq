@@ -11,7 +11,7 @@ from bot.db.supabase_client import (
     run_sync, get_shop, get_orders, get_product, update_order_status,
     get_inquiries, mark_inquiry_seen, format_price,
 )
-from bot.strings.lang import s
+from bot.strings.lang import s, seed_lang
 
 
 def _inquiry_button(t, inquiry_id: str) -> InlineKeyboardMarkup:
@@ -37,12 +37,13 @@ def _order_buttons(t, order_id: str) -> InlineKeyboardMarkup:
 async def list_orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /orders — list new inquiries for the seller."""
     user = update.effective_user
-    t = s(user.id)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await update.message.reply_text(t.ERROR)
+        await update.message.reply_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     inquiries = await run_sync(get_inquiries, shop["id"], "new")
     if not inquiries:
@@ -78,12 +79,13 @@ async def list_orders_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     inquiries = await run_sync(get_inquiries, shop["id"], "new")
     if not inquiries:

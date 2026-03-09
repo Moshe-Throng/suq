@@ -508,11 +508,12 @@ async def theme_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 async def shop_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /shop — show shop link."""
     user = update.effective_user
-    t = s(user.id)
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await update.message.reply_text(t.ASK_SHOP_TYPE)
+        await update.message.reply_text(s(user.id).ASK_SHOP_TYPE)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
     link = catalog_link(shop["shop_slug"])
     await update.message.reply_text(f"🔗 {link}")
 

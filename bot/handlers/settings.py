@@ -12,7 +12,7 @@ from bot.db.supabase_client import (
     update_shop_logo, update_shop_template, update_shop_type, update_shop_category,
     update_shop_location, get_product_count, catalog_link,
 )
-from bot.strings.lang import s
+from bot.strings.lang import s, seed_lang
 from bot.handlers.start import (
     COLORS, TEMPLATES, THEMES, LOCATION_AREAS, LOCATION_MAP,
     PRODUCT_CATEGORIES, SERVICE_CATEGORIES, _location_keyboard,
@@ -27,12 +27,13 @@ async def settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     color_key = shop.get("template_style", "purple")
     color_info = COLORS.get(color_key) or TEMPLATES.get(color_key) or COLORS["purple"]
@@ -100,7 +101,6 @@ async def settings_color_selected(update: Update, context: ContextTypes.DEFAULT_
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     color_key = query.data.replace("setcolor_", "").replace("settmpl_", "")
     # map legacy style names to colors
@@ -112,8 +112,10 @@ async def settings_color_selected(update: Update, context: ContextTypes.DEFAULT_
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     await run_sync(update_shop_template, shop["id"], color_key)
     color_info = COLORS[color_key]
@@ -151,15 +153,16 @@ async def settings_location_selected(update: Update, context: ContextTypes.DEFAU
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     loc_key = query.data.replace("setloc_", "")
     location_text = None if loc_key == "skip" else LOCATION_MAP.get(loc_key)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     await run_sync(update_shop_location, shop["id"], location_text)
     msg = getattr(t, "LOCATION_UPDATED", "📍 Location updated!")
@@ -177,12 +180,13 @@ async def settings_change_category(update: Update, context: ContextTypes.DEFAULT
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     shop_type = shop.get("shop_type", "product")
     cats = SERVICE_CATEGORIES if shop_type == "service" else PRODUCT_CATEGORIES
@@ -203,13 +207,14 @@ async def settings_category_selected(update: Update, context: ContextTypes.DEFAU
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     category = query.data.replace("setcat_", "")
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     await run_sync(update_shop_category, shop["id"], category)
     await query.edit_message_text(f"✅ {t.CATEGORY_UPDATED}")
@@ -240,13 +245,14 @@ async def settings_type_selected(update: Update, context: ContextTypes.DEFAULT_T
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     shop_type = query.data.replace("settype_", "")
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     await run_sync(update_shop_type, shop["id"], shop_type)
     await query.edit_message_text(f"✅ {t.TYPE_UPDATED}")
@@ -265,13 +271,14 @@ async def settings_theme_selected(update: Update, context: ContextTypes.DEFAULT_
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     theme = query.data.replace("settheme_", "")
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     await run_sync(update_shop_theme, shop["id"], theme)
     theme_info = THEMES.get(theme, THEMES["teal"])
@@ -298,14 +305,15 @@ async def settings_recv_desc(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return False
 
     user = update.effective_user
-    t = s(user.id)
     text = update.message.text.strip()
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
         context.user_data.pop("awaiting_description", None)
-        await update.message.reply_text(t.ERROR)
+        await update.message.reply_text(s(user.id).ERROR)
         return True
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     if text.lower() == "/skip":
         context.user_data.pop("awaiting_description", None)
@@ -343,13 +351,14 @@ async def settings_recv_logo(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return False
 
     user = update.effective_user
-    t = s(user.id)
     context.user_data.pop("awaiting_logo", None)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await update.message.reply_text(t.ERROR)
+        await update.message.reply_text(s(user.id).ERROR)
         return True
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     photo = update.message.photo[-1]
     file_id = photo.file_id
@@ -374,11 +383,12 @@ async def settings_recv_logo_skip(update: Update, context: ContextTypes.DEFAULT_
         return False
 
     user = update.effective_user
-    t = s(user.id)
     context.user_data.pop("awaiting_logo", None)
 
     shop = await run_sync(get_shop, user.id)
     if shop:
+        seed_lang(user.id, shop.get("language", "am"))
+        t = s(user.id)
         await run_sync(update_shop_logo, shop["id"], None, None)
         await update.message.reply_text(t.LOGO_REMOVED)
     return True
@@ -392,12 +402,13 @@ async def share_shop_card(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     product_count = await run_sync(get_product_count, shop["id"])
 
