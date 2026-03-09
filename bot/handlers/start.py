@@ -169,7 +169,7 @@ async def _handle_contact_deeplink(update: Update, product_id: str) -> None:
     buttons.append([
         InlineKeyboardButton(
             "🌐 View on souk.et",
-            url=f"https://web-theta-plum-56.vercel.app/{shop['shop_slug']}/{product_id}"
+            url=catalog_link(f"{shop['shop_slug']}/{product_id}")
         )
     ])
 
