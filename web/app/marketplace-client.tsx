@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 
 /* ─── Types ──────────────────────────────────────────────── */
@@ -50,6 +50,98 @@ const C = {
   muted:  "#7B6548",
   border: "#E0D5C0",
   white:  "#FFFFFF",
+};
+
+/* ─── Translations ───────────────────────────────────────── */
+const T = {
+  en: {
+    marketplaceBadge: "ETHIOPIAN MARKETPLACE",
+    heroHeadline1: "Your Shop.",
+    heroHeadline2: "Beautiful.",
+    heroSub: "Turn your Telegram into a professional shop — free.",
+    ctaSell: "Start Selling Free",
+    ctaBrowse: "Browse Products",
+    statsShops: "shops",
+    statsProducts: "products",
+    statsCategories: "categories",
+    newArrivals: "New Arrivals",
+    newArrivalsSub: "Latest from Ethiopian sellers",
+    seeAll: "See all",
+    shops: "Shops",
+    shopsSub: "Browse by seller",
+    forSellers: "FOR SELLERS",
+    openIn3: "Open your shop in",
+    openIn3Bold: "3 minutes",
+    step1Title: "Open the bot",
+    step1Desc: "Start @SoukEtBot on Telegram. Choose your language — English or Amharic.",
+    step2Title: "Add your products",
+    step2Desc: "Send a photo, set a name and price. The bot generates 4 marketing images instantly.",
+    step3Title: "Share & sell",
+    step3Desc: "Get your catalog link. Share it on your channel, story, or WhatsApp.",
+    createShopFree: "Create Your Shop Free →",
+    allProducts: "All Products",
+    searchPlaceholder: "Search products...",
+    noProducts: "No products found",
+    noProductsSub: "Try a different search",
+    loadMore: "Load more",
+    loading: "Loading...",
+    soldOut: "Sold out",
+    items: "items",
+    item: "item",
+    footerTagline: "Where Ethiopia Shops",
+    footerBrowse: "Browse Products",
+    footerCreate: "Create a Shop",
+    footerCopyright: "© 2026 souk.et · All rights reserved",
+    createShopNav: "+ Create Shop",
+    newest: "Newest",
+    priceAsc: "Price ↑",
+    priceDesc: "Price ↓",
+    all: "All",
+  },
+  am: {
+    marketplaceBadge: "የኢትዮጵያ ገበያ",
+    heroHeadline1: "ሱቅህ።",
+    heroHeadline2: "ውብ።",
+    heroSub: "ቴሌግራምህን ነፃ ሱቅ አድርግ",
+    ctaSell: "ሱቅ ክፈት ነፃ",
+    ctaBrowse: "ምርቶችን ይመልከቱ",
+    statsShops: "ሱቆች",
+    statsProducts: "ምርቶች",
+    statsCategories: "ምድቦች",
+    newArrivals: "አዲስ ምርቶች",
+    newArrivalsSub: "ከኢትዮጵያ ሻጮች",
+    seeAll: "ሁሉም",
+    shops: "ሱቆች",
+    shopsSub: "በሻጭ ይፈልጉ",
+    forSellers: "ለሻጮች",
+    openIn3: "ሱቅህን በ",
+    openIn3Bold: "3 ደቂቃ",
+    step1Title: "ቦቱን ክፈት",
+    step1Desc: "ቴሌግራምን ላይ @SoukEtBot ጀምር",
+    step2Title: "ምርቶችህን ጨምር",
+    step2Desc: "ፎቶ ላክ፣ ስም እና ዋጋ አስቀምጥ",
+    step3Title: "ካሻር እና ሽጥ",
+    step3Desc: "የካታሎግ ሊንክህን ካሻር",
+    createShopFree: "ነፃ ሱቅ ክፈት →",
+    allProducts: "ሁሉም ምርቶች",
+    searchPlaceholder: "ምርቶችን ፈልግ...",
+    noProducts: "ምርት አልተገኘም",
+    noProductsSub: "ሌላ ፍለጋ ሞክር",
+    loadMore: "ተጨማሪ",
+    loading: "እየጫነ...",
+    soldOut: "Sold out",
+    items: "ምርቶች",
+    item: "ምርት",
+    footerTagline: "ኢትዮጵያ የምትሸምትበት",
+    footerBrowse: "ምርቶችን ይፈልጉ",
+    footerCreate: "ሱቅ ክፈት",
+    footerCopyright: "© 2026 souk.et · መብቶች ተጠብቀዋል",
+    createShopNav: "+ ሱቅ ክፈት",
+    newest: "አዲስ",
+    priceAsc: "ዋጋ ↑",
+    priceDesc: "ዋጋ ↓",
+    all: "ሁሉም",
+  },
 };
 
 const CATEGORIES = [
@@ -156,8 +248,9 @@ function ProductCard({ p, delay = 0 }: { p: MarketProduct; delay?: number }) {
   );
 }
 
-function ShopCard({ s }: { s: MarketShop }) {
+function ShopCard({ s, lang }: { s: MarketShop; lang: "en" | "am" }) {
   const cat = CATEGORIES.find(c => c.key === s.category);
+  const t = T[lang];
   return (
     <Link href={`/${s.shop_slug}`} style={{ textDecoration: "none", color: "inherit", flexShrink: 0, width: "160px" }}>
       <div className="scard" style={{
@@ -190,11 +283,11 @@ function ShopCard({ s }: { s: MarketShop }) {
         </p>
         {cat && (
           <p style={{ fontSize: "11px", color: cat.color, fontWeight: 600, marginBottom: "2px" }}>
-            {cat.emoji} {cat.label}
+            {cat.emoji} {lang === "am" ? cat.am : cat.label}
           </p>
         )}
         <p style={{ fontSize: "11px", color: C.muted }}>
-          {s.product_count} {s.product_count === 1 ? "item" : "items"}
+          {s.product_count} {s.product_count === 1 ? t.item : t.items}
         </p>
       </div>
     </Link>
@@ -205,6 +298,7 @@ function ShopCard({ s }: { s: MarketShop }) {
 
 export default function MarketplaceClient({ initialProducts, initialShops, categoryCounts, totalProducts }: Props) {
   const [mounted, setMounted] = useState(false);
+  const [lang, setLang] = useState<"en" | "am">("en");
   const [browseMode, setBrowseMode] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -218,6 +312,8 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
   const browseRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { requestAnimationFrame(() => setMounted(true)); }, []);
+
+  const t = T[lang];
 
   const featuredProducts = useMemo(() => initialProducts.slice(0, 8), [initialProducts]);
   const featuredShops = useMemo(() => initialShops.slice(0, 10), [initialShops]);
@@ -302,7 +398,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         .cta-btn:active { transform: scale(0.97); }
 
         .ghost-btn { transition: all .2s ease; }
-        .ghost-btn:hover { background: ${C.dark}0D !important; }
+        .ghost-btn:hover { background: rgba(26,16,8,0.05) !important; }
 
         .hide-scrollbar { scrollbar-width: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -312,6 +408,8 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
 
         .browse-card { transition: transform .2s ease, box-shadow .2s ease; }
         .browse-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,16,8,.08); }
+
+        .lang-toggle-btn { transition: all .18s ease; cursor: pointer; border: none; font-family: inherit; }
 
         /* Ethiopian cross pattern */
         .eth-pattern {
@@ -354,84 +452,155 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
           </span>
         </div>
 
-        {/* Nav CTA */}
-        <a href="https://t.me/SoukEtBot" target="_blank" rel="noopener noreferrer"
-          className="ghost-btn"
-          style={{
-            padding: "8px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: 700,
-            color: C.terra, background: `${C.terra}10`, textDecoration: "none",
-            border: `1.5px solid ${C.terra}30`,
+        {/* Right side: lang toggle + CTA */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {/* Language toggle pill */}
+          <div style={{
+            display: "flex", alignItems: "center",
+            background: C.sand,
+            borderRadius: "10px",
+            padding: "3px",
+            border: `1px solid ${C.border}`,
+            gap: "2px",
           }}>
-          + Create Shop
-        </a>
+            <button
+              onClick={() => setLang("en")}
+              className="lang-toggle-btn"
+              style={{
+                padding: "4px 10px",
+                borderRadius: "7px",
+                fontSize: "12px",
+                fontWeight: 700,
+                background: lang === "en" ? C.terra : "transparent",
+                color: lang === "en" ? "white" : C.muted,
+                letterSpacing: "0.02em",
+              }}>
+              EN
+            </button>
+            <button
+              onClick={() => setLang("am")}
+              className="lang-toggle-btn"
+              style={{
+                padding: "4px 10px",
+                borderRadius: "7px",
+                fontSize: "12px",
+                fontWeight: 700,
+                background: lang === "am" ? C.terra : "transparent",
+                color: lang === "am" ? "white" : C.muted,
+                letterSpacing: "0.01em",
+              }}>
+              አማ
+            </button>
+          </div>
+
+          {/* Nav CTA */}
+          <a href="https://t.me/SoukEtBot" target="_blank" rel="noopener noreferrer"
+            className="ghost-btn"
+            style={{
+              padding: "8px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: 700,
+              color: C.terra, background: `${C.terra}10`, textDecoration: "none",
+              border: `1.5px solid ${C.terra}30`,
+            }}>
+            {t.createShopNav}
+          </a>
+        </div>
       </nav>
 
       {/* ══════════════════════════════════════
-          HERO
+          HERO — Bold & Elegant
       ══════════════════════════════════════ */}
       <section style={{
         position: "relative",
-        padding: "52px 24px 48px",
+        padding: "64px 28px 56px",
         overflow: "hidden",
+        background: "linear-gradient(160deg, #1A0A04 0%, #2D1206 35%, #3D1C0A 60%, #4A2510 80%, #3A1A08 100%)",
       }}>
-        {/* Background pattern */}
-        <div className="eth-pattern" style={{
-          position: "absolute", inset: 0, opacity: 0.5, pointerEvents: "none",
-        }} />
-        {/* Warm gradient blob */}
+        {/* Subtle grain overlay */}
         <div style={{
-          position: "absolute", top: "-80px", right: "-60px",
+          position: "absolute", inset: 0, pointerEvents: "none",
+          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
+          backgroundSize: "180px 180px",
+          opacity: 0.6,
+        }} />
+        {/* Gold radial glow — top right */}
+        <div style={{
+          position: "absolute", top: "-100px", right: "-80px",
+          width: "420px", height: "420px",
+          background: `radial-gradient(circle at 60% 40%, ${C.gold}28 0%, transparent 65%)`,
+          pointerEvents: "none",
+        }} />
+        {/* Warm amber glow — bottom left */}
+        <div style={{
+          position: "absolute", bottom: "-60px", left: "-60px",
           width: "320px", height: "320px",
-          background: `radial-gradient(circle, ${C.gold}20 0%, transparent 70%)`,
+          background: `radial-gradient(circle, #FF8C3020 0%, transparent 60%)`,
           pointerEvents: "none",
         }} />
-        <div style={{
-          position: "absolute", bottom: "-40px", left: "-40px",
-          width: "240px", height: "240px",
-          background: `radial-gradient(circle, ${C.terra}14 0%, transparent 70%)`,
-          pointerEvents: "none",
+        {/* Ethiopian cross pattern overlay */}
+        <div className="eth-pattern" style={{
+          position: "absolute", inset: 0, opacity: 0.12, pointerEvents: "none",
         }} />
 
-        <div style={{ position: "relative", maxWidth: "600px", margin: "0 auto" }}>
-          {/* Eyebrow */}
-          <div className="hero-text" style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            background: `${C.gold}18`, border: `1px solid ${C.gold}40`,
-            padding: "5px 12px", borderRadius: "20px", marginBottom: "20px",
-          }}>
-            <span style={{ fontSize: "14px" }}>🇪🇹</span>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: C.gold, letterSpacing: "0.04em" }}>
-              ETHIOPIAN MARKETPLACE
+        <div style={{ position: "relative", maxWidth: "640px", margin: "0 auto" }}>
+
+          {/* Wordmark in hero */}
+          <div className="hero-text" style={{ marginBottom: "28px" }}>
+            <span style={{
+              fontSize: "clamp(1rem, 3.5vw, 1.15rem)",
+              fontWeight: 800,
+              color: "rgba(255,255,255,0.22)",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+            }}>
+              souk<span style={{ color: C.gold }}>.</span>et
             </span>
           </div>
 
-          {/* Headline */}
-          <h1 className="hero-sub" style={{
-            fontSize: "clamp(2.2rem, 8vw, 3.2rem)",
-            fontWeight: 800,
-            color: C.dark,
-            letterSpacing: "-0.03em",
-            lineHeight: 1.08,
-            marginBottom: "8px",
+          {/* Eyebrow badge */}
+          <div className="hero-text" style={{
+            display: "inline-flex", alignItems: "center", gap: "7px",
+            background: `${C.gold}20`, border: `1px solid ${C.gold}45`,
+            padding: "6px 14px", borderRadius: "20px", marginBottom: "18px",
           }}>
-            ሱቅ<span style={{ color: C.terra }}>።</span>{" "}
+            <span style={{ fontSize: "14px" }}>🇪🇹</span>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: C.gold, letterSpacing: "0.1em" }}>
+              {t.marketplaceBadge}
+            </span>
+          </div>
+
+          {/* Thin rule */}
+          <div style={{
+            width: "48px", height: "2px",
+            background: `linear-gradient(90deg, ${C.gold}, transparent)`,
+            marginBottom: "20px",
+            borderRadius: "2px",
+          }} />
+
+          {/* Headline — massive */}
+          <h1 className="hero-sub" style={{
+            fontSize: "clamp(2.8rem, 11vw, 4rem)",
+            fontWeight: 800,
+            color: C.white,
+            letterSpacing: "-0.04em",
+            lineHeight: 1.0,
+            marginBottom: "20px",
+          }}>
+            {t.heroHeadline1}
             <br />
-            <span style={{ color: C.dark }}>Your Shop,</span>
-            <br />
-            <span style={{ color: C.terra }}>Made Beautiful.</span>
+            <span style={{ color: C.gold }}>{t.heroHeadline2}</span>
           </h1>
 
           {/* Sub */}
           <p className="hero-cta" style={{
-            fontSize: "15px", color: C.muted, fontWeight: 500,
-            lineHeight: 1.6, marginBottom: "28px", maxWidth: "380px",
+            fontSize: "16px", color: "rgba(255,255,255,0.55)", fontWeight: 400,
+            lineHeight: 1.6, marginBottom: "36px", maxWidth: "380px",
+            letterSpacing: "0.01em",
           }}>
-            Turn your Telegram into a professional shop — free.
-            Add products, share your catalog, and start selling today.
+            {t.heroSub}
           </p>
 
-          {/* CTAs */}
-          <div className="hero-cta" style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "32px" }}>
+          {/* CTAs — stark contrast pair */}
+          <div className="hero-cta" style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "44px" }}>
             <a
               href="https://t.me/SoukEtBot"
               target="_blank"
@@ -439,47 +608,63 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               className="cta-btn"
               style={{
                 display: "inline-flex", alignItems: "center", gap: "8px",
-                padding: "14px 26px", borderRadius: "14px",
-                background: `linear-gradient(135deg, ${C.terra}, #A83A18)`,
-                color: "white", fontWeight: 700, fontSize: "15px",
+                padding: "15px 28px", borderRadius: "14px",
+                background: C.white,
+                color: C.dark, fontWeight: 800, fontSize: "15px",
                 textDecoration: "none",
-                boxShadow: `0 4px 20px ${C.terra}40`,
+                boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
+                letterSpacing: "-0.01em",
               }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill={C.terra}>
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.07-.18c-.08-.05-.19-.03-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.46-.01.06.01.24 0 .37z" />
               </svg>
-              Start Selling Free
+              {t.ctaSell}
             </a>
             <button
               onClick={() => openBrowse()}
-              className="ghost-btn"
               style={{
-                display: "inline-flex", alignItems: "center", gap: "6px",
-                padding: "14px 22px", borderRadius: "14px",
-                background: "transparent",
-                color: C.text, fontWeight: 700, fontSize: "15px",
-                border: `2px solid ${C.border}`,
+                display: "inline-flex", alignItems: "center", gap: "7px",
+                padding: "15px 24px", borderRadius: "14px",
+                background: "rgba(255,255,255,0.08)",
+                color: "rgba(255,255,255,0.85)", fontWeight: 700, fontSize: "15px",
+                border: `1.5px solid rgba(255,255,255,0.2)`,
                 cursor: "pointer",
-              }}>
-              Browse Products
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                letterSpacing: "-0.01em",
+                transition: "all .2s ease",
+                fontFamily: "inherit",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.14)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)"; }}>
+              {t.ctaBrowse}
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
               </svg>
             </button>
           </div>
 
-          {/* Stats bar */}
+          {/* Stats row with visual separators */}
           <div className="hero-stats" style={{
-            display: "flex", gap: "24px", flexWrap: "wrap",
+            display: "flex", alignItems: "center", gap: "0",
           }}>
             {[
-              { n: `${totalShops}+`, label: "shops" },
-              { n: `${totalProducts}+`, label: "products" },
-              { n: CATEGORIES.length.toString(), label: "categories" },
-            ].map(({ n, label }) => (
-              <div key={label}>
-                <span style={{ fontSize: "20px", fontWeight: 800, color: C.dark }}>{n}</span>
-                <span style={{ fontSize: "13px", color: C.muted, fontWeight: 500, marginLeft: "4px" }}>{label}</span>
+              { n: `${totalShops}+`, label: t.statsShops },
+              { n: `${totalProducts}+`, label: t.statsProducts },
+              { n: CATEGORIES.length.toString(), label: t.statsCategories },
+            ].map(({ n, label }, i) => (
+              <div key={label} style={{ display: "flex", alignItems: "center" }}>
+                {i > 0 && (
+                  <span style={{
+                    color: "rgba(255,255,255,0.2)",
+                    fontSize: "18px",
+                    fontWeight: 300,
+                    margin: "0 16px",
+                    lineHeight: 1,
+                  }}>|</span>
+                )}
+                <div>
+                  <span style={{ fontSize: "21px", fontWeight: 800, color: C.white }}>{n}</span>
+                  <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", fontWeight: 500, marginLeft: "5px" }}>{label}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -487,12 +672,13 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       </section>
 
       {/* ══════════════════════════════════════
-          CATEGORIES
+          CATEGORIES — compact elegant pills
       ══════════════════════════════════════ */}
-      <section style={{ padding: "0 0 8px" }}>
+      <section style={{ padding: "20px 0 4px" }}>
         <div className="hide-scrollbar" style={{
-          display: "flex", gap: "10px", overflowX: "auto",
-          padding: "0 24px 12px",
+          display: "flex", gap: "8px", overflowX: "auto",
+          padding: "0 24px 8px",
+          alignItems: "center",
         }}>
           {CATEGORIES.map((c) => {
             const count = categoryCounts[c.key] || 0;
@@ -504,17 +690,18 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                 className="catpill"
                 style={{
                   flexShrink: 0,
-                  display: "flex", flexDirection: "column", alignItems: "center",
-                  gap: "4px",
-                  padding: "14px 16px",
-                  borderRadius: "18px",
-                  background: `${c.color}12`,
+                  display: "inline-flex", alignItems: "center",
+                  gap: "5px",
+                  padding: "7px 13px",
+                  borderRadius: "100px",
+                  background: `${c.color}14`,
                   border: `1.5px solid ${c.color}30`,
-                  minWidth: "84px",
+                  whiteSpace: "nowrap",
                 }}>
-                <span style={{ fontSize: "24px", lineHeight: 1 }}>{c.emoji}</span>
-                <span style={{ fontSize: "12px", fontWeight: 700, color: c.color }}>{c.label}</span>
-                <span style={{ fontSize: "10px", fontWeight: 500, color: C.muted }}>{count} items</span>
+                <span style={{ fontSize: "14px", lineHeight: 1 }}>{c.emoji}</span>
+                <span style={{ fontSize: "12px", fontWeight: 700, color: c.color }}>
+                  {lang === "am" ? c.am : c.label}
+                </span>
               </button>
             );
           })}
@@ -525,18 +712,22 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
           FEATURED PRODUCTS
       ══════════════════════════════════════ */}
       {featuredProducts.length > 0 && (
-        <section style={{ padding: "24px 0 8px" }}>
+        <section style={{
+          padding: "0 0 8px",
+          borderTop: `2px solid ${C.gold}40`,
+          marginTop: "8px",
+        }}>
           {/* Header */}
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 24px", marginBottom: "16px",
+            padding: "20px 24px 16px",
           }}>
             <div>
               <h2 style={{ fontSize: "20px", fontWeight: 800, color: C.dark, letterSpacing: "-0.02em" }}>
-                New Arrivals
+                {t.newArrivals}
               </h2>
               <p style={{ fontSize: "13px", color: C.muted, marginTop: "2px" }}>
-                Latest from Ethiopian sellers
+                {t.newArrivalsSub}
               </p>
             </div>
             <button
@@ -547,8 +738,9 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                 padding: "4px 0",
                 textDecoration: "none",
                 display: "flex", alignItems: "center", gap: "3px",
+                fontFamily: "inherit",
               }}>
-              See all
+              {t.seeAll}
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
               </svg>
@@ -578,10 +770,10 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
           }}>
             <div>
               <h2 style={{ fontSize: "20px", fontWeight: 800, color: C.dark, letterSpacing: "-0.02em" }}>
-                Shops
+                {t.shops}
               </h2>
               <p style={{ fontSize: "13px", color: C.muted, marginTop: "2px" }}>
-                Browse by seller
+                {t.shopsSub}
               </p>
             </div>
           </div>
@@ -591,7 +783,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
             padding: "4px 24px 16px",
           }}>
             {featuredShops.map((s) => (
-              <ShopCard key={s.shop_slug} s={s} />
+              <ShopCard key={s.shop_slug} s={s} lang={lang} />
             ))}
           </div>
         </section>
@@ -615,19 +807,20 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
             <p style={{ fontSize: "11px", fontWeight: 700, color: C.gold, letterSpacing: "0.1em",
               marginBottom: "8px", textTransform: "uppercase" }}>
-              FOR SELLERS
+              {t.forSellers}
             </p>
             <h2 style={{ fontSize: "22px", fontWeight: 800, color: "white", letterSpacing: "-0.02em" }}>
-              Open your shop in{" "}
-              <span style={{ color: C.gold }}>3 minutes</span>
+              {t.openIn3}{" "}
+              <span style={{ color: C.gold }}>{t.openIn3Bold}</span>
+              {lang === "am" ? " ክፈት" : ""}
             </h2>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {[
-              { n: "1", icon: "💬", title: "Open the bot", desc: "Start @SoukEtBot on Telegram. Choose your language — English or Amharic." },
-              { n: "2", icon: "📦", title: "Add your products", desc: "Send a photo, set a name and price. The bot generates 4 marketing images instantly." },
-              { n: "3", icon: "🔗", title: "Share & sell", desc: "Get your catalog link. Share it on your channel, story, or WhatsApp." },
+              { n: "1", icon: "💬", titleKey: "step1Title" as const, descKey: "step1Desc" as const },
+              { n: "2", icon: "📦", titleKey: "step2Title" as const, descKey: "step2Desc" as const },
+              { n: "3", icon: "🔗", titleKey: "step3Title" as const, descKey: "step3Desc" as const },
             ].map((step) => (
               <div key={step.n} style={{
                 display: "flex", gap: "16px", alignItems: "flex-start",
@@ -642,10 +835,10 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                 </div>
                 <div>
                   <p style={{ fontSize: "15px", fontWeight: 700, color: "white", marginBottom: "4px" }}>
-                    {step.title}
+                    {t[step.titleKey]}
                   </p>
                   <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
-                    {step.desc}
+                    {t[step.descKey]}
                   </p>
                 </div>
               </div>
@@ -669,7 +862,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
             <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.07-.18c-.08-.05-.19-.03-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.46-.01.06.01.24 0 .37z" />
             </svg>
-            Create Your Shop Free →
+            {t.createShopFree}
           </a>
         </div>
       </section>
@@ -690,8 +883,8 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
                 <h2 style={{ fontSize: "18px", fontWeight: 800, color: C.dark }}>
                   {selectedCategory
-                    ? `${CATEGORIES.find(c => c.key === selectedCategory)?.emoji} ${CATEGORIES.find(c => c.key === selectedCategory)?.label}`
-                    : "All Products"}
+                    ? `${CATEGORIES.find(c => c.key === selectedCategory)?.emoji} ${lang === "am" ? CATEGORIES.find(c => c.key === selectedCategory)?.am : CATEGORIES.find(c => c.key === selectedCategory)?.label}`
+                    : t.allProducts}
                 </h2>
                 <button onClick={() => setBrowseMode(false)} style={{
                   width: "32px", height: "32px", borderRadius: "10px",
@@ -711,7 +904,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                   fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
-                <input type="text" placeholder="Search products..." value={searchInput}
+                <input type="text" placeholder={t.searchPlaceholder} value={searchInput}
                   onChange={(e) => handleSearch(e.target.value)}
                   className="search-input"
                   style={{
@@ -731,7 +924,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                     background: !selectedCategory ? C.terra : C.sand,
                     color: !selectedCategory ? "white" : C.muted,
                     border: "none",
-                  }}>All</button>
+                  }}>{t.all}</button>
                 {CATEGORIES.map(c => (
                   <button key={c.key} onClick={() => handleCategory(selectedCategory === c.key ? null : c.key)}
                     className="catpill"
@@ -742,7 +935,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                       color: selectedCategory === c.key ? "white" : C.muted,
                       border: "none",
                     }}>
-                    {c.emoji} {c.label}
+                    {c.emoji} {lang === "am" ? c.am : c.label}
                   </button>
                 ))}
               </div>
@@ -751,7 +944,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
             {/* Sort */}
             <div style={{ display: "flex", gap: "8px", marginBottom: "14px", justifyContent: "flex-end" }}>
               {(["newest", "price_asc", "price_desc"] as const).map(s => {
-                const labels = { newest: "Newest", price_asc: "Price ↑", price_desc: "Price ↓" };
+                const labels = { newest: t.newest, price_asc: t.priceAsc, price_desc: t.priceDesc };
                 return (
                   <button key={s} onClick={() => {
                     setSortBy(s);
@@ -762,6 +955,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                       fontWeight: 600, border: "none", cursor: "pointer",
                       background: sortBy === s ? `${C.terra}18` : "transparent",
                       color: sortBy === s ? C.terra : C.muted,
+                      fontFamily: "inherit",
                     }}>
                     {labels[s]}
                   </button>
@@ -782,8 +976,8 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               <div style={{ textAlign: "center", padding: "48px 20px",
                 background: C.white, borderRadius: "20px", border: `1px solid ${C.border}` }}>
                 <div style={{ fontSize: "36px", marginBottom: "10px" }}>🔍</div>
-                <p style={{ fontSize: "15px", fontWeight: 700, color: C.dark }}>No products found</p>
-                <p style={{ fontSize: "13px", color: C.muted, marginTop: "4px" }}>Try a different search</p>
+                <p style={{ fontSize: "15px", fontWeight: 700, color: C.dark }}>{t.noProducts}</p>
+                <p style={{ fontSize: "13px", color: C.muted, marginTop: "4px" }}>{t.noProductsSub}</p>
               </div>
             ) : (
               <>
@@ -812,7 +1006,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                                 display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <span style={{ color: "white", fontSize: "10px", fontWeight: 700,
                                   background: "rgba(0,0,0,.4)", padding: "3px 8px", borderRadius: "20px" }}>
-                                  Sold out
+                                  {t.soldOut}
                                 </span>
                               </div>
                             )}
@@ -853,8 +1047,9 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                         fontSize: "14px", fontWeight: 700, cursor: "pointer",
                         opacity: loading ? 0.7 : 1,
                         transition: "all .2s ease",
+                        fontFamily: "inherit",
                       }}>
-                      {loading ? "Loading..." : "Load more"}
+                      {loading ? t.loading : t.loadMore}
                     </button>
                   </div>
                 )}
@@ -870,6 +1065,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       <footer style={{
         background: C.dark,
         padding: "44px 24px 36px",
+        position: "relative",
       }}>
         <div className="eth-pattern" style={{ position: "absolute", opacity: 0.15, inset: 0, pointerEvents: "none" }} />
         <div style={{ position: "relative", maxWidth: "400px" }}>
@@ -890,13 +1086,13 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
             </span>
           </div>
           <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", marginBottom: "28px", lineHeight: 1.6 }}>
-            Where Ethiopia Shops — ኢትዮጵያ የምትሸምትበት
+            {t.footerTagline}
           </p>
 
           <div style={{ display: "flex", gap: "20px", marginBottom: "32px", flexWrap: "wrap" }}>
             {[
-              { label: "Browse Products", href: "#", onClick: () => openBrowse() },
-              { label: "Create a Shop", href: "https://t.me/SoukEtBot" },
+              { label: t.footerBrowse, onClick: () => openBrowse() },
+              { label: t.footerCreate, href: "https://t.me/SoukEtBot" },
             ].map((l) => (
               l.onClick ? (
                 <button key={l.label} onClick={l.onClick}
@@ -914,7 +1110,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
           </div>
 
           <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)" }}>
-            © 2026 souk.et · All rights reserved
+            {t.footerCopyright}
           </p>
         </div>
       </footer>
