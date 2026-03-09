@@ -158,7 +158,7 @@ export default function ProductDetailPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shop_id: (shop as Record<string, unknown>).id || "",
+          shop_id: (shop as unknown as Record<string, unknown>).id || "",
           product_id: product.id,
           buyer_name: buyerName.trim(),
           buyer_phone: buyerPhone.trim() || undefined,

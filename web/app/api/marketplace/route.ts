@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
   // Flatten shop join + resolve photo URLs
   const resolved = await Promise.all(
     (products || []).map(async (p) => {
-      const shop = p.suq_shops as Record<string, unknown> | null;
+      const shop = p.suq_shops as unknown as Record<string, unknown> | null;
       const flat = {
         id: p.id,
         name: p.name,

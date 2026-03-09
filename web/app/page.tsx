@@ -17,7 +17,7 @@ export default async function MarketplacePage() {
     .range(0, 19);
 
   const products = (rawProducts || []).map((p) => {
-    const s = p.suq_shops as Record<string, unknown> | null;
+    const s = p.suq_shops as unknown as Record<string, unknown> | null;
     return {
       id: p.id as string,
       name: p.name as string,
@@ -42,7 +42,7 @@ export default async function MarketplacePage() {
 
   const categoryCounts: Record<string, number> = {};
   for (const p of allProds || []) {
-    const s = p.suq_shops as Record<string, unknown> | null;
+    const s = p.suq_shops as unknown as Record<string, unknown> | null;
     const c = (s?.category as string) || "other";
     categoryCounts[c] = (categoryCounts[c] || 0) + 1;
   }

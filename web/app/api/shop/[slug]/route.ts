@@ -102,7 +102,7 @@ export async function GET(
             }
           } catch { /* silent */ }
         }
-        const s = p.suq_shops as Record<string, unknown> | null;
+        const s = p.suq_shops as unknown as Record<string, unknown> | null;
         return {
           id: p.id, name: p.name, price: p.price, price_type: p.price_type,
           photo_url: p.photo_url, stock: p.stock, tag: p.tag,

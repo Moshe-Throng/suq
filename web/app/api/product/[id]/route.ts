@@ -40,7 +40,7 @@ export async function GET(
 
   // Resolve product photo
   if (!product.photo_url && product.photo_file_id) {
-    const url = await resolveTelegramUrl(product.photo_file_id, botToken);
+    const url = await resolveTelegramUrl(product.photo_file_id, botToken ?? null);
     if (url) {
       product.photo_url = url;
       supabase.from("suq_products").update({ photo_url: url }).eq("id", id).then(() => {});
@@ -60,7 +60,7 @@ export async function GET(
 
   // Resolve shop logo
   if (shop.logo_file_id && !shop.logo_url) {
-    const url = await resolveTelegramUrl(shop.logo_file_id, botToken);
+    const url = await resolveTelegramUrl(shop.logo_file_id, botToken ?? null);
     if (url) {
       shop.logo_url = url;
       supabase.from("suq_shops").update({ logo_url: url }).eq("id", shop.id).then(() => {});
@@ -80,7 +80,7 @@ export async function GET(
   const resolvedMore = await Promise.all(
     (moreFromShop || []).map(async (p) => {
       if (!p.photo_url && p.photo_file_id) {
-        const url = await resolveTelegramUrl(p.photo_file_id, botToken);
+        const url = await resolveTelegramUrl(p.photo_file_id, botToken ?? null);
         if (url) {
           p.photo_url = url;
           supabase.from("suq_products").update({ photo_url: url }).eq("id", p.id).then(() => {});
@@ -105,13 +105,13 @@ export async function GET(
     similarProducts = await Promise.all(
       (similar || []).map(async (p) => {
         if (!p.photo_url && p.photo_file_id) {
-          const url = await resolveTelegramUrl(p.photo_file_id, botToken);
+          const url = await resolveTelegramUrl(p.photo_file_id, botToken ?? null);
           if (url) {
             p.photo_url = url;
             supabase.from("suq_products").update({ photo_url: url }).eq("id", p.id).then(() => {});
           }
         }
-        const s = p.suq_shops as Record<string, unknown> | null;
+        const s = p.suq_shops as unknown as Record<string, unknown> | null;
         return {
           id: p.id,
           name: p.name,
