@@ -12,8 +12,7 @@ import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
-from telegram import BotCommand
-from bot.utils.commands import COMMANDS_AM, set_user_commands
+from bot.utils.commands import COMMANDS_AM
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,

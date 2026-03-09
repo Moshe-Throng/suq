@@ -25,7 +25,7 @@ from bot.handlers.settings import (
     settings_change_type, settings_type_selected,
 )
 from bot.db.supabase_client import run_sync, get_shop, catalog_link
-from bot.strings.lang import s
+from bot.strings.lang import s, seed_lang
 
 
 async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -142,6 +142,7 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         user = query.from_user
         shop = await run_sync(get_shop, user.id)
         if shop:
+            seed_lang(user.id, shop.get("language", "am"))
             await _send_seller_menu_from_query(query, user.id, shop)
 
     # ── Products & Inquiries ─────────────────────────────────

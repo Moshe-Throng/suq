@@ -13,7 +13,7 @@ from bot.db.supabase_client import (
     run_sync, get_shop, get_products, get_product, create_product, delete_product,
     format_price, catalog_link,
 )
-from bot.strings.lang import s
+from bot.strings.lang import s, seed_lang
 from bot.services.tag_registry import get_tags_for_category
 
 # Conversation states
@@ -35,11 +35,9 @@ async def add_entry(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        t = s(user.id)
-        await update.message.reply_text(t.ERROR)
+        await update.message.reply_text(s(user.id).ERROR)
         return ConversationHandler.END
 
-    from bot.strings.lang import seed_lang
     seed_lang(user.id, shop.get("language", "am"))
     t = s(user.id)
 
@@ -60,11 +58,9 @@ async def add_entry_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        t = s(user.id)
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return ConversationHandler.END
 
-    from bot.strings.lang import seed_lang
     seed_lang(user.id, shop.get("language", "am"))
     t = s(user.id)
 
@@ -103,6 +99,15 @@ async def remind_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     reminder = getattr(t, "REMIND_PHOTO", None) or f"📸 {prompt}\n\n(/cancel ለመሰረዝ)"
     await update.message.reply_text(reminder)
     return PHOTO
+
+
+async def _remind_in_progress(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """User typed /add mid-flow — tell them to complete the current step."""
+    t = s(update.effective_user.id)
+    await update.message.reply_text(
+        getattr(t, "ALREADY_ADDING", "⚠️ Complete the current step or /cancel to stop.")
+    )
+    # Return None → conversation stays in current state (PTB v20 behaviour)
 
 
 async def recv_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -174,7 +179,8 @@ async def recv_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     t = s(user.id)
 
     text = update.message.text.strip()
-    desc = None if text.lower() == "/skip" else text
+    # Treat /skip (and any stray command) as skipping description
+    desc = None if text.startswith("/") else text
     context.user_data["product_desc"] = desc
 
     # Show tag picker
@@ -252,9 +258,12 @@ async def recv_stock_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
     query = update.callback_query
     await query.answer()
     user = query.from_user
+    t = s(user.id)
 
     context.user_data["product_stock"] = None  # unlimited
-    await query.edit_message_text("♾ Unlimited ✓")
+    await query.edit_message_text(
+        getattr(t, "BTN_STOCK_UNLIMITED", "♾ Unlimited") + " ✓"
+    )
     return await _save_product(update, context, user, from_query=True)
 
 
@@ -360,7 +369,6 @@ async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if not shop:
         await update.message.reply_text(s(user.id).ERROR)
         return
-    from bot.strings.lang import seed_lang
     seed_lang(user.id, shop.get("language", "am"))
     t = s(user.id)
 
@@ -392,8 +400,9 @@ async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     footer = getattr(t, "CATALOG_FOOTER", "\n🔗 <b>Browse full catalog:</b>")
     lines.append(footer)
 
+    btn_label = getattr(t, "CATALOG_VIEW_BTN", "🛍 View Full Catalog")
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛍 View Full Catalog", url=link)]
+        [InlineKeyboardButton(btn_label, url=link)]
     ])
 
     await update.message.reply_text(
@@ -413,7 +422,6 @@ async def list_products(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not shop:
         await update.message.reply_text(s(user.id).ERROR)
         return
-    from bot.strings.lang import seed_lang
     seed_lang(user.id, shop.get("language", "am"))
     t = s(user.id)
 
@@ -446,12 +454,13 @@ async def list_products_callback(update: Update, context: ContextTypes.DEFAULT_T
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await query.edit_message_text(t.ERROR)
+        await query.edit_message_text(s(user.id).ERROR)
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     is_service = shop.get("shop_type") == "service"
     products = await run_sync(get_products, shop["id"])
@@ -482,6 +491,11 @@ async def delete_product_callback(update: Update, context: ContextTypes.DEFAULT_
     query = update.callback_query
     await query.answer()
     user = query.from_user
+
+    # Seed lang (delete button appears after /products which seeds, but cover restart case)
+    shop = await run_sync(get_shop, user.id)
+    if shop:
+        seed_lang(user.id, shop.get("language", "am"))
     t = s(user.id)
 
     product_id = query.data.replace("del_product_", "")
@@ -520,19 +534,35 @@ def build_add_product_conv() -> ConversationHandler:
                 MessageHandler(filters.PHOTO, recv_photo),
                 CommandHandler("add", remind_photo),
             ],
-            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, recv_name)],
-            PRICE_TYPE: [CallbackQueryHandler(recv_price_type, pattern="^ptype_")],
-            PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, recv_price)],
-            DESC: [MessageHandler(filters.TEXT, recv_desc)],  # Allow /skip
-            TAG: [CallbackQueryHandler(recv_tag, pattern="^ptag_")],
+            NAME: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, recv_name),
+                CommandHandler("add", _remind_in_progress),
+            ],
+            PRICE_TYPE: [
+                CallbackQueryHandler(recv_price_type, pattern="^ptype_"),
+            ],
+            PRICE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, recv_price),
+                CommandHandler("add", _remind_in_progress),
+            ],
+            # filters.TEXT (not ~COMMAND) to catch /skip; any other command is treated as skip
+            DESC: [
+                MessageHandler(filters.TEXT, recv_desc),
+            ],
+            TAG: [
+                CallbackQueryHandler(recv_tag, pattern="^ptag_"),
+            ],
             STOCK: [
                 CallbackQueryHandler(recv_stock_callback, pattern="^pstock_"),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, recv_stock_text),
+                CommandHandler("add", _remind_in_progress),
             ],
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
             CommandHandler("start", _start_fallback),
+            # Catch /add in any state not already handling it (PRICE_TYPE, TAG)
+            CommandHandler("add", _remind_in_progress),
         ],
         per_message=False,
         conversation_timeout=300,

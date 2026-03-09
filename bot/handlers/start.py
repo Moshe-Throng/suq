@@ -539,7 +539,11 @@ async def language_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /help."""
-    t = s(update.effective_user.id)
+    user = update.effective_user
+    shop = await run_sync(get_shop, user.id)
+    if shop:
+        seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
     await update.message.reply_text(t.HELP)
 
 

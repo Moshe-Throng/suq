@@ -261,3 +261,11 @@ CATALOG_HEADER = "🏪 <b>{shop_name}</b>\n"
 CATALOG_EMPTY = "No products to show yet. Use /add to add your first item."
 CATALOG_FOOTER = "\n🔗 <b>Browse full catalog:</b>"
 CATALOG_MORE = "...and {count} more"
+CATALOG_VIEW_BTN = "🛍 View Full Catalog"
+
+# ══════════════════════════════════════════════════════════════
+# FLOW GUARD
+# ══════════════════════════════════════════════════════════════
+
+ALREADY_ADDING = "⚠️ You're already adding a listing. Complete the current step or /cancel to stop."
+REMIND_PHOTO = "📸 Please send a photo to continue.\n\n(/cancel to stop)"
