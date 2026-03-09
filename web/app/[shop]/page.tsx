@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -115,17 +116,17 @@ const TAG_LABELS: Record<string, string> = {
 /* ─── Price helpers ───────────────────────────────────────── */
 
 function fmtPrice(price: number | null, pt: string | null): string {
-  if (pt === "contact" || price === null) return "Contact";
+  if (pt === "contact" || price === null) return "ለዋጋ ያግኙን";
   const f = price.toLocaleString();
-  if (pt === "starting_from") return `From ${f} Birr`;
-  return `${f} Birr`;
+  if (pt === "starting_from") return `ከ ${f} ብር`;
+  return `${f} ብር`;
 }
 
 function fmtPriceLong(price: number | null, pt: string | null): string {
-  if (pt === "contact" || price === null) return "Contact for pricing";
+  if (pt === "contact" || price === null) return "ለዋጋ ያግኙን";
   const f = price.toLocaleString();
-  if (pt === "starting_from") return `Starting from ${f} Birr`;
-  return `${f} Birr`;
+  if (pt === "starting_from") return `ከ ${f} ብር`;
+  return `${f} ብር`;
 }
 
 /* ─── Component ─────────────────────────────────────────── */
@@ -136,6 +137,7 @@ export default function ShopPage() {
 
   const [shop, setShop] = useState<Shop | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [crossSell, setCrossSell] = useState<{ id: string; name: string; price: number | null; price_type: string | null; photo_url: string | null; stock: number | null; tag: string | null; shop_name: string; shop_slug: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -207,6 +209,7 @@ export default function ShopPage() {
         const data = await res.json();
         setShop(data.shop);
         setProducts(data.products);
+        if (data.crossSell) setCrossSell(data.crossSell);
       } catch { setError("Failed to load shop"); }
       finally { setLoading(false); }
     }
@@ -312,8 +315,8 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-gray-50/50">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap');
-        * { font-family: 'DM Sans', system-ui, sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap');
+        * { font-family: 'Plus Jakarta Sans', 'Noto Sans Ethiopic', system-ui, sans-serif; }
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         @keyframes scaleIn { from { opacity:0; } to { opacity:1; } }
         @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
@@ -330,11 +333,23 @@ export default function ShopPage() {
         .hide-scrollbar::-webkit-scrollbar { display:none; }
       `}</style>
 
+      {/* ═══ Breadcrumb ═══ */}
+      <div style={{ background: "rgba(0,0,0,0.03)", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
+        <div className="max-w-2xl mx-auto px-5 py-2.5">
+          <Link href="/" className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#6B7280", textDecoration: "none" }}>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
+            souk.et
+          </Link>
+        </div>
+      </div>
+
       {/* ═══ Hero Header ═══ */}
       <header className="relative overflow-hidden" style={{ background: theme.gradient }}>
         <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
         <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} />
-        <div className="relative max-w-2xl mx-auto px-5 pt-10 pb-14">
+        <div className="relative max-w-2xl mx-auto px-5 pt-8 pb-14">
           <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center mb-4"
             style={{ background: shop.logo_url ? "transparent" : "rgba(255,255,255,0.2)", backdropFilter: shop.logo_url ? undefined : "blur(8px)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
             {shop.logo_url
@@ -546,12 +561,52 @@ export default function ShopPage() {
         </div>
       </div>
 
+      {/* ═══ More on souk.et (cross-sell) ═══ */}
+      {crossSell.length > 0 && (
+        <div className="max-w-2xl mx-auto px-4 pb-6 relative z-10">
+          <div className="border-t border-gray-100 pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold text-gray-900">More on souk.et</h2>
+              {shop.category && (
+                <Link href={`/?category=${shop.category}`} className="text-xs font-semibold" style={{ color: theme.primary, textDecoration: "none" }}>
+                  Browse all →
+                </Link>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {crossSell.map((p) => (
+                <Link key={p.id} href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className="product-card bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+                    <div className="aspect-square bg-gray-50 overflow-hidden">
+                      {p.photo_url ? (
+                        <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #FFF8F3, #FFF0E6)" }}>
+                          <span style={{ fontSize: "24px", opacity: 0.3 }}>📦</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2.5">
+                      <p className="font-semibold text-gray-900 text-xs leading-tight line-clamp-2">{p.name}</p>
+                      <p className="text-xs font-bold mt-0.5" style={{ color: "#FF6B35" }}>{fmtPrice(p.price, p.price_type)}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{p.shop_name}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ═══ Footer ═══ */}
-      <footer className="text-center pb-24 pt-6">
-        <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 text-xs text-gray-300">
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            Powered by souk.et
+      <footer className="text-center pb-24 pt-6 border-t border-gray-100">
+        <div className="space-y-2.5">
+          <p className="text-sm font-bold text-gray-900">{shop.shop_name} <span className="font-normal text-gray-400">on</span> <span style={{ color: "#FF6B35" }}>souk.et</span></p>
+          <div className="flex items-center justify-center gap-4">
+            <Link href="/" className="text-xs text-gray-400 font-medium" style={{ textDecoration: "none" }}>
+              Browse more shops →
+            </Link>
           </div>
           <div>
             <a href="https://t.me/SoukEtBot" target="_blank" rel="noopener noreferrer"
@@ -612,6 +667,11 @@ export default function ShopPage() {
                   📋 {copiedId === `detail-${selectedProduct.id}` ? "Copied!" : "Copy Link"}
                 </button>
               </div>
+              <Link href={`/${slug}/${selectedProduct.id}`}
+                className="block text-center mt-3 text-xs font-semibold transition-colors"
+                style={{ color: theme.primary, textDecoration: "none" }}>
+                View full page →
+              </Link>
             </div>
           </div>
         </div>

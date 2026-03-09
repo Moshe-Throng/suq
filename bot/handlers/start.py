@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 
 from bot.db.supabase_client import (
     run_sync, get_shop, create_shop, catalog_link, slugify,
-    update_shop_theme, update_shop_template,
+    update_shop_theme, update_shop_template, get_product,
 )
 from bot.strings.lang import s, set_lang, seed_lang
 
@@ -85,8 +85,15 @@ SERVICE_CATEGORIES = [
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /start — language picker or seller menu."""
+    """Handle /start — language picker, seller menu, or buyer contact deep link."""
     user = update.effective_user
+
+    # ── Check for buyer contact deep link: /start contact_{product_id} ──
+    args = context.args
+    if args and args[0].startswith("contact_"):
+        product_id = args[0][len("contact_"):]
+        await _handle_contact_deeplink(update, product_id)
+        return
 
     shop = await run_sync(get_shop, user.id)
     if shop:
@@ -104,6 +111,89 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "🌍 ቋንቋ ይምረጡ / Choose your language:",
         reply_markup=keyboard,
     )
+
+
+async def _handle_contact_deeplink(update: Update, product_id: str) -> None:
+    """Handle buyer clicking a product contact link from the web catalog."""
+    from bot.db.supabase_client import get_client
+
+    product = await run_sync(get_product, product_id)
+    if not product:
+        await update.message.reply_text(
+            "😕 Sorry, this product was not found or is no longer available."
+        )
+        return
+
+    # Get shop info
+    client = get_client()
+    result = client.table("suq_shops").select(
+        "shop_name, shop_slug, telegram_username, telegram_id"
+    ).eq("id", product["shop_id"]).execute()
+    shop = result.data[0] if result.data else None
+
+    if not shop:
+        await update.message.reply_text(
+            "😕 Sorry, this shop is no longer available."
+        )
+        return
+
+    # Format price
+    price_str = ""
+    if product.get("price") is not None and product.get("price_type") != "contact":
+        price_str = f"\n💰 {product['price']:,} ብር"
+        if product.get("price_type") == "starting_from":
+            price_str = f"\n💰 ከ {product['price']:,} ብር"
+    elif product.get("price_type") == "contact":
+        price_str = "\n💰 ለዋጋ ያግኙን"
+
+    text = (
+        f"📦 <b>{product['name']}</b>{price_str}\n"
+        f"🏪 {shop['shop_name']}\n\n"
+    )
+
+    buttons = []
+
+    # Direct link to seller's Telegram
+    if shop.get("telegram_username"):
+        text += f"👤 Contact the seller directly:\n"
+        buttons.append([
+            InlineKeyboardButton(
+                f"💬 Message {shop['shop_name']}",
+                url=f"https://t.me/{shop['telegram_username']}"
+            )
+        ])
+    else:
+        text += "ℹ️ This seller hasn't set up direct messaging yet.\n"
+
+    # Link to product on web
+    buttons.append([
+        InlineKeyboardButton(
+            "🌐 View on souk.et",
+            url=f"https://web-theta-plum-56.vercel.app/{shop['shop_slug']}/{product_id}"
+        )
+    ])
+
+    # Send product photo if available
+    if product.get("photo_url"):
+        await update.message.reply_photo(
+            photo=product["photo_url"],
+            caption=text,
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup(buttons) if buttons else None,
+        )
+    elif product.get("photo_file_id"):
+        await update.message.reply_photo(
+            photo=product["photo_file_id"],
+            caption=text,
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup(buttons) if buttons else None,
+        )
+    else:
+        await update.message.reply_text(
+            text,
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup(buttons) if buttons else None,
+        )
 
 
 # ── Language ─────────────────────────────────────────────────

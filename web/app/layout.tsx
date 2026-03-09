@@ -13,8 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "souk.et — Your shop, made beautiful",
-  description: "Turn your Telegram into a beautiful shop — free",
+  title: "souk.et — Where Ethiopia Shops",
+  description: "Discover products from Ethiopian sellers. Fashion, food, electronics, beauty, handmade crafts and more — all on souk.et",
+  openGraph: {
+    title: "souk.et — Where Ethiopia Shops",
+    description: "Discover products from Ethiopian sellers",
+    siteName: "souk.et",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

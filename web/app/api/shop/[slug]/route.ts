@@ -76,5 +76,41 @@ export async function GET(
     })
   );
 
-  return NextResponse.json({ shop, products: resolved });
+  // ── Cross-sell: products from other shops in same category ──
+  let crossSell: Record<string, unknown>[] = [];
+  if (shop.category) {
+    const { data: cross } = await supabase
+      .from("suq_products")
+      .select("id, name, price, price_type, photo_url, photo_file_id, stock, tag, suq_shops!inner(shop_name, shop_slug, category)")
+      .eq("is_active", true)
+      .eq("suq_shops.category", shop.category)
+      .neq("shop_id", shop.id)
+      .order("created_at", { ascending: false })
+      .limit(4);
+
+    crossSell = await Promise.all(
+      (cross || []).map(async (p) => {
+        if (!p.photo_url && p.photo_file_id && botToken) {
+          try {
+            const res = await fetch(
+              `https://api.telegram.org/bot${botToken}/getFile?file_id=${p.photo_file_id}`
+            );
+            const data = await res.json();
+            if (data.ok && data.result?.file_path) {
+              p.photo_url = `https://api.telegram.org/file/bot${botToken}/${data.result.file_path}`;
+              supabase.from("suq_products").update({ photo_url: p.photo_url }).eq("id", p.id).then(() => {});
+            }
+          } catch { /* silent */ }
+        }
+        const s = p.suq_shops as Record<string, unknown> | null;
+        return {
+          id: p.id, name: p.name, price: p.price, price_type: p.price_type,
+          photo_url: p.photo_url, stock: p.stock, tag: p.tag,
+          shop_name: s?.shop_name, shop_slug: s?.shop_slug,
+        };
+      })
+    );
+  }
+
+  return NextResponse.json({ shop, products: resolved, crossSell });
 }
