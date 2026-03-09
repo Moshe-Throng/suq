@@ -40,15 +40,15 @@ interface Props {
 
 /* ─── Design tokens ──────────────────────────────────────── */
 const C = {
-  bg:     "#FAF8F2",
-  dark:   "#1A1008",
-  gold:   "#C8891A",
-  terra:  "#C04820",
-  sand:   "#EDE4CF",
+  bg:     "#FFF8F3",
+  dark:   "#0A0A0F",
+  gold:   "#FFB800",
+  terra:  "#FF6B35",
+  sand:   "#FFE8D6",
   sage:   "#4A6B4A",
-  text:   "#2E1F0A",
-  muted:  "#7B6548",
-  border: "#E0D5C0",
+  text:   "#1A0804",
+  muted:  "#8C6E58",
+  border: "#FFCDB4",
   white:  "#FFFFFF",
 };
 
@@ -100,10 +100,10 @@ const T = {
   },
   am: {
     marketplaceBadge: "የኢትዮጵያ ገበያ",
-    heroHeadline1: "ሱቅህ።",
+    heroHeadline1: "ሱቅዎ።",
     heroHeadline2: "ውብ።",
-    heroSub: "ቴሌግራምህን ነፃ ሱቅ አድርግ",
-    ctaSell: "ሱቅ ክፈት ነፃ",
+    heroSub: "ቴሌግራምዎን ነፃ ሱቅ ያድርጉ",
+    ctaSell: "ነፃ ሱቅ ክፈቱ",
     ctaBrowse: "ምርቶችን ይመልከቱ",
     statsShops: "ሱቆች",
     statsProducts: "ምርቶች",
@@ -114,29 +114,29 @@ const T = {
     shops: "ሱቆች",
     shopsSub: "በሻጭ ይፈልጉ",
     forSellers: "ለሻጮች",
-    openIn3: "ሱቅህን በ",
+    openIn3: "ሱቅዎን በ",
     openIn3Bold: "3 ደቂቃ",
-    step1Title: "ቦቱን ክፈት",
-    step1Desc: "ቴሌግራምን ላይ @SoukEtBot ጀምር",
-    step2Title: "ምርቶችህን ጨምር",
-    step2Desc: "ፎቶ ላክ፣ ስም እና ዋጋ አስቀምጥ",
-    step3Title: "ካሻር እና ሽጥ",
-    step3Desc: "የካታሎግ ሊንክህን ካሻር",
-    createShopFree: "ነፃ ሱቅ ክፈት →",
+    step1Title: "ቦቱን ክፈቱ",
+    step1Desc: "ቴሌግራም ላይ @SoukEtBot ይጀምሩ",
+    step2Title: "ምርቶቹን ይጨምሩ",
+    step2Desc: "ፎቶ ይላኩ፣ ስም እና ዋጋ ያስቀምጡ",
+    step3Title: "ያጋሩ እና ይሸጡ",
+    step3Desc: "የካታሎግ ሊንኩን ያጋሩ",
+    createShopFree: "ነፃ ሱቅ ክፈቱ →",
     allProducts: "ሁሉም ምርቶች",
-    searchPlaceholder: "ምርቶችን ፈልግ...",
+    searchPlaceholder: "ምርቶችን ይፈልጉ...",
     noProducts: "ምርት አልተገኘም",
-    noProductsSub: "ሌላ ፍለጋ ሞክር",
+    noProductsSub: "ሌላ ፍለጋ ይሞክሩ",
     loadMore: "ተጨማሪ",
     loading: "እየጫነ...",
-    soldOut: "Sold out",
+    soldOut: "አልቋል",
     items: "ምርቶች",
     item: "ምርት",
     footerTagline: "ኢትዮጵያ የምትሸምትበት",
     footerBrowse: "ምርቶችን ይፈልጉ",
-    footerCreate: "ሱቅ ክፈት",
+    footerCreate: "ሱቅ ክፈቱ",
     footerCopyright: "© 2026 souk.et · መብቶች ተጠብቀዋል",
-    createShopNav: "+ ሱቅ ክፈት",
+    createShopNav: "+ ሱቅ ክፈቱ",
     newest: "አዲስ",
     priceAsc: "ዋጋ ↑",
     priceDesc: "ዋጋ ↓",
@@ -189,6 +189,7 @@ function initials(name: string) {
 
 function ProductCard({ p, delay = 0 }: { p: MarketProduct; delay?: number }) {
   const isSoldOut = p.stock === 0;
+  const [imgFailed, setImgFailed] = useState(false);
   return (
     <Link href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
       <div className="pcard" style={{
@@ -202,12 +203,13 @@ function ProductCard({ p, delay = 0 }: { p: MarketProduct; delay?: number }) {
       }}>
         {/* Image */}
         <div style={{ position: "relative", width: "100%", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
-          {p.photo_url ? (
+          {p.photo_url && !imgFailed ? (
             <img src={p.photo_url} alt={p.name} loading="lazy" decoding="async"
+              onError={() => setImgFailed(true)}
               style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
-              justifyContent: "center", background: `linear-gradient(135deg, #F5EDD8, #EDE0C4)` }}>
+              justifyContent: "center", background: `linear-gradient(135deg, #FFE8D6, #FFCDB4)` }}>
               <span style={{ fontSize: "36px", opacity: 0.35 }}>
                 {CATEGORIES.find(c => c.key === p.shop_category)?.emoji || "📦"}
               </span>
@@ -252,29 +254,34 @@ function ShopCard({ s, lang }: { s: MarketShop; lang: "en" | "am" }) {
   const cat = CATEGORIES.find(c => c.key === s.category);
   const t = T[lang];
   return (
-    <Link href={`/${s.shop_slug}`} style={{ textDecoration: "none", color: "inherit", flexShrink: 0, width: "160px" }}>
+    <Link href={`/${s.shop_slug}`} style={{ textDecoration: "none", color: "inherit", flexShrink: 0, width: "152px" }}>
       <div className="scard" style={{
         background: C.white,
         border: `1.5px solid ${C.border}`,
         borderRadius: "20px",
-        padding: "18px 14px",
+        padding: "16px 12px",
         textAlign: "center",
+        height: "140px",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       }}>
         {/* Avatar */}
         <div style={{
           width: "52px", height: "52px", borderRadius: "16px", margin: "0 auto 10px",
           overflow: "hidden", flexShrink: 0,
-          background: s.logo_url ? "transparent" : `linear-gradient(135deg, ${cat?.color || C.gold}22, ${cat?.color || C.gold}44)`,
+          background: s.logo_url ? "transparent" : `linear-gradient(135deg, ${cat?.color || C.terra}18, ${cat?.color || C.terra}30)`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          border: `2px solid ${cat?.color || C.gold}33`,
+          border: `1.5px solid ${cat?.color || C.terra}30`,
         }}>
           {s.logo_url ? (
             <img src={s.logo_url} alt={s.shop_name} loading="lazy"
               style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <span style={{ fontSize: "18px", fontWeight: 800, color: cat?.color || C.gold }}>
-              {initials(s.shop_name)}
-            </span>
+            <svg viewBox="0 0 120 120" width="30" height="30" opacity="0.7">
+              <path d="M24 52 L60 28 L96 52" stroke={cat?.color || C.terra} strokeWidth="8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M28 52 Q36 60 44 52 Q52 60 60 52 Q68 60 76 52 Q84 60 92 52" stroke={cat?.color || C.terra} strokeWidth="5" fill="none" strokeLinecap="round" />
+              <rect x="38" y="56" width="44" height="30" rx="4" fill="none" stroke={cat?.color || C.terra} strokeWidth="5" />
+              <rect x="50" y="64" width="20" height="22" rx="3" fill={cat?.color || C.gold} opacity="0.35" />
+            </svg>
           )}
         </div>
         <p style={{ fontSize: "13px", fontWeight: 700, color: C.dark, marginBottom: "3px",
@@ -315,7 +322,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
 
   const t = T[lang];
 
-  const featuredProducts = useMemo(() => initialProducts.slice(0, 8), [initialProducts]);
+  const featuredProducts = useMemo(() => initialProducts.filter(p => p.photo_url).slice(0, 8), [initialProducts]);
   const featuredShops = useMemo(() => initialShops.slice(0, 10), [initialShops]);
   const totalShops = initialShops.length;
 
@@ -366,9 +373,9 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
   return (
     <div style={{ background: C.bg, overflowX: "hidden", minHeight: "100vh" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&family=Noto+Sans+Ethiopic:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Plus Jakarta Sans', 'Noto Sans Ethiopic', system-ui, sans-serif; }
+        body { font-family: 'DM Sans', 'Noto Sans Ethiopic', system-ui, sans-serif; }
 
         /* Animations */
         @keyframes fadeUp   { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
@@ -394,7 +401,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         .catpill:hover { transform: translateY(-1px); }
 
         .cta-btn { transition: all .25s cubic-bezier(.16,1,.3,1); }
-        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(192,72,32,.35); }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,107,53,.4); }
         .cta-btn:active { transform: scale(0.97); }
 
         .ghost-btn { transition: all .2s ease; }
@@ -414,7 +421,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         /* Ethiopian cross pattern */
         .eth-pattern {
           background-image: url("data:image/svg+xml,${encodeURIComponent(
-            '<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg"><path d="M16 4 L18 14 L28 16 L18 18 L16 28 L14 18 L4 16 L14 14 Z" fill="none" stroke="%23C8891A" stroke-width="1" opacity="0.18"/></svg>'
+            '<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg"><path d="M16 4 L18 14 L28 16 L18 18 L16 28 L14 18 L4 16 L14 14 Z" fill="none" stroke="%23FFB800" stroke-width="1" opacity="0.18"/></svg>'
           )}");
           background-size: 32px 32px;
         }
@@ -436,17 +443,16 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{
-            width: "34px", height: "34px", borderRadius: "10px",
-            background: `linear-gradient(135deg, ${C.terra}, ${C.gold})`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0,
-          }}>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#fff" strokeWidth="2" strokeLinejoin="round" />
-              <path d="M9 22V12h6v10" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </div>
+          <svg viewBox="0 0 120 120" width="34" height="34" style={{ flexShrink: 0 }}>
+            <circle cx="60" cy="60" r="58" fill="#FF6B35" />
+            <path d="M24 52 L60 28 L96 52" stroke="#fff" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M28 52 Q36 60 44 52 Q52 60 60 52 Q68 60 76 52 Q84 60 92 52" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" />
+            <rect x="38" y="56" width="44" height="30" rx="3" fill="none" stroke="#fff" strokeWidth="3" />
+            <rect x="50" y="64" width="20" height="22" rx="2" fill="#FFB800" opacity="0.3" />
+            <circle cx="44" cy="62" r="2.5" fill="#FFB800" />
+            <circle cx="76" cy="62" r="2.5" fill="#FFB800" />
+            <path d="M88 36 L90 32 L92 36 L96 38 L92 40 L90 44 L88 40 L84 38Z" fill="#FFB800" opacity="0.9" />
+          </svg>
           <span style={{ fontSize: "19px", fontWeight: 800, color: C.dark, letterSpacing: "-0.03em" }}>
             souk<span style={{ color: C.terra }}>.</span>et
           </span>
@@ -513,7 +519,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         position: "relative",
         padding: "64px 28px 56px",
         overflow: "hidden",
-        background: "linear-gradient(160deg, #1A0A04 0%, #2D1206 35%, #3D1C0A 60%, #4A2510 80%, #3A1A08 100%)",
+        background: "linear-gradient(160deg, #0A0A0F 0%, #140806 35%, #1E0C08 60%, #2A1009 80%, #140806 100%)",
       }}>
         {/* Subtle grain overlay */}
         <div style={{
@@ -533,7 +539,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         <div style={{
           position: "absolute", bottom: "-60px", left: "-60px",
           width: "320px", height: "320px",
-          background: `radial-gradient(circle, #FF8C3020 0%, transparent 60%)`,
+          background: `radial-gradient(circle, #FF6B3528 0%, transparent 60%)`,
           pointerEvents: "none",
         }} />
         {/* Ethiopian cross pattern overlay */}
@@ -794,7 +800,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       ══════════════════════════════════════ */}
       <section style={{
         margin: "24px 20px",
-        background: `linear-gradient(135deg, ${C.dark} 0%, #2D1A08 100%)`,
+        background: `linear-gradient(135deg, ${C.dark} 0%, #160909 100%)`,
         borderRadius: "28px",
         padding: "40px 28px",
         position: "relative",
@@ -812,7 +818,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
             <h2 style={{ fontSize: "22px", fontWeight: 800, color: "white", letterSpacing: "-0.02em" }}>
               {t.openIn3}{" "}
               <span style={{ color: C.gold }}>{t.openIn3Bold}</span>
-              {lang === "am" ? " ክፈት" : ""}
+              {lang === "am" ? " ክፈቱ" : ""}
             </h2>
           </div>
 
@@ -854,10 +860,10 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
               marginTop: "32px",
               padding: "16px 28px", borderRadius: "16px",
-              background: `linear-gradient(135deg, ${C.gold}, #A86E10)`,
+              background: `linear-gradient(135deg, ${C.terra}, #E85D2A)`,
               color: "white", fontWeight: 700, fontSize: "15px",
               textDecoration: "none",
-              boxShadow: `0 6px 24px ${C.gold}50`,
+              boxShadow: `0 6px 24px ${C.terra}50`,
             }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.07-.18c-.08-.05-.19-.03-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.46-.01.06.01.24 0 .37z" />
@@ -994,8 +1000,10 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                           <div style={{ position: "relative", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
                             {p.photo_url ? (
                               <img src={p.photo_url} alt={p.name} loading="lazy"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                                 style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            ) : (
+                            ) : null}
+                            {!p.photo_url && (
                               <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
                                 justifyContent: "center" }}>
                                 <span style={{ fontSize: "28px", opacity: 0.3 }}>📦</span>
@@ -1071,16 +1079,16 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         <div style={{ position: "relative", maxWidth: "400px" }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-            <div style={{
-              width: "34px", height: "34px", borderRadius: "10px",
-              background: `linear-gradient(135deg, ${C.terra}, ${C.gold})`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#fff" strokeWidth="2" strokeLinejoin="round" />
-                <path d="M9 22V12h6v10" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
+            <svg viewBox="0 0 120 120" width="34" height="34" style={{ flexShrink: 0 }}>
+              <circle cx="60" cy="60" r="58" fill="#FF6B35" />
+              <path d="M24 52 L60 28 L96 52" stroke="#fff" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M28 52 Q36 60 44 52 Q52 60 60 52 Q68 60 76 52 Q84 60 92 52" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" />
+              <rect x="38" y="56" width="44" height="30" rx="3" fill="none" stroke="#fff" strokeWidth="3" />
+              <rect x="50" y="64" width="20" height="22" rx="2" fill="#FFB800" opacity="0.3" />
+              <circle cx="44" cy="62" r="2.5" fill="#FFB800" />
+              <circle cx="76" cy="62" r="2.5" fill="#FFB800" />
+              <path d="M88 36 L90 32 L92 36 L96 38 L92 40 L90 44 L88 40 L84 38Z" fill="#FFB800" opacity="0.9" />
+            </svg>
             <span style={{ fontSize: "20px", fontWeight: 800, color: "white", letterSpacing: "-0.03em" }}>
               souk<span style={{ color: C.terra }}>.</span>et
             </span>

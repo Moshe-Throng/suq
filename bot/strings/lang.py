@@ -12,9 +12,8 @@ _lang_cache: dict[int, str] = {}
 
 
 def seed_lang(user_id: int, lang: str) -> None:
-    """Seed the language cache from a DB record (only if not already cached)."""
-    if user_id not in _lang_cache:
-        _lang_cache[user_id] = lang
+    """Seed the language cache from a DB record. Always overwrites with DB value."""
+    _lang_cache[user_id] = lang
 
 
 def get_lang(user_id: int) -> str:

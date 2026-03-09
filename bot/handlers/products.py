@@ -32,12 +32,16 @@ _CLEANUP_KEYS = (
 async def add_entry(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Entry point for /add — ask for photo."""
     user = update.effective_user
-    t = s(user.id)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
+        t = s(user.id)
         await update.message.reply_text(t.ERROR)
         return ConversationHandler.END
+
+    from bot.strings.lang import seed_lang
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     context.user_data["shop_id"] = shop["id"]
     context.user_data["listing_type"] = shop.get("shop_type", "product")
@@ -53,12 +57,16 @@ async def add_entry_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    t = s(user.id)
 
     shop = await run_sync(get_shop, user.id)
     if not shop:
+        t = s(user.id)
         await query.edit_message_text(t.ERROR)
         return ConversationHandler.END
+
+    from bot.strings.lang import seed_lang
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     context.user_data["shop_id"] = shop["id"]
     context.user_data["listing_type"] = shop.get("shop_type", "product")
@@ -84,6 +92,17 @@ async def recv_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     prompt = getattr(t, "ASK_SERVICE_NAME", t.ASK_PRODUCT_NAME) if is_service else t.ASK_PRODUCT_NAME
     await update.message.reply_text(prompt)
     return NAME
+
+
+async def remind_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """User typed /add again while waiting for a photo — remind them."""
+    user = update.effective_user
+    t = s(user.id)
+    is_service = context.user_data.get("listing_type") == "service"
+    prompt = getattr(t, "ASK_SERVICE_PHOTO", t.ASK_PRODUCT_PHOTO) if is_service else t.ASK_PRODUCT_PHOTO
+    reminder = getattr(t, "REMIND_PHOTO", None) or f"📸 {prompt}\n\n(/cancel ለመሰረዝ)"
+    await update.message.reply_text(reminder)
+    return PHOTO
 
 
 async def recv_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -337,12 +356,13 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /catalog — formatted product list for sharing in chats/channels."""
     user = update.effective_user
-    t = s(user.id)
-
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await update.message.reply_text(t.ERROR)
+        await update.message.reply_text(s(user.id).ERROR)
         return
+    from bot.strings.lang import seed_lang
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     products = await run_sync(get_products, shop["id"])
     if not products:
@@ -389,12 +409,13 @@ async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def list_products(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /products — list seller's items."""
     user = update.effective_user
-    t = s(user.id)
-
     shop = await run_sync(get_shop, user.id)
     if not shop:
-        await update.message.reply_text(t.ERROR)
+        await update.message.reply_text(s(user.id).ERROR)
         return
+    from bot.strings.lang import seed_lang
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     is_service = shop.get("shop_type") == "service"
     products = await run_sync(get_products, shop["id"])
@@ -495,7 +516,10 @@ def build_add_product_conv() -> ConversationHandler:
             CallbackQueryHandler(add_entry_callback, pattern="^menu_add$"),
         ],
         states={
-            PHOTO: [MessageHandler(filters.PHOTO, recv_photo)],
+            PHOTO: [
+                MessageHandler(filters.PHOTO, recv_photo),
+                CommandHandler("add", remind_photo),
+            ],
             NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, recv_name)],
             PRICE_TYPE: [CallbackQueryHandler(recv_price_type, pattern="^ptype_")],
             PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, recv_price)],

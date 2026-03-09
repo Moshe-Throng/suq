@@ -56,14 +56,13 @@ logger = logging.getLogger("suq")
 # ── Bot menu commands ─────────────────────────────────────────
 
 COMMANDS_EN = [
-    BotCommand("start", "Main menu"),
     BotCommand("add", "Add a product or service"),
     BotCommand("products", "View your items"),
     BotCommand("orders", "View inquiries"),
     BotCommand("shop", "Your shop link"),
+    BotCommand("catalog", "Share product catalog"),
     BotCommand("language", "Change language"),
     BotCommand("help", "List commands"),
-    BotCommand("catalog", "Share product catalog"),
 ]
 
 

@@ -178,10 +178,10 @@ export default function ProductDetailPage() {
 
   /* ─── Loading ──────────────────────────── */
   if (loading) return (
-    <div style={{ minHeight: "100vh", background: "#FFFCF8" }}>
+    <div style={{ minHeight: "100vh", background: "#FFF8F3" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap');
-        * { font-family: 'Plus Jakarta Sans', 'Noto Sans Ethiopic', system-ui, sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap');
+        * { font-family: 'DM Sans', 'Noto Sans Ethiopic', system-ui, sans-serif; }
       `}</style>
       <div style={{ height: "56px", background: "white", borderBottom: "1px solid #F3F4F6" }} />
       <div style={{ aspectRatio: "4/3", background: "#F3F4F6", animation: "pulse 1.5s ease-in-out infinite" }} />
@@ -197,13 +197,13 @@ export default function ProductDetailPage() {
   /* ─── Error ──────────────────────────── */
   if (error || !product || !shop) return (
     <div style={{
-      minHeight: "100vh", background: "#FFFCF8",
+      minHeight: "100vh", background: "#FFF8F3",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: "24px",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'DM Sans', system-ui, sans-serif; }
       `}</style>
       <div style={{ textAlign: "center" }}>
         <p style={{ fontSize: "40px", marginBottom: "12px" }}>😕</p>
@@ -219,10 +219,10 @@ export default function ProductDetailPage() {
 
   /* ─── Main render ──────────────────────── */
   return (
-    <div style={{ minHeight: "100vh", background: "#FFFCF8" }}>
+    <div style={{ minHeight: "100vh", background: "#FFF8F3" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap');
-        * { font-family: 'Plus Jakarta Sans', 'Noto Sans Ethiopic', system-ui, sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap');
+        * { font-family: 'DM Sans', 'Noto Sans Ethiopic', system-ui, sans-serif; }
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
         @keyframes scaleIn { from { opacity:0; } to { opacity:1; } }
@@ -237,8 +237,8 @@ export default function ProductDetailPage() {
       {/* ═══ Top bar ═══ */}
       <div style={{
         position: "sticky", top: 0, zIndex: 30,
-        background: "rgba(255,252,248,0.95)", backdropFilter: "blur(12px)",
-        borderBottom: "1px solid #F3F4F6",
+        background: "rgba(255,248,243,0.96)", backdropFilter: "blur(12px)",
+        borderBottom: "1px solid #FFCDB4",
         padding: "12px 16px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
@@ -268,30 +268,33 @@ export default function ProductDetailPage() {
       </div>
 
       {/* ═══ Product photo ═══ */}
-      <div className="fade-in" style={{
-        width: "100%", maxHeight: "60vh", overflow: "hidden",
-        background: "#F3F4F6",
-      }}>
-        {product.photo_url ? (
-          <img
-            src={product.photo_url}
-            alt={product.name}
-            style={{ width: "100%", height: "100%", objectFit: "cover", maxHeight: "60vh" }}
-            fetchPriority="high"
-          />
-        ) : (
-          <div style={{
-            width: "100%", aspectRatio: "4/3",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "linear-gradient(135deg, #FFF8F3, #FFF0E6)",
-          }}>
-            <span style={{ fontSize: "48px", opacity: 0.3 }}>📦</span>
-          </div>
-        )}
+      <div className="fade-in" style={{ maxWidth: "600px", margin: "0 auto" }}>
+        <div style={{
+          width: "100%", aspectRatio: "1",
+          overflow: "hidden", background: "#FFE8D6",
+          position: "relative",
+        }}>
+          {product.photo_url ? (
+            <img
+              src={product.photo_url}
+              alt={product.name}
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              fetchPriority="high"
+            />
+          ) : (
+            <div style={{
+              width: "100%", height: "100%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: "linear-gradient(135deg, #FFF8F3, #FFE8D6)",
+            }}>
+              <span style={{ fontSize: "56px", opacity: 0.2 }}>📦</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ═══ Product info ═══ */}
-      <div className="fade-in" style={{ animationDelay: ".1s", padding: "20px 20px 0" }}>
+      <div className="fade-in" style={{ animationDelay: ".1s", padding: "20px 20px 0", maxWidth: "600px", margin: "0 auto" }}>
         {/* Tag + stock badges */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
           {product.tag && (
@@ -364,7 +367,7 @@ export default function ProductDetailPage() {
       </div>
 
       {/* ═══ CTA buttons ═══ */}
-      <div className="fade-in" style={{ animationDelay: ".2s", padding: "20px" }}>
+      <div className="fade-in" style={{ animationDelay: ".2s", padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
         {/* Primary: Telegram deep link */}
         <a
           href={`https://t.me/SoukEtBot?start=contact_${product.id}`}
@@ -407,7 +410,7 @@ export default function ProductDetailPage() {
 
       {/* ═══ More from this shop ═══ */}
       {moreFromShop.length > 0 && (
-        <div className="fade-in" style={{ animationDelay: ".3s", padding: "0 20px 20px" }}>
+        <div className="fade-in" style={{ animationDelay: ".3s", padding: "0 20px 20px", maxWidth: "600px", margin: "0 auto" }}>
           <div style={{
             borderTop: "1px solid #F3F4F6", paddingTop: "20px",
           }}>
@@ -455,7 +458,7 @@ export default function ProductDetailPage() {
 
       {/* ═══ Similar on souk.et ═══ */}
       {similarProducts.length > 0 && (
-        <div className="fade-in" style={{ animationDelay: ".4s", padding: "0 20px 20px" }}>
+        <div className="fade-in" style={{ animationDelay: ".4s", padding: "0 20px 20px", maxWidth: "600px", margin: "0 auto" }}>
           <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "20px" }}>
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
