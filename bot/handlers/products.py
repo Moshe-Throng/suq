@@ -316,7 +316,8 @@ async def _save_product(update, context, user, from_query=False):
 
         template_style = shop.get("template_style", "clean") if shop else "clean"
 
-        images = generate_all(
+        images = await run_sync(
+            generate_all,
             product_name=name,
             price=price,
             photo_bytes=bytes(photo_bytes),

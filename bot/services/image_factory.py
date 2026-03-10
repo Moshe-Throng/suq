@@ -12,8 +12,7 @@ Design: clean product card — photo always fully visible, brand accent color pi
 
 import io
 from pathlib import Path
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont
 
 # ── Palette ──────────────────────────────────────────────────
 
@@ -170,10 +169,13 @@ def _fit_contain(photo: Image.Image, tw: int, th: int,
 
 
 def _gradient(w: int, h: int, top: tuple, bot: tuple) -> Image.Image:
-    arr = np.zeros((h, w, 3), dtype=np.uint8)
-    for c in range(3):
-        arr[:, :, c] = np.linspace(top[c], bot[c], h, dtype=np.uint8)[:, np.newaxis]
-    return Image.fromarray(arr)
+    img = Image.new("RGB", (w, h))
+    draw = ImageDraw.Draw(img)
+    for y in range(h):
+        t = y / max(h - 1, 1)
+        color = tuple(int(top[c] + (bot[c] - top[c]) * t) for c in range(3))
+        draw.line([(0, y), (w - 1, y)], fill=color)
+    return img
 
 
 def _resolve_accent(template_style: str | None) -> tuple:
@@ -231,16 +233,11 @@ def _product_card(photo: Image.Image, name: str, price_display: str,
         photo_img = _fit_contain(photo, split, h - bar_h, PHOTO_BG, margin=0.06)
         img.paste(photo_img, (0, bar_h))
 
-        # Thin right-edge shadow on photo
+        # Thin right-edge shadow on photo (simple lines, no numpy)
         for i in range(6):
-            alpha = 20 - i * 3
-            img_arr = np.array(img)
-            x_pos = split - 6 + i
-            if 0 <= x_pos < w:
-                img_arr[:, x_pos] = np.clip(
-                    img_arr[:, x_pos].astype(int) - alpha, 0, 255)
-            img = Image.fromarray(img_arr.astype(np.uint8))
-            draw = ImageDraw.Draw(img)
+            shade = 235 - i * 8
+            draw.line([(split - 6 + i, bar_h), (split - 6 + i, h)],
+                      fill=(shade, shade, shade + 2))
 
         # Info column
         ix = split + pad
