@@ -162,6 +162,9 @@ export default function ShopPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // Logo fallback
+  const [logoFailed, setLogoFailed] = useState(false);
+
   // Debounced search
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const handleSearch = useCallback((value: string) => {
@@ -250,8 +253,8 @@ export default function ShopPage() {
   const shopUrl = `${baseUrl}/${slug}`;
 
   function shareProduct(p: Product) {
-    const url = `${shopUrl}?p=${p.id}`;
-    const text = `Check out ${p.name}${p.price ? ` - ${p.price.toLocaleString()} Birr` : ""} at ${shop?.shop_name}!`;
+    const url = `${shopUrl}/${p.id}`;
+    const text = `${p.name}${p.price ? ` — ${p.price.toLocaleString()} Birr` : ""} at ${shop?.shop_name} on souk.et`;
     if (navigator?.share) { navigator.share({ title: p.name, text, url }).catch(() => {}); }
     else { setShareProductId(shareProductId === p.id ? null : p.id); }
   }
@@ -275,16 +278,15 @@ export default function ShopPage() {
   /* ─── Loading skeleton ──────────────────────────────── */
   if (loading) return (
     <div className="min-h-screen bg-white">
-      <div className="h-44 bg-gradient-to-br from-gray-200 to-gray-100 animate-pulse" />
-      <div className="max-w-2xl mx-auto px-4 -mt-6">
+      <div className="h-40 animate-pulse" style={{ background: "linear-gradient(135deg, #e5e7eb, #f3f4f6)" }} />
+      <div className="max-w-2xl mx-auto px-4 pt-4">
         <div className="grid grid-cols-2 gap-3">
           {[1,2,3,4].map(i => (
-            <div key={i} className="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
+            <div key={i} className="rounded-2xl overflow-hidden animate-pulse">
               <div className="aspect-square bg-gray-100" />
-              <div className="p-3 space-y-2">
+              <div className="pt-2.5 pb-1 space-y-2">
                 <div className="h-4 bg-gray-100 rounded w-3/4" />
-                <div className="h-3 bg-gray-100 rounded w-1/2" />
-                <div className="h-9 bg-gray-100 rounded-lg mt-2" />
+                <div className="h-9 bg-gray-100 rounded-xl" />
               </div>
             </div>
           ))}
@@ -310,10 +312,11 @@ export default function ShopPage() {
 
   const itemCount = products.length;
   const itemLabel = isService ? (itemCount === 1 ? "service" : "services") : (itemCount === 1 ? "item" : "items");
+  const showLogo = shop.logo_url && !logoFailed;
 
   /* ─── Main render ───────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-white">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap');
         * { font-family: 'DM Sans', 'Noto Sans Ethiopic', system-ui, sans-serif; }
@@ -325,73 +328,76 @@ export default function ShopPage() {
         .modal-backdrop { animation: scaleIn 0.2s ease-out; }
         .modal-sheet { animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1); }
         .check-pop { animation: checkPop 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.1s both; }
-        .product-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .product-card:active { transform: scale(0.98); }
-        @media (hover:hover) { .product-card:hover { transform:translateY(-4px); box-shadow:0 12px 24px -8px rgba(0,0,0,0.12); } }
+        .product-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .product-card:active { transform: scale(0.97); }
+        @media (hover:hover) { .product-card:hover { transform:translateY(-3px); box-shadow:0 12px 28px -8px rgba(0,0,0,0.18); } }
         .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .line-clamp-1 { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
         .hide-scrollbar { scrollbar-width:none; }
         .hide-scrollbar::-webkit-scrollbar { display:none; }
       `}</style>
 
-      {/* ═══ Breadcrumb ═══ */}
-      <div style={{ background: "rgba(0,0,0,0.03)", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
-        <div className="max-w-2xl mx-auto px-5 py-2.5">
-          <Link href="/" className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#6B7280", textDecoration: "none" }}>
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-            </svg>
-            souk.et
-          </Link>
-        </div>
-      </div>
+      {/* ═══ Header ═══ */}
+      <header className="relative overflow-hidden" style={{ background: theme.primary }}>
+        <div className="max-w-2xl mx-auto px-5 pt-4 pb-6">
+          {/* Top row: back + share */}
+          <div className="flex items-center justify-between mb-5">
+            <Link href="/" className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+              souk.et
+            </Link>
+            <button onClick={shareShop}
+              className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition-all active:scale-95"
+              style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+              </svg>
+              Share
+            </button>
+          </div>
 
-      {/* ═══ Hero Header ═══ */}
-      <header className="relative overflow-hidden" style={{ background: theme.gradient }}>
-        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
-        <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} />
-        <div className="relative max-w-2xl mx-auto px-5 pt-8 pb-14">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center mb-4"
-            style={{ background: shop.logo_url ? "transparent" : "rgba(255,255,255,0.2)", backdropFilter: shop.logo_url ? undefined : "blur(8px)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
-            {shop.logo_url
-              ? <img src={shop.logo_url} alt={shop.shop_name} className="w-full h-full object-cover" />
-              : <span className="text-2xl font-bold text-white">{shop.shop_name.charAt(0).toUpperCase()}</span>}
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">{shop.shop_name}</h1>
-          {shop.description && (
-            <p className="mt-1.5 text-sm leading-relaxed max-w-md" style={{ color: "rgba(255,255,255,0.75)" }}>{shop.description}</p>
-          )}
-          <div className="flex items-center gap-3 mt-2 flex-wrap">
-            {shop.category && (
-              <span className="inline-flex items-center text-xs px-2.5 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.9)" }}>
-                {shop.category.charAt(0).toUpperCase() + shop.category.slice(1)}
-              </span>
-            )}
-            {shop.location_text && <span className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>📍 {shop.location_text}</span>}
-            <span style={{ color: "rgba(255,255,255,0.5)" }} className="text-sm">{itemCount} {itemLabel}</span>
+          {/* Shop info */}
+          <div className="flex items-center gap-4">
+            {/* Logo */}
+            <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center"
+              style={{ background: showLogo ? "white" : "rgba(255,255,255,0.2)", boxShadow: "0 2px 12px rgba(0,0,0,0.15)" }}>
+              {showLogo ? (
+                <img src={shop.logo_url!} alt={shop.shop_name} className="w-full h-full object-cover"
+                  onError={() => setLogoFailed(true)} />
+              ) : (
+                <span className="text-2xl font-bold text-white">{shop.shop_name.charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-bold text-white tracking-tight leading-tight truncate">{shop.shop_name}</h1>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {shop.category && (
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.9)" }}>
+                    {shop.category.charAt(0).toUpperCase() + shop.category.slice(1)}
+                  </span>
+                )}
+                {shop.location_text && <span className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>📍 {shop.location_text}</span>}
+                <span className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>{itemCount} {itemLabel}</span>
+              </div>
+              {shop.description && (
+                <p className="text-xs mt-1.5 leading-relaxed line-clamp-2" style={{ color: "rgba(255,255,255,0.65)" }}>{shop.description}</p>
+              )}
+            </div>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 40" fill="none" className="w-full block"><path d="M0 40V20Q360 0 720 0T1440 20V40Z" fill="rgb(249 250 251)" /></svg>
-        </div>
+
+        {copiedId === "shop" && (
+          <span className="absolute top-3 right-20 text-xs font-medium px-2.5 py-1 rounded-lg bg-white text-gray-900 shadow-md"
+            style={{ animation: "fadeUp 0.2s ease-out" }}>
+            Link copied!
+          </span>
+        )}
       </header>
 
-      {/* ═══ Search + Filters + About ═══ */}
-      <div className="max-w-2xl mx-auto px-4 -mt-2 relative z-10">
-        {(shop.description || shop.location_text || shop.phone) && (
-          <details className="mb-3">
-            <summary className="cursor-pointer text-xs font-medium text-gray-400 flex items-center gap-1 py-1 select-none">
-              About this shop
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
-            </summary>
-            <div className="mt-2 p-3.5 rounded-xl text-sm space-y-1.5" style={{ background: theme.bgSoft }}>
-              {shop.description && <p className="text-gray-700">{shop.description}</p>}
-              {shop.location_text && <p className="text-gray-500 text-xs">📍 {shop.location_text}</p>}
-              {shop.category && <p className="text-gray-500 text-xs">📂 {shop.category.charAt(0).toUpperCase() + shop.category.slice(1)}</p>}
-              {shop.phone && <p className="text-gray-500 text-xs">📱 {shop.phone}</p>}
-            </div>
-          </details>
-        )}
-
+      {/* ═══ Search + Filters ═══ */}
+      <div className="max-w-2xl mx-auto px-4 pt-4 pb-1">
         {itemCount > 0 && (
           <div className="relative mb-3">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -399,8 +405,8 @@ export default function ShopPage() {
             </svg>
             <input type="text" placeholder={`Search ${isService ? "services" : "products"}...`} value={searchInput}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none transition-shadow text-gray-900 placeholder:text-gray-300"
-              style={{ boxShadow: searchInput ? `0 0 0 2px ${theme.ring}` : undefined }} />
+              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border bg-white focus:outline-none transition-shadow text-gray-900 placeholder:text-gray-300"
+              style={{ borderColor: searchInput ? theme.ring : "#E5E7EB", boxShadow: searchInput ? `0 0 0 2px ${theme.ring}` : "0 1px 2px rgba(0,0,0,0.04)" }} />
             {searchQuery && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{filteredProducts.length} found</span>}
           </div>
         )}
@@ -409,14 +415,14 @@ export default function ShopPage() {
           <div className="flex items-center gap-2 mb-3">
             {availableTags.length > 0 && (
               <div className="flex-1 flex gap-1.5 overflow-x-auto hide-scrollbar -mx-1 px-1 py-0.5">
-                <button onClick={() => setActiveTag(null)} className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-                  style={{ background: activeTag === null ? theme.primary : theme.bgSoft, color: activeTag === null ? "white" : "#6B7280" }}>
+                <button onClick={() => setActiveTag(null)} className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                  style={{ background: activeTag === null ? theme.primary : "transparent", color: activeTag === null ? "white" : "#9CA3AF", border: activeTag === null ? "none" : "1px solid #E5E7EB" }}>
                   All
                 </button>
                 {availableTags.map(tag => (
                   <button key={tag} onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                    className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-                    style={{ background: activeTag === tag ? theme.primary : theme.bgSoft, color: activeTag === tag ? "white" : "#6B7280" }}>
+                    className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                    style={{ background: activeTag === tag ? theme.primary : "transparent", color: activeTag === tag ? "white" : "#9CA3AF", border: activeTag === tag ? "none" : "1px solid #E5E7EB" }}>
                     {TAG_LABELS[tag] || tag.charAt(0).toUpperCase() + tag.slice(1)}
                   </button>
                 ))}
@@ -424,7 +430,7 @@ export default function ShopPage() {
             )}
             {itemCount > 2 && (
               <button onClick={nextSort}
-                className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-all"
+                className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
                 style={{ borderColor: sortBy !== "newest" ? theme.primary : "#E5E7EB", color: sortBy !== "newest" ? theme.primary : "#9CA3AF" }}>
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h6M3 12h10M3 17h4m8-12v14m0 0-3-3m3 3 3-3" />
@@ -437,7 +443,7 @@ export default function ShopPage() {
       </div>
 
       {/* ═══ Products Grid ═══ */}
-      <main className="max-w-2xl mx-auto px-4 pb-24 relative z-10">
+      <main className="max-w-2xl mx-auto px-4 pb-28">
         {itemCount === 0 ? (
           <div className="text-center py-20">
             <div className="w-20 h-20 mx-auto mb-5 rounded-full flex items-center justify-center" style={{ background: theme.bgSoft }}>
@@ -454,15 +460,16 @@ export default function ShopPage() {
             <button onClick={() => { handleSearch(""); setActiveTag(null); }} className="mt-2 text-xs font-medium" style={{ color: theme.primary }}>Clear filters</button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {filteredProducts.map((p, idx) => {
               const priceDisplay = fmtPrice(p.price, p.price_type);
-              const isContactPrice = p.price_type === "contact" || p.price === null;
               const isSoldOut = p.stock === 0;
               return (
-                <div key={p.id} className="product-card bg-white rounded-2xl overflow-hidden card-enter"
-                  style={{ animationDelay: `${idx * 0.06}s`, boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)" }}>
-                  <div className="relative aspect-square bg-gray-50 overflow-hidden cursor-pointer" onClick={() => setSelectedProduct(p)}>
+                <div key={p.id} className="product-card rounded-2xl overflow-hidden card-enter"
+                  style={{ animationDelay: `${idx * 0.05}s`, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+
+                  {/* Photo area — cinematic */}
+                  <div className="relative aspect-square overflow-hidden cursor-pointer" onClick={() => setSelectedProduct(p)}>
                     {p.photo_url ? (
                       <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
@@ -472,20 +479,28 @@ export default function ShopPage() {
                         </svg>
                       </div>
                     )}
+
+                    {/* Dark gradient overlay on photo bottom */}
+                    {p.photo_url && (
+                      <div className="absolute inset-0"
+                        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 40%, transparent 60%)" }} />
+                    )}
+
+                    {/* Sold out overlay */}
                     {isSoldOut && (
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <span className="text-white font-bold text-xs bg-black/60 px-3 py-1 rounded-full">Sold out</span>
+                      <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+                        <span className="text-white font-bold text-xs px-3 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>Sold out</span>
                       </div>
                     )}
+
+                    {/* Low stock badge */}
                     {!isSoldOut && p.stock !== null && p.stock > 0 && p.stock <= 5 && (
                       <div className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#FEF3C7", color: "#92400E" }}>
                         {p.stock} left
                       </div>
                     )}
-                    <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg text-xs font-bold text-white"
-                      style={{ background: isContactPrice ? "#374151" : theme.primary, boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
-                      {priceDisplay}
-                    </div>
+
+                    {/* Share button */}
                     <button onClick={(e) => { e.stopPropagation(); shareProduct(p); }}
                       className="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center transition-all"
                       style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(4px)" }}>
@@ -493,34 +508,52 @@ export default function ShopPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
                       </svg>
                     </button>
+
+                    {/* Share dropdown */}
                     {shareProductId === p.id && (
                       <div className="absolute top-10 left-2 bg-white rounded-xl shadow-lg p-2 z-20 flex flex-col gap-1 min-w-[140px]" onClick={(e) => e.stopPropagation()}>
-                        <a href={`https://wa.me/?text=${encodeURIComponent(`${p.name}${p.price ? ` - ${p.price.toLocaleString()} Birr` : ""} at ${shop.shop_name} ${shopUrl}?p=${p.id}`)}`}
+                        <a href={`https://wa.me/?text=${encodeURIComponent(`${p.name}${p.price ? ` - ${p.price.toLocaleString()} Birr` : ""} at ${shop.shop_name} ${shopUrl}/${p.id}`)}`}
                           target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50">
                           <span className="text-base">💬</span> WhatsApp
                         </a>
-                        <button onClick={() => copyLink(`${shopUrl}?p=${p.id}`, p.id)}
+                        <button onClick={() => copyLink(`${shopUrl}/${p.id}`, p.id)}
                           className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 text-left">
                           <span className="text-base">📋</span> {copiedId === p.id ? "Copied!" : "Copy Link"}
                         </button>
                       </div>
                     )}
-                    {p.tag && (
+
+                    {/* Product name + price on gradient */}
+                    {p.photo_url && (
+                      <div className="absolute bottom-0 left-0 right-0 px-3 pb-2.5 pt-6">
+                        <p className="text-white font-bold text-sm leading-tight line-clamp-1 drop-shadow-sm">{p.name}</p>
+                        <p className="text-white font-bold text-xs mt-0.5" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>{priceDisplay}</p>
+                      </div>
+                    )}
+
+                    {/* Tag */}
+                    {p.tag && !p.photo_url && (
                       <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-medium"
-                        style={{ background: "rgba(255,255,255,0.85)", color: "#374151", backdropFilter: "blur(4px)" }}>
+                        style={{ background: "rgba(255,255,255,0.85)", color: "#374151" }}>
                         {TAG_LABELS[p.tag] || p.tag}
                       </div>
                     )}
                   </div>
-                  <div className="p-3">
-                    <h2 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2 cursor-pointer" onClick={() => setSelectedProduct(p)}>{p.name}</h2>
-                    {p.description && <p className="text-gray-400 text-xs mt-1 line-clamp-2 leading-relaxed">{p.description}</p>}
+
+                  {/* Info below photo */}
+                  <div className="px-3 pt-2 pb-2.5" style={{ background: "white" }}>
+                    {!p.photo_url && (
+                      <>
+                        <h2 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-1">{p.name}</h2>
+                        <p className="text-xs font-bold mt-0.5" style={{ color: theme.primary }}>{priceDisplay}</p>
+                      </>
+                    )}
                     <button onClick={() => isSoldOut ? null : openInquiry(p)} disabled={isSoldOut}
-                      className="w-full mt-3 py-2 rounded-xl text-white text-sm font-semibold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full mt-1.5 py-2 rounded-xl text-white text-xs font-semibold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ background: isSoldOut ? "#D1D5DB" : theme.primary }}
                       onMouseEnter={(e) => { if (!isSoldOut) e.currentTarget.style.background = theme.primaryDark; }}
                       onMouseLeave={(e) => { if (!isSoldOut) e.currentTarget.style.background = theme.primary; }}>
-                      {isSoldOut ? "Sold Out" : isContactPrice ? "Inquire" : (isService ? "Book Now" : "Buy Now")}
+                      {isSoldOut ? "Sold Out" : (p.price_type === "contact" ? "Inquire" : (isService ? "Book Now" : "Buy Now"))}
                     </button>
                   </div>
                 </div>
@@ -528,12 +561,59 @@ export default function ShopPage() {
             })}
           </div>
         )}
+
+        {/* ═══ More on souk.et (cross-sell) ═══ */}
+        {crossSell.length > 0 && (
+          <div className="mt-8 pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold text-gray-900">More on souk.et</h2>
+              {shop.category && (
+                <Link href={`/?category=${shop.category}`} className="text-xs font-semibold" style={{ color: theme.primary, textDecoration: "none" }}>
+                  Browse all →
+                </Link>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {crossSell.map((p) => (
+                <Link key={p.id} href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className="product-card rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                    <div className="relative aspect-square overflow-hidden">
+                      {p.photo_url ? (
+                        <>
+                          <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)" }} />
+                          <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2">
+                            <p className="text-white font-bold text-xs leading-tight line-clamp-1">{p.name}</p>
+                            <p className="text-white text-[10px] mt-0.5 font-bold">{fmtPrice(p.price, p.price_type)}</p>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #FFF8F3, #FFF0E6)" }}>
+                          <span style={{ fontSize: "24px", opacity: 0.3 }}>📦</span>
+                        </div>
+                      )}
+                    </div>
+                    {!p.photo_url && (
+                      <div className="p-2.5">
+                        <p className="font-semibold text-gray-900 text-xs leading-tight line-clamp-1">{p.name}</p>
+                        <p className="text-xs font-bold mt-0.5" style={{ color: theme.primary }}>{fmtPrice(p.price, p.price_type)}</p>
+                      </div>
+                    )}
+                    <div className="px-2.5 pb-2">
+                      <p className="text-[10px] text-gray-400">{p.shop_name}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* ═══ Sticky Action Bar ═══ */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 border-t border-gray-100"
-        style={{ backdropFilter: "blur(12px)", paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="max-w-2xl mx-auto px-4 py-2.5 flex items-center gap-2 relative">
+      <div className="fixed bottom-0 left-0 right-0 z-30"
+        style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderTop: "1px solid rgba(0,0,0,0.06)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="max-w-2xl mx-auto px-4 py-2.5 flex items-center gap-2">
           {shop.telegram_username && (
             <a href={`https://t.me/${shop.telegram_username}`} target="_blank" rel="noopener noreferrer"
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-semibold transition-all active:scale-95"
@@ -551,70 +631,21 @@ export default function ShopPage() {
               📞 Call
             </a>
           )}
-          <button onClick={shareShop}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-500 transition-all active:scale-95">
-            📤 Share
-          </button>
-          {copiedId === "shop" && (
-            <span className="absolute -top-8 right-4 text-xs font-medium px-2 py-1 rounded-lg bg-gray-900 text-white">Link copied!</span>
-          )}
         </div>
       </div>
 
-      {/* ═══ More on souk.et (cross-sell) ═══ */}
-      {crossSell.length > 0 && (
-        <div className="max-w-2xl mx-auto px-4 pb-6 relative z-10">
-          <div className="border-t border-gray-100 pt-5">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-gray-900">More on souk.et</h2>
-              {shop.category && (
-                <Link href={`/?category=${shop.category}`} className="text-xs font-semibold" style={{ color: theme.primary, textDecoration: "none" }}>
-                  Browse all →
-                </Link>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {crossSell.map((p) => (
-                <Link key={p.id} href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                  <div className="product-card bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-                    <div className="aspect-square bg-gray-50 overflow-hidden">
-                      {p.photo_url ? (
-                        <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #FFF8F3, #FFF0E6)" }}>
-                          <span style={{ fontSize: "24px", opacity: 0.3 }}>📦</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-2.5">
-                      <p className="font-semibold text-gray-900 text-xs leading-tight line-clamp-2">{p.name}</p>
-                      <p className="text-xs font-bold mt-0.5" style={{ color: "#FF6B35" }}>{fmtPrice(p.price, p.price_type)}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">{p.shop_name}</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ═══ Footer ═══ */}
-      <footer className="text-center pb-24 pt-6 border-t border-gray-100">
-        <div className="space-y-2.5">
-          <p className="text-sm font-bold text-gray-900">{shop.shop_name} <span className="font-normal text-gray-400">on</span> <span style={{ color: "#FF6B35" }}>souk.et</span></p>
-          <div className="flex items-center justify-center gap-4">
-            <Link href="/" className="text-xs text-gray-400 font-medium" style={{ textDecoration: "none" }}>
-              Browse more shops →
-            </Link>
-          </div>
-          <div>
-            <a href="https://t.me/SoukEtBot" target="_blank" rel="noopener noreferrer"
-              className="text-xs font-medium transition-colors" style={{ color: theme.accent }}>
-              Create your own shop — free →
-            </a>
-          </div>
+      <footer className="text-center pb-28 pt-6 max-w-2xl mx-auto px-4">
+        <p className="text-sm font-bold text-gray-900">{shop.shop_name} <span className="font-normal text-gray-400">on</span> <span style={{ color: theme.primary }}>souk.et</span></p>
+        <div className="flex items-center justify-center gap-4 mt-2">
+          <Link href="/" className="text-xs text-gray-400 font-medium" style={{ textDecoration: "none" }}>
+            Browse more shops →
+          </Link>
         </div>
+        <a href="https://t.me/SoukEtBot" target="_blank" rel="noopener noreferrer"
+          className="inline-block text-xs font-medium mt-2 transition-colors" style={{ color: theme.accent }}>
+          Create your own shop — free →
+        </a>
       </footer>
 
       {/* ═══ Product Detail Modal ═══ */}
@@ -625,14 +656,16 @@ export default function ShopPage() {
           <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl modal-sheet sm:mx-4 max-h-[85vh] overflow-y-auto">
             <div className="flex justify-center pt-3 sm:hidden"><div className="w-10 h-1 rounded-full bg-gray-200" /></div>
             <button onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-white hover:bg-black/40 transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center text-white transition-colors"
+              style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
             </button>
             {selectedProduct.photo_url && (
-              <div className="w-full aspect-[4/3] overflow-hidden rounded-t-3xl">
+              <div className="w-full aspect-[4/3] overflow-hidden rounded-t-3xl relative">
                 <img src={selectedProduct.photo_url} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 40%)" }} />
               </div>
             )}
             <div className="p-5">
@@ -657,12 +690,12 @@ export default function ShopPage() {
                 {selectedProduct.stock === 0 ? "Sold Out" : (selectedProduct.price_type === "contact" ? "Send Inquiry" : isService ? "Book Now" : "Buy Now")}
               </button>
               <div className="flex items-center gap-3 mt-4 justify-center">
-                <a href={`https://wa.me/?text=${encodeURIComponent(`${selectedProduct.name}${selectedProduct.price ? ` - ${selectedProduct.price.toLocaleString()} Birr` : ""} at ${shop.shop_name} ${shopUrl}?p=${selectedProduct.id}`)}`}
+                <a href={`https://wa.me/?text=${encodeURIComponent(`${selectedProduct.name}${selectedProduct.price ? ` - ${selectedProduct.price.toLocaleString()} Birr` : ""} at ${shop.shop_name} ${shopUrl}/${selectedProduct.id}`)}`}
                   target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50 border border-gray-100">
                   💬 WhatsApp
                 </a>
-                <button onClick={() => copyLink(`${shopUrl}?p=${selectedProduct.id}`, `detail-${selectedProduct.id}`)}
+                <button onClick={() => copyLink(`${shopUrl}/${selectedProduct.id}`, `detail-${selectedProduct.id}`)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50 border border-gray-100">
                   📋 {copiedId === `detail-${selectedProduct.id}` ? "Copied!" : "Copy Link"}
                 </button>

@@ -7,7 +7,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { productId } = await params;
+  const { productId, shop: shopSlug } = await params;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://web-theta-plum-56.vercel.app";
   const supabase = getServerClient();
 
   const { data: product } = await supabase
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `${product.name}${priceStr}`,
       description: `at ${shopName} on souk.et`,
-      images: product.photo_url ? [{ url: product.photo_url }] : [],
+      images: [{ url: `${baseUrl}/api/og/product/${productId}`, width: 1200, height: 630 }],
       type: "website",
       siteName: "souk.et",
     },
@@ -50,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title: `${product.name}${priceStr}`,
       description: `at ${shopName} on souk.et`,
-      images: product.photo_url ? [product.photo_url] : [],
+      images: [`${baseUrl}/api/og/product/${productId}`],
     },
     other: {
       "product:price:amount": product.price?.toString() || "",
