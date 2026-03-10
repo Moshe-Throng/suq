@@ -111,6 +111,9 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     elif data == "menu_share":
         await share_shop_card(update, context)
 
+    elif data == "menu_manage_web":
+        await _handle_manage_web(query)
+
     # ── Settings sub-menu ────────────────────────────────────
 
     elif data == "settings_color":
@@ -158,3 +161,32 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     else:
         await query.answer("Unknown action")
+
+
+async def _handle_manage_web(query) -> None:
+    """Generate a signed login URL and send it as an inline button."""
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    from bot.services.web_auth import generate_admin_token
+
+    await query.answer()
+    user = query.from_user
+    shop = await run_sync(get_shop, user.id)
+    if not shop:
+        await query.edit_message_text("❌ Shop not found.")
+        return
+
+    token = generate_admin_token(user.id, shop["id"], shop["shop_slug"])
+    base = catalog_link("").rstrip("/")
+    login_url = f"{base}/api/auth/telegram?token={token}"
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🌐 Open Shop Manager", url=login_url)],
+    ])
+    t = s(user.id)
+    await query.edit_message_text(
+        f"🌐 <b>Manage on Web</b>\n\n"
+        f"Tap below to open your shop dashboard in the browser.\n"
+        f"This link expires in 5 minutes.",
+        parse_mode="HTML",
+        reply_markup=keyboard,
+    )

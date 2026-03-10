@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const ProductForm = dynamic(() => import("./admin/product-form"), { ssr: false });
+const ShopSettings = dynamic(() => import("./admin/shop-settings"), { ssr: false });
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -165,6 +169,15 @@ export default function ShopPage() {
   // Logo fallback
   const [logoFailed, setLogoFailed] = useState(false);
 
+  // Admin state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminShopId, setAdminShopId] = useState<string | null>(null);
+  const [adminLoading, setAdminLoading] = useState(true);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showShopSettings, setShowShopSettings] = useState(false);
+  const router = useRouter();
+
   // Debounced search
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const handleSearch = useCallback((value: string) => {
@@ -218,6 +231,45 @@ export default function ShopPage() {
     }
     load();
   }, [slug]);
+
+  // Check admin session
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then(r => r.json())
+      .then(data => {
+        if (data.authenticated && data.shopSlug === slug) {
+          setIsAdmin(true);
+          setAdminShopId(data.shopId);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAdminLoading(false));
+  }, [slug]);
+
+  async function adminLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setIsAdmin(false);
+    setAdminShopId(null);
+  }
+
+  async function adminRefresh() {
+    // Reload shop + products after admin action
+    const res = await fetch(`/api/shop/${slug}`);
+    if (res.ok) {
+      const data = await res.json();
+      setShop(data.shop);
+      setProducts(data.products);
+    }
+    setEditProduct(null);
+    setShowAddProduct(false);
+    setShowShopSettings(false);
+  }
+
+  async function adminDeleteProduct(productId: string) {
+    if (!confirm("Delete this product?")) return;
+    await fetch(`/api/admin/products/${productId}`, { method: "DELETE" });
+    adminRefresh();
+  }
 
   async function submitInquiry() {
     if (!inquiryForm || !buyerName.trim()) return;
@@ -396,6 +448,31 @@ export default function ShopPage() {
         )}
       </header>
 
+      {/* ═══ Admin Toolbar ═══ */}
+      {isAdmin && !adminLoading && (
+        <div className="max-w-2xl mx-auto px-4 pt-3 pb-1">
+          <div className="flex items-center gap-2 p-2.5 rounded-xl" style={{ background: theme.bgSoft }}>
+            <span className="text-xs font-semibold flex-1" style={{ color: theme.primary }}>
+              ✏️ Admin Mode
+            </span>
+            <button onClick={() => setShowAddProduct(true)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all active:scale-95"
+              style={{ background: theme.primary }}>
+              + Add
+            </button>
+            <button onClick={() => setShowShopSettings(true)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95"
+              style={{ borderColor: theme.primary, color: theme.primary }}>
+              Settings
+            </button>
+            <button onClick={adminLogout}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 border border-gray-200 transition-all active:scale-95">
+              Log out
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ═══ Search + Filters ═══ */}
       <div className="max-w-2xl mx-auto px-4 pt-4 pb-1">
         {itemCount > 0 && (
@@ -501,6 +578,7 @@ export default function ShopPage() {
                     )}
 
                     {/* Share button */}
+                    {!isAdmin && (
                     <button onClick={(e) => { e.stopPropagation(); shareProduct(p); }}
                       className="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center transition-all"
                       style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(4px)" }}>
@@ -508,6 +586,27 @@ export default function ShopPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
                       </svg>
                     </button>
+                    )}
+
+                    {/* Admin edit/delete buttons */}
+                    {isAdmin && (
+                      <div className="absolute top-2 left-2 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => setEditProduct(p)}
+                          className="w-7 h-7 rounded-full flex items-center justify-center"
+                          style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(4px)" }}>
+                          <svg className="w-3.5 h-3.5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                          </svg>
+                        </button>
+                        <button onClick={() => adminDeleteProduct(p.id)}
+                          className="w-7 h-7 rounded-full flex items-center justify-center"
+                          style={{ background: "rgba(239,68,68,0.9)" }}>
+                          <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
 
                     {/* Share dropdown */}
                     {shareProductId === p.id && (
@@ -788,6 +887,54 @@ export default function ShopPage() {
             )}
           </div>
         </div>
+      )}
+      {/* ═══ Admin: Floating Add Button ═══ */}
+      {isAdmin && !showAddProduct && !editProduct && !showShopSettings && (
+        <button onClick={() => setShowAddProduct(true)}
+          className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-2xl font-light transition-all active:scale-90"
+          style={{ background: theme.primary, boxShadow: `0 4px 20px ${theme.primary}44` }}>
+          +
+        </button>
+      )}
+
+      {/* ═══ Admin: Product Form Modal ═══ */}
+      {(showAddProduct || editProduct) && (
+        <ProductForm
+          product={editProduct ? {
+            id: editProduct.id,
+            name: editProduct.name,
+            price: editProduct.price,
+            price_type: editProduct.price_type || "fixed",
+            description: editProduct.description || "",
+            tag: editProduct.tag || "",
+            stock: editProduct.stock,
+            photo_url: editProduct.photo_url,
+            listing_type: editProduct.listing_type || "product",
+          } : undefined}
+          tags={availableTags}
+          themeColor={theme.primary}
+          onSave={adminRefresh}
+          onClose={() => { setEditProduct(null); setShowAddProduct(false); }}
+        />
+      )}
+
+      {/* ═══ Admin: Shop Settings Modal ═══ */}
+      {showShopSettings && shop && (
+        <ShopSettings
+          shop={{
+            shop_name: shop.shop_name,
+            description: shop.description,
+            location_text: shop.location_text,
+            category: shop.category,
+            template_style: shop.template_style,
+            phone: shop.phone,
+            email: null,
+            shop_type: shop.shop_type,
+          }}
+          themeColor={theme.primary}
+          onSave={adminRefresh}
+          onClose={() => setShowShopSettings(false)}
+        />
       )}
     </div>
   );

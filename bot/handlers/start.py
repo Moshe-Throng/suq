@@ -563,6 +563,8 @@ def _seller_keyboard(t, shop: dict | None = None):
 
     inq_btn = getattr(t, "BTN_INQUIRIES", t.BTN_MY_ORDERS)
 
+    web_label = getattr(t, "BTN_MANAGE_WEB", "🌐 Manage on Web")
+
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton(add_btn, callback_data="menu_add"),
@@ -575,6 +577,9 @@ def _seller_keyboard(t, shop: dict | None = None):
         [
             InlineKeyboardButton(t.BTN_SETTINGS, callback_data="menu_settings"),
             InlineKeyboardButton(t.BTN_SHARE_SHOP, callback_data="menu_share"),
+        ],
+        [
+            InlineKeyboardButton(web_label, callback_data="menu_manage_web"),
         ],
     ])
 
