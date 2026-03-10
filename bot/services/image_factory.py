@@ -7,7 +7,8 @@ Formats:
   banner  (1200×628)  — Facebook/Twitter header
   tile    (600×600)   — web catalog card
 
-Design: clean product card — photo always fully visible, brand accent color pill.
+Design: cinematic full-bleed — photo fills canvas, dark gradient overlay,
+white text anchored at the bottom. Brand accent color as accent bar + divider.
 """
 
 import io
@@ -16,13 +17,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 # ── Palette ──────────────────────────────────────────────────
 
-BG           = (250, 250, 250)   # near-white canvas
-PHOTO_BG     = (238, 238, 242)   # subtle gray behind product photo
-WHITE        = (255, 255, 255)
-BLACK        = (20, 20, 24)
-TEXT_DARK    = (22, 22, 28)
-TEXT_GRAY    = (108, 114, 128)
-DIVIDER      = (220, 220, 226)
+WHITE      = (255, 255, 255)
+WHITE_DIM  = (220, 220, 220)   # slightly dimmed white for secondary text
+BLACK      = (0, 0, 0)
 
 # ── Brand color map (template_style → hex) ───────────────────
 
@@ -106,37 +103,8 @@ def _wrap(text: str, font, max_w: int, draw: ImageDraw.Draw) -> list[str]:
     return lines
 
 
-def _draw_text_block(draw, text, font, x, y, max_w, color, max_lines=2, line_gap=1.25) -> int:
-    """Draw wrapped text block. Returns y after last line."""
-    lines = _wrap(text, font, max_w, draw)
-    lh = int(font.size * line_gap)
-    for line in lines[:max_lines]:
-        draw.text((x, y), line, fill=color, font=font)
-        y += lh
-    return y
-
-
-def _center_text(draw, text, font, y, canvas_w, color) -> int:
-    """Draw horizontally centered text. Returns y after line."""
-    bb = draw.textbbox((0, 0), text, font=font)
-    x = (canvas_w - (bb[2] - bb[0])) // 2
-    draw.text((x, y), text, fill=color, font=font)
-    return y + int(font.size * 1.3)
-
-
 def _text_w(draw, text, font) -> int:
     return draw.textbbox((0, 0), text, font=font)[2]
-
-
-def _pill(draw, x, y, text, font, bg, fg, h_pad=20, v_pad=10) -> tuple[int, int]:
-    """Draw a rounded pill. Returns (pill_width, pill_height)."""
-    tw = _text_w(draw, text, font)
-    pw = tw + h_pad * 2
-    ph = font.size + v_pad * 2
-    r = ph // 2
-    draw.rounded_rectangle([x, y, x + pw, y + ph], radius=r, fill=bg)
-    draw.text((x + h_pad, y + v_pad), text, fill=fg, font=font)
-    return pw, ph
 
 
 # ── Photo processing ─────────────────────────────────────────
@@ -146,15 +114,22 @@ def _load_photo(photo_bytes: bytes) -> Image.Image:
     return Image.open(io.BytesIO(photo_bytes)).convert("RGB")
 
 
-def _fit_contain(photo: Image.Image, tw: int, th: int,
-                 bg: tuple = PHOTO_BG, margin: float = 0.05) -> Image.Image:
-    """
-    Scale photo to fit fully within (tw × th) without cropping.
-    Pads the empty area with bg. A small margin keeps the product from
-    touching the edges.
-    """
+def _fit_cover(photo: Image.Image, tw: int, th: int) -> Image.Image:
+    """Scale photo to FILL (tw × th), cropping excess. Center crop."""
     iw, ih = photo.size
-    # Reserve margin inside the box
+    scale = max(tw / iw, th / ih)
+    nw = max(1, int(iw * scale))
+    nh = max(1, int(ih * scale))
+    resized = photo.resize((nw, nh), Image.LANCZOS)
+    x = (nw - tw) // 2
+    y = (nh - th) // 2
+    return resized.crop((x, y, x + tw, y + th))
+
+
+def _fit_contain(photo: Image.Image, tw: int, th: int,
+                 bg: tuple = (238, 238, 242), margin: float = 0.05) -> Image.Image:
+    """Scale photo to fit fully within (tw × th) without cropping."""
+    iw, ih = photo.size
     inner_w = int(tw * (1 - margin * 2))
     inner_h = int(th * (1 - margin * 2))
     scale = min(inner_w / iw, inner_h / ih)
@@ -168,14 +143,20 @@ def _fit_contain(photo: Image.Image, tw: int, th: int,
     return canvas
 
 
-def _gradient(w: int, h: int, top: tuple, bot: tuple) -> Image.Image:
-    img = Image.new("RGB", (w, h))
-    draw = ImageDraw.Draw(img)
-    for y in range(h):
-        t = y / max(h - 1, 1)
-        color = tuple(int(top[c] + (bot[c] - top[c]) * t) for c in range(3))
-        draw.line([(0, y), (w - 1, y)], fill=color)
-    return img
+def _dark_overlay(w: int, h: int, start_fraction: float = 0.40,
+                  max_alpha: int = 215) -> Image.Image:
+    """
+    RGBA image: fully transparent at top, dark at bottom.
+    Used to make white text readable over any photo.
+    """
+    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    start_y = int(h * start_fraction)
+    for y in range(start_y, h):
+        progress = (y - start_y) / max(h - start_y - 1, 1)
+        alpha = int(max_alpha * (progress ** 0.60))  # ease-in curve
+        draw.line([(0, y), (w - 1, y)], fill=(0, 0, 0, alpha))
+    return overlay
 
 
 def _resolve_accent(template_style: str | None) -> tuple:
@@ -191,21 +172,19 @@ def _price_text(price: int | None, price_type: str = "fixed") -> str:
     return f"{price:,} Birr"
 
 
-def _watermark(draw, text: str, canvas_w: int, canvas_h: int) -> None:
-    """Draw a small pill watermark at the bottom center."""
-    font = _regular(max(14, int(canvas_w * 0.018)))
-    tw = _text_w(draw, text, font)
-    pw, ph = tw + 20, font.size + 10
-    px = (canvas_w - pw) // 2
-    py = canvas_h - ph - 12
-    draw.rounded_rectangle([px, py, px + pw, py + ph], radius=ph // 2,
-                            fill=(0, 0, 0))
-    draw.text((px + 10, py + 5), text, fill=(255, 255, 255), font=font)
+def _gradient(w: int, h: int, top: tuple, bot: tuple) -> Image.Image:
+    img = Image.new("RGB", (w, h))
+    draw = ImageDraw.Draw(img)
+    for y in range(h):
+        t = y / max(h - 1, 1)
+        color = tuple(int(top[c] + (bot[c] - top[c]) * t) for c in range(3))
+        draw.line([(0, y), (w - 1, y)], fill=color)
+    return img
 
 
 # ══════════════════════════════════════════════════════════════
-# SINGLE PRODUCT CARD STYLE
-# All 4 formats use this. Layout adapts to aspect ratio.
+# CINEMATIC PRODUCT CARD
+# Photo fills canvas, dark gradient from bottom, white text.
 # ══════════════════════════════════════════════════════════════
 
 
@@ -213,138 +192,144 @@ def _product_card(photo: Image.Image, name: str, price_display: str,
                   desc: str | None, w: int, h: int,
                   shop_slug: str, accent: tuple) -> Image.Image:
 
-    is_banner = w > h * 1.1   # landscape (banner)
-    is_story  = h > w * 1.5   # tall (story)
+    is_banner = w > h * 1.1   # landscape
+    is_story  = h > w * 1.5   # tall portrait
 
-    img = Image.new("RGB", (w, h), BG)
-    draw = ImageDraw.Draw(img)
-    pad = int(w * 0.058)      # ~63px on 1080
-
-    # ── Accent bar (top) ─────────────────────────────────────
-    bar_h = max(5, int(h * 0.004))
-    draw.rectangle([(0, 0), (w, bar_h)], fill=accent)
+    pad = int(w * 0.06)
 
     if is_banner:
-        # ── BANNER layout: photo left, info right ────────────
-        split = int(w * 0.46)           # photo column width
+        # ── BANNER: photo left half, solid brand color right half ──
+        split = int(w * 0.50)
 
-        # Photo area
-        draw.rectangle([(0, bar_h), (split, h)], fill=PHOTO_BG)
-        photo_img = _fit_contain(photo, split, h - bar_h, PHOTO_BG, margin=0.06)
-        img.paste(photo_img, (0, bar_h))
+        img = Image.new("RGB", (w, h), accent)
+        draw = ImageDraw.Draw(img)
 
-        # Thin right-edge shadow on photo (simple lines, no numpy)
-        for i in range(6):
-            shade = 235 - i * 8
-            draw.line([(split - 6 + i, bar_h), (split - 6 + i, h)],
-                      fill=(shade, shade, shade + 2))
+        # Photo side (left) — cover fill
+        photo_cover = _fit_cover(photo, split, h)
+        img.paste(photo_cover, (0, 0))
 
-        # Info column
+        # Thin vertical accent stripe at the split
+        draw.rectangle([(split, 0), (split + 4, h)], fill=accent)
+
+        # Accent bar at very top (left side only, matching photo width)
+        bar_h = max(5, int(h * 0.008))
+        draw.rectangle([(0, 0), (split, bar_h)], fill=accent)
+
+        # Info side (right)
         ix = split + pad
         info_w = w - ix - pad
-        iy = int(h * 0.15)
+        iy = int(h * 0.14)
 
-        f_name = _bold(int(w * 0.034))
-        iy = _draw_text_block(draw, name, f_name, ix, iy, info_w,
-                              TEXT_DARK, max_lines=2, line_gap=1.3)
-        iy += int(h * 0.04)
+        f_name = _bold(int(h * 0.110))
+        for line in _wrap(name, f_name, info_w, draw)[:2]:
+            draw.text((ix, iy), line, fill=WHITE, font=f_name)
+            iy += int(f_name.size * 1.25)
+        iy += int(h * 0.03)
 
-        # Accent divider
-        draw.rectangle([ix, iy, ix + int(info_w * 0.28), iy + 3], fill=accent)
+        # Short accent divider (lighter)
+        div_color = tuple(min(255, c + 80) for c in accent)
+        draw.rectangle([ix, iy, ix + int(info_w * 0.35), iy + 3], fill=div_color)
         iy += int(h * 0.07)
 
         if desc:
-            f_desc = _regular(int(w * 0.019))
-            iy = _draw_text_block(draw, desc, f_desc, ix, iy, info_w,
-                                  TEXT_GRAY, max_lines=2)
-            iy += int(h * 0.03)
+            f_desc = _regular(int(h * 0.058))
+            for line in _wrap(desc, f_desc, info_w, draw)[:2]:
+                draw.text((ix, iy), line, fill=WHITE_DIM, font=f_desc)
+                iy += int(f_desc.size * 1.35)
+            iy += int(h * 0.02)
 
-        # Price pill
-        f_price = _bold(int(w * 0.030))
-        _pill(draw, ix, h - pad - int(w * 0.056),
-              price_display, f_price, accent, WHITE,
-              h_pad=18, v_pad=9)
+        # Price — large, white
+        f_price = _bold(int(h * 0.120))
+        price_y = h - pad - int(f_price.size * 1.1)
+        draw.text((ix, price_y), price_display, fill=WHITE, font=f_price)
 
-    elif is_story:
-        # ── STORY layout: photo top 48%, info bottom 52% ─────
-        photo_h = int(h * 0.48)
-
-        draw.rectangle([(0, bar_h), (w, photo_h)], fill=PHOTO_BG)
-        photo_img = _fit_contain(photo, w, photo_h - bar_h, PHOTO_BG, margin=0.05)
-        img.paste(photo_img, (0, bar_h))
-
-        # Shadow line separating photo from info
-        for i in range(6):
-            gray = 200 + i * 5
-            draw.line([(0, photo_h + i), (w, photo_h + i)], fill=(gray, gray, gray + 4))
-
-        iy = photo_h + int(h * 0.04)
-
-        f_name = _bold(int(w * 0.060))
-        iy = _draw_text_block(draw, name, f_name, pad, iy, w - pad * 2,
-                              TEXT_DARK, max_lines=2, line_gap=1.3)
-        iy += int(h * 0.015)
-
-        if desc:
-            f_desc = _regular(int(w * 0.032))
-            iy = _draw_text_block(draw, desc, f_desc, pad, iy, w - pad * 2,
-                                  TEXT_GRAY, max_lines=2)
-            iy += int(h * 0.015)
-
-        # Accent divider
-        draw.rectangle([pad, iy, pad + int(w * 0.20), iy + 3], fill=accent)
-        iy += int(h * 0.04)
-
-        # Price pill
-        f_price = _bold(int(w * 0.060))
-        _pill(draw, pad, iy, price_display, f_price, accent, WHITE,
-              h_pad=22, v_pad=12)
-        iy += int(w * 0.060) + 24 + int(h * 0.04)
-
-        # CTA
-        f_cta = _bold(int(w * 0.030))
-        cta = "ORDER NOW →" if price_display != "Contact for pricing" else "INQUIRE →"
-        draw.text((pad, iy), cta, fill=accent, font=f_cta)
+        # Watermark bottom-right
+        f_wm = _regular(max(12, int(h * 0.040)))
+        wm = f"souk.et/{shop_slug}" if shop_slug else "souk.et"
+        wm_w = _text_w(draw, wm, f_wm)
+        draw.text((w - pad - wm_w, h - pad // 2 - f_wm.size), wm,
+                  fill=(255, 255, 255, 160) if hasattr(WHITE, '__len__') else WHITE_DIM,
+                  font=f_wm)
 
     else:
-        # ── SQUARE / TILE layout: photo top 56%, info bottom ─
-        photo_h = int(h * 0.56)
+        # ── SQUARE / STORY / TILE: full-bleed cinematic ──────────
 
-        draw.rectangle([(0, bar_h), (w, photo_h)], fill=PHOTO_BG)
-        photo_img = _fit_contain(photo, w, photo_h - bar_h, PHOTO_BG, margin=0.05)
-        img.paste(photo_img, (0, bar_h))
+        # 1. Photo fills entire canvas
+        photo_cover = _fit_cover(photo, w, h)
+        img = photo_cover.convert("RGBA")
 
-        # Shadow line
-        for i in range(5):
-            gray = 202 + i * 6
-            draw.line([(0, photo_h + i), (w, photo_h + i)], fill=(gray, gray, gray + 4))
+        # 2. Dark gradient overlay from ~40% down
+        start_frac = 0.38 if is_story else 0.35
+        overlay = _dark_overlay(w, h, start_fraction=start_frac, max_alpha=220)
+        img.paste(overlay, (0, 0), overlay)
+        img = img.convert("RGB")
+        draw = ImageDraw.Draw(img)
 
-        iy = photo_h + int(h * 0.04)
+        # 3. Short accent bar at top-left (not full width — more intentional)
+        bar_h = max(5, int(h * 0.005))
+        bar_w = int(w * 0.28)
+        draw.rectangle([(pad, 0), (pad + bar_w, bar_h)], fill=accent)
 
-        f_name = _bold(int(w * 0.052))
-        iy = _draw_text_block(draw, name, f_name, pad, iy, w - pad * 2,
-                              TEXT_DARK, max_lines=2, line_gap=1.25)
-        iy += int(h * 0.012)
+        # 4. Text anchored to bottom
+        #    Layout (bottom-up): watermark → price → divider → name
+        f_wm = _regular(max(14, int(w * 0.022)))
+        wm = f"souk.et/{shop_slug}" if shop_slug else "souk.et"
 
-        if desc:
-            f_desc = _regular(int(w * 0.030))
-            iy = _draw_text_block(draw, desc, f_desc, pad, iy, w - pad * 2,
-                                  TEXT_GRAY, max_lines=1)
+        if is_story:
+            f_price = _bold(int(w * 0.085))
+            f_name  = _bold(int(w * 0.068))
+            f_desc  = _regular(int(w * 0.038))
+            name_max_lines = 2
+            line_gap_name  = 1.25
+            line_gap_price = 1.15
+            bottom_pad = int(h * 0.055)
+        else:
+            f_price = _bold(int(w * 0.078))
+            f_name  = _bold(int(w * 0.062))
+            f_desc  = _regular(int(w * 0.032))
+            name_max_lines = 2
+            line_gap_name  = 1.25
+            line_gap_price = 1.15
+            bottom_pad = int(h * 0.050)
 
-        # Price pill anchored near bottom
-        f_price = _bold(int(w * 0.050))
-        pill_h_size = int(w * 0.080)
-        pill_y = h - pad - pill_h_size - int(h * 0.018)
-        tw_price = _text_w(draw, price_display, f_price)
-        pill_w = tw_price + 40
-        draw.rounded_rectangle([pad, pill_y, pad + pill_w, pill_y + pill_h_size],
-                                radius=pill_h_size // 2, fill=accent)
-        v_off = (pill_h_size - f_price.size) // 2
-        draw.text((pad + 20, pill_y + v_off), price_display, fill=WHITE, font=f_price)
+        text_w = w - pad * 2
 
-    # ── Watermark ─────────────────────────────────────────────
-    wm_text = f"souk.et/{shop_slug}" if shop_slug else "souk.et"
-    _watermark(draw, wm_text, w, h)
+        # watermark
+        wm_y = h - bottom_pad - f_wm.size
+        wm_tw = _text_w(draw, wm, f_wm)
+        draw.text((w - pad - wm_tw, wm_y), wm, fill=WHITE_DIM, font=f_wm)
+
+        # price
+        price_y = wm_y - int(f_price.size * line_gap_price) - int(h * 0.008)
+        draw.text((pad, price_y), price_display, fill=WHITE, font=f_price)
+
+        # accent divider
+        div_y = price_y - int(h * 0.028)
+        draw.rectangle([pad, div_y, pad + int(text_w * 0.22), div_y + 3], fill=accent)
+
+        # product name (bottom-up: measure total name block height first)
+        name_lines = _wrap(name, f_name, text_w, draw)[:name_max_lines]
+        name_block_h = int(f_name.size * line_gap_name) * len(name_lines)
+        name_y = div_y - int(h * 0.02) - name_block_h
+
+        for line in name_lines:
+            draw.text((pad, name_y), line, fill=WHITE, font=f_name)
+            name_y += int(f_name.size * line_gap_name)
+
+        # optional description above name
+        if desc and not is_story:
+            pass  # skip desc on square to keep it clean; too much text
+        if desc and is_story:
+            f_desc = _regular(int(w * 0.036))
+            desc_lines = _wrap(desc, f_desc, text_w, draw)[:2]
+            # positioned above the name block
+            desc_block_h = int(f_desc.size * 1.35) * len(desc_lines)
+            desc_y = (div_y - int(h * 0.02) - name_block_h
+                      - int(h * 0.015) - desc_block_h)
+            if desc_y > int(h * 0.45):  # only draw if there's room
+                for line in desc_lines:
+                    draw.text((pad, desc_y), line, fill=WHITE_DIM, font=f_desc)
+                    desc_y += int(f_desc.size * 1.35)
 
     return img
 
@@ -475,20 +460,24 @@ def generate_shop_card(
         img = img_rgba.convert("RGB")
         draw = ImageDraw.Draw(img)
         f_init = _bold(72)
-        _center_text(draw, shop_name[0].upper(), f_init, y + 28, W, WHITE)
+        bb = draw.textbbox((0, 0), shop_name[0].upper(), font=f_init)
+        tx = bx + (box - (bb[2] - bb[0])) // 2
+        draw.text((tx, y + 28), shop_name[0].upper(), fill=WHITE, font=f_init)
 
     y += box + 48
 
     f_name = _bold(54)
     for line in _wrap(shop_name, f_name, W - 140, draw)[:2]:
-        _center_text(draw, line, f_name, y, W, WHITE)
+        bb = draw.textbbox((0, 0), line, font=f_name)
+        draw.text(((W - (bb[2] - bb[0])) // 2, y), line, fill=WHITE, font=f_name)
         y += 68
     y += 8
 
     if description:
         f_desc = _regular(28)
         for line in _wrap(description, f_desc, W - 200, draw)[:2]:
-            _center_text(draw, line, f_desc, y, W, (255, 255, 255))
+            bb = draw.textbbox((0, 0), line, font=f_desc)
+            draw.text(((W - (bb[2] - bb[0])) // 2, y), line, fill=WHITE, font=f_desc)
             y += 38
         y += 16
 
@@ -504,8 +493,13 @@ def generate_shop_card(
 
     from bot.db.supabase_client import catalog_link
     url = catalog_link(shop_slug)
-    _center_text(draw, url, _regular(22), H - 120, W, (255, 255, 255))
-    _center_text(draw, "Powered by souk.et", _regular(18), H - 64, W, (255, 255, 255))
+    f_url = _regular(22)
+    bb = draw.textbbox((0, 0), url, font=f_url)
+    draw.text(((W - (bb[2] - bb[0])) // 2, H - 120), url, fill=WHITE, font=f_url)
+    f_pw = _regular(18)
+    bb2 = draw.textbbox((0, 0), "Powered by souk.et", font=f_pw)
+    draw.text(((W - (bb2[2] - bb2[0])) // 2, H - 64), "Powered by souk.et",
+              fill=WHITE, font=f_pw)
 
     buf = io.BytesIO()
     img.save(buf, "PNG", optimize=True)
