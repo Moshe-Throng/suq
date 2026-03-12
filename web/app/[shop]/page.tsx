@@ -362,7 +362,7 @@ export default function ShopPage() {
   }
 
   async function submitInquiry() {
-    if (!inquiryForm || !buyerName.trim()) return;
+    if (!inquiryForm || !buyerName.trim() || !buyerPhone.trim()) return;
     setSubmitting(true);
     try {
       const res = await fetch("/api/order", {
@@ -972,19 +972,20 @@ export default function ShopPage() {
                     onFocus={(e) => (e.currentTarget.style.boxShadow = `0 0 0 2px ${theme.ring}`)}
                     onBlur={(e) => { if (!buyerName) e.currentTarget.style.boxShadow = "none"; }}
                     autoFocus />
-                  <input type="tel" placeholder="Phone number (optional)" value={buyerPhone} onChange={(e) => setBuyerPhone(e.target.value)}
+                  <input type="tel" placeholder="Phone number" value={buyerPhone} onChange={(e) => setBuyerPhone(e.target.value)}
                     className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none transition-shadow"
                     onFocus={(e) => (e.currentTarget.style.boxShadow = `0 0 0 2px ${theme.ring}`)}
                     onBlur={(e) => (e.currentTarget.style.boxShadow = "none")} />
+                  <p className="text-xs text-gray-400 -mt-1 ml-1">So the seller can reach you back</p>
                   <textarea placeholder="Message (optional)" value={buyerMessage} onChange={(e) => setBuyerMessage(e.target.value)} rows={2}
                     className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none resize-none transition-shadow"
                     onFocus={(e) => (e.currentTarget.style.boxShadow = `0 0 0 2px ${theme.ring}`)}
                     onBlur={(e) => (e.currentTarget.style.boxShadow = "none")} />
-                  <button onClick={submitInquiry} disabled={!buyerName.trim() || submitting}
+                  <button onClick={submitInquiry} disabled={!buyerName.trim() || !buyerPhone.trim() || submitting}
                     className="w-full py-3.5 rounded-xl text-white text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{ background: !buyerName.trim() || submitting ? "#D1D5DB" : theme.primary }}
-                    onMouseEnter={(e) => { if (buyerName.trim() && !submitting) e.currentTarget.style.background = theme.primaryDark; }}
-                    onMouseLeave={(e) => { if (buyerName.trim() && !submitting) e.currentTarget.style.background = theme.primary; }}>
+                    style={{ background: !buyerName.trim() || !buyerPhone.trim() || submitting ? "#D1D5DB" : theme.primary }}
+                    onMouseEnter={(e) => { if (buyerName.trim() && buyerPhone.trim() && !submitting) e.currentTarget.style.background = theme.primaryDark; }}
+                    onMouseLeave={(e) => { if (buyerName.trim() && buyerPhone.trim() && !submitting) e.currentTarget.style.background = theme.primary; }}>
                     {submitting ? (
                       <span className="inline-flex items-center gap-2">
                         <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">

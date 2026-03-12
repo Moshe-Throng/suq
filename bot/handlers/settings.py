@@ -14,7 +14,7 @@ from bot.db.supabase_client import (
 )
 from bot.strings.lang import s, seed_lang
 from bot.handlers.start import (
-    COLORS, TEMPLATES, THEMES, LOCATION_AREAS, LOCATION_MAP,
+    COLORS, TEMPLATES, THEMES, LOCATION_AREAS, LOCATION_AREA_KEYS, LOCATION_MAP,
     PRODUCT_CATEGORIES, SERVICE_CATEGORIES, _location_keyboard,
 )
 
@@ -136,15 +136,24 @@ async def settings_template_selected(update: Update, context: ContextTypes.DEFAU
 
 
 async def settings_change_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Show location picker."""
+    """Show location picker with GPS option."""
     query = update.callback_query
     await query.answer()
     user = query.from_user
     t = s(user.id)
 
+    kb = _location_keyboard(t, prefix="setloc_")
+    # Insert GPS button before the skip row
+    gps_btn = [InlineKeyboardButton(
+        getattr(t, "BTN_SHARE_LOCATION", "📍 Share GPS Location"),
+        callback_data="setloc_gps",
+    )]
+    rows = list(kb.inline_keyboard)
+    rows.insert(-1, gps_btn)  # before skip
+
     await query.edit_message_text(
         getattr(t, "ASK_LOCATION", "📍 Where is your shop? (optional)"),
-        reply_markup=_location_keyboard(t, prefix="setloc_"),
+        reply_markup=InlineKeyboardMarkup(rows),
     )
 
 
@@ -155,6 +164,21 @@ async def settings_location_selected(update: Update, context: ContextTypes.DEFAU
     user = query.from_user
 
     loc_key = query.data.replace("setloc_", "")
+
+    # GPS option — prompt user to share Telegram location
+    if loc_key == "gps":
+        shop = await run_sync(get_shop, user.id)
+        if shop:
+            seed_lang(user.id, shop.get("language", "am"))
+        t = s(user.id)
+        context.user_data["awaiting_gps_location"] = True
+        await query.edit_message_text(
+            getattr(t, "ASK_GPS_LOCATION",
+                    "📍 Send your shop's location using Telegram's location sharing.\n\n"
+                    "Tap the 📎 icon → Location → send your pin.\n\nOr /skip to cancel.")
+        )
+        return
+
     location_text = None if loc_key == "skip" else LOCATION_MAP.get(loc_key)
 
     shop = await run_sync(get_shop, user.id)
@@ -170,6 +194,50 @@ async def settings_location_selected(update: Update, context: ContextTypes.DEFAU
         await query.edit_message_text(f"📍 {location_text} — {msg}")
     else:
         await query.edit_message_text(msg)
+
+
+async def settings_recv_gps_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Receive a Telegram location message. Returns True if consumed."""
+    if not context.user_data.get("awaiting_gps_location"):
+        return False
+
+    context.user_data.pop("awaiting_gps_location", None)
+    user = update.effective_user
+    location = update.message.location
+
+    if not location:
+        return False
+
+    shop = await run_sync(get_shop, user.id)
+    if not shop:
+        await update.message.reply_text(s(user.id).ERROR)
+        return True
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
+
+    # Store as Google Maps link text so it's useful on web too
+    lat, lng = location.latitude, location.longitude
+    location_text = f"{lat:.6f}, {lng:.6f}"
+
+    # If shop already has an area name, keep it and append coordinates
+    existing = shop.get("location_text")
+    if existing and not existing.replace(",", "").replace(".", "").replace(" ", "").replace("-", "").isdigit():
+        location_text = f"{existing} ({lat:.6f}, {lng:.6f})"
+
+    await run_sync(update_shop_location, shop["id"], location_text)
+    msg = getattr(t, "GPS_LOCATION_SAVED", "📍 GPS location saved!")
+    await update.message.reply_text(f"{msg}\n📍 {location_text}")
+    return True
+
+
+async def settings_recv_gps_skip(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Handle /skip during GPS location prompt. Returns True if consumed."""
+    if not context.user_data.get("awaiting_gps_location"):
+        return False
+    context.user_data.pop("awaiting_gps_location", None)
+    t = s(update.effective_user.id)
+    await update.message.reply_text(getattr(t, "CANCELLED", "Cancelled."))
+    return True
 
 
 # ── Category Change ──────────────────────────────────────────

@@ -29,6 +29,7 @@ from bot.handlers.orders import list_orders
 from bot.handlers.callbacks import callback_router
 from bot.handlers.settings import (
     settings_recv_desc, settings_recv_logo, settings_recv_logo_skip,
+    settings_recv_gps_location, settings_recv_gps_skip,
 )
 from bot.handlers.feedback import feedback_command, feedback_text_handler
 
@@ -99,6 +100,13 @@ def main():
 
     app.add_handler(MessageHandler(filters.PHOTO & ~filters.COMMAND, _photo_handler))
 
+    # ── Location handler for GPS sharing (settings) ──
+    async def _location_handler(update, context):
+        if await settings_recv_gps_location(update, context):
+            return
+
+    app.add_handler(MessageHandler(filters.LOCATION & ~filters.COMMAND, _location_handler))
+
     # ── Text handler (feedback → description → logo skip → shop name) ──
     async def _text_handler(update, context):
         text = update.message.text.strip() if update.message.text else ""
@@ -110,6 +118,11 @@ def main():
         # Check /skip during logo prompt
         if text.lower() == "/skip" and context.user_data.get("awaiting_logo"):
             await settings_recv_logo_skip(update, context)
+            return
+
+        # Check /skip during GPS location prompt
+        if text.lower() == "/skip" and context.user_data.get("awaiting_gps_location"):
+            await settings_recv_gps_skip(update, context)
             return
 
         # Check description input
@@ -128,6 +141,9 @@ def main():
             return
         if context.user_data.get("awaiting_logo"):
             await settings_recv_logo_skip(update, context)
+            return
+        if context.user_data.get("awaiting_gps_location"):
+            await settings_recv_gps_skip(update, context)
             return
 
     app.add_handler(CommandHandler("skip", _skip_handler))

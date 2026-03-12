@@ -74,12 +74,24 @@ def _font(names: list[str], size: int) -> ImageFont.FreeTypeFont:
     return f
 
 
-def _bold(size: int) -> ImageFont.FreeTypeFont:
+def _has_ethiopic(text: str) -> bool:
+    """Check if text contains Ethiopic (Ge'ez) characters."""
+    return any("\u1200" <= c <= "\u137F" or "\u1380" <= c <= "\u139F"
+               or "\u2D80" <= c <= "\u2DDF" or "\uAB00" <= c <= "\uAB2F" for c in text)
+
+
+def _bold(size: int, text: str = "") -> ImageFont.FreeTypeFont:
+    if _has_ethiopic(text):
+        return _font(["NotoSansEthiopic.ttf", "DMSans-Bold.ttf",
+                      "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf", "arialbd.ttf"], size)
     return _font(["DMSans-Bold.ttf", "PlusJakartaSans-Bold.ttf",
                   "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf", "arialbd.ttf"], size)
 
 
-def _regular(size: int) -> ImageFont.FreeTypeFont:
+def _regular(size: int, text: str = "") -> ImageFont.FreeTypeFont:
+    if _has_ethiopic(text):
+        return _font(["NotoSansEthiopic.ttf", "DMSans-Regular.ttf",
+                      "LiberationSans-Regular.ttf", "DejaVuSans.ttf", "arial.ttf"], size)
     return _font(["DMSans-Regular.ttf", "PlusJakartaSans-Regular.ttf",
                   "LiberationSans-Regular.ttf", "DejaVuSans.ttf", "arial.ttf"], size)
 
@@ -164,12 +176,13 @@ def _resolve_accent(template_style: str | None) -> tuple:
     return tuple(int(hx[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def _price_text(price: int | None, price_type: str = "fixed") -> str:
+def _price_text(price: int | None, price_type: str = "fixed",
+                lang: str = "en") -> str:
     if price_type == "contact" or price is None:
-        return "Contact for pricing"
+        return "ለዋጋ ያግኙን" if lang == "am" else "Contact for pricing"
     if price_type == "starting_from":
-        return f"From {price:,} Birr"
-    return f"{price:,} Birr"
+        return f"ከ {price:,} ብር" if lang == "am" else f"From {price:,} Birr"
+    return f"{price:,} ብር" if lang == "am" else f"{price:,} Birr"
 
 
 def _gradient(w: int, h: int, top: tuple, bot: tuple) -> Image.Image:
@@ -194,6 +207,9 @@ def _product_card(photo: Image.Image, name: str, price_display: str,
 
     is_banner = w > h * 1.1   # landscape
     is_story  = h > w * 1.5   # tall portrait
+
+    # Detect if we need Ethiopic-capable fonts
+    all_text = f"{name} {price_display} {desc or ''}"
 
     pad = int(w * 0.06)
 
@@ -220,7 +236,7 @@ def _product_card(photo: Image.Image, name: str, price_display: str,
         info_w = w - ix - pad
         iy = int(h * 0.14)
 
-        f_name = _bold(int(h * 0.110))
+        f_name = _bold(int(h * 0.110), name)
         for line in _wrap(name, f_name, info_w, draw)[:2]:
             draw.text((ix, iy), line, fill=WHITE, font=f_name)
             iy += int(f_name.size * 1.25)
@@ -232,14 +248,14 @@ def _product_card(photo: Image.Image, name: str, price_display: str,
         iy += int(h * 0.07)
 
         if desc:
-            f_desc = _regular(int(h * 0.058))
+            f_desc = _regular(int(h * 0.058), desc)
             for line in _wrap(desc, f_desc, info_w, draw)[:2]:
                 draw.text((ix, iy), line, fill=WHITE_DIM, font=f_desc)
                 iy += int(f_desc.size * 1.35)
             iy += int(h * 0.02)
 
         # Price — large, white
-        f_price = _bold(int(h * 0.120))
+        f_price = _bold(int(h * 0.120), price_display)
         price_y = h - pad - int(f_price.size * 1.1)
         draw.text((ix, price_y), price_display, fill=WHITE, font=f_price)
 
@@ -276,17 +292,17 @@ def _product_card(photo: Image.Image, name: str, price_display: str,
         wm = f"souk.et/{shop_slug}" if shop_slug else "souk.et"
 
         if is_story:
-            f_price = _bold(int(w * 0.085))
-            f_name  = _bold(int(w * 0.068))
-            f_desc  = _regular(int(w * 0.038))
+            f_price = _bold(int(w * 0.085), price_display)
+            f_name  = _bold(int(w * 0.068), name)
+            f_desc  = _regular(int(w * 0.038), desc or "")
             name_max_lines = 2
             line_gap_name  = 1.25
             line_gap_price = 1.15
             bottom_pad = int(h * 0.055)
         else:
-            f_price = _bold(int(w * 0.078))
-            f_name  = _bold(int(w * 0.062))
-            f_desc  = _regular(int(w * 0.032))
+            f_price = _bold(int(w * 0.078), price_display)
+            f_name  = _bold(int(w * 0.062), name)
+            f_desc  = _regular(int(w * 0.032), desc or "")
             name_max_lines = 2
             line_gap_name  = 1.25
             line_gap_price = 1.15
@@ -320,7 +336,7 @@ def _product_card(photo: Image.Image, name: str, price_display: str,
         if desc and not is_story:
             pass  # skip desc on square to keep it clean; too much text
         if desc and is_story:
-            f_desc = _regular(int(w * 0.036))
+            f_desc = _regular(int(w * 0.036), desc)
             desc_lines = _wrap(desc, f_desc, text_w, draw)[:2]
             # positioned above the name block
             desc_block_h = int(f_desc.size * 1.35) * len(desc_lines)
@@ -357,11 +373,12 @@ def generate_all(
     watermark: bool = True,
     price_type: str = "fixed",
     template_style: str | None = None,
+    lang: str = "en",
 ) -> dict[str, bytes]:
     """Generate all 4 marketing image formats. Returns {format: PNG bytes}."""
     photo = _load_photo(photo_bytes)
     accent = _resolve_accent(template_style)
-    pd = _price_text(price, price_type)
+    pd = _price_text(price, price_type, lang)
     results = {}
 
     for fmt_name, (w, h) in FORMATS.items():
@@ -384,11 +401,12 @@ def generate_single(
     watermark: bool = True,
     price_type: str = "fixed",
     template_style: str | None = None,
+    lang: str = "en",
 ) -> bytes:
     """Generate one marketing image. Returns PNG bytes."""
     photo = _load_photo(photo_bytes)
     accent = _resolve_accent(template_style)
-    pd = _price_text(price, price_type)
+    pd = _price_text(price, price_type, lang)
     w, h = FORMATS[fmt]
     img = _product_card(photo, product_name, pd, description, w, h, shop_slug, accent)
     buf = io.BytesIO()
@@ -466,7 +484,7 @@ def generate_shop_card(
 
     y += box + 48
 
-    f_name = _bold(54)
+    f_name = _bold(54, shop_name)
     for line in _wrap(shop_name, f_name, W - 140, draw)[:2]:
         bb = draw.textbbox((0, 0), line, font=f_name)
         draw.text(((W - (bb[2] - bb[0])) // 2, y), line, fill=WHITE, font=f_name)
@@ -474,7 +492,7 @@ def generate_shop_card(
     y += 8
 
     if description:
-        f_desc = _regular(28)
+        f_desc = _regular(28, description)
         for line in _wrap(description, f_desc, W - 200, draw)[:2]:
             bb = draw.textbbox((0, 0), line, font=f_desc)
             draw.text(((W - (bb[2] - bb[0])) // 2, y), line, fill=WHITE, font=f_desc)

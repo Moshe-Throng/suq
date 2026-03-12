@@ -232,6 +232,48 @@ THEME_UPDATED = "ቀለም ተቀይሯል!"  # legacy
 
 SHARE_CARD_CAPTION = "ይህን ለገዢዎችዎ እና በማህበራዊ ሚዲያ ላይ ያጋሩ!"
 
+BTN_MANAGE_WEB = "🌐 በድረ-ገጽ ያስተዳድሩ"
+
+# ══════════════════════════════════════════════════════════════
+# DEEP LINK MESSAGES
+# ══════════════════════════════════════════════════════════════
+
+NO_SHOP_YET = "ገና ሱቅ የለዎትም። ለመፍጠር /start ይጠቀሙ።"
+LOGIN_EXPIRED = "ይህ የመግቢያ ሊንክ ጊዜው አልፏል። እባክዎ ከድረ-ገጹ እንደገና ይሞክሩ።"
+LOGIN_SUCCESS = "በድረ-ገጹ ገብተዋል!\n\n🏪 {name}"
+PRODUCT_NOT_FOUND = "😕 ይቅርታ፣ ይህ ምርት አልተገኘም ወይም ከአሁን በኋላ አይገኝም።"
+SHOP_NOT_FOUND = "😕 ይቅርታ፣ ይህ ሱቅ ከአሁን በኋላ አይገኝም።"
+CONTACT_SELLER = "👤 ሻጩን በቀጥታ ያግኙ:"
+BTN_MESSAGE_SHOP = "💬 ለ{name} ይላኩ"
+NO_DIRECT_MSG = "ℹ️ ይህ ሻጭ የቀጥታ መልዕክት ገና አላዘጋጀም።"
+BTN_VIEW_WEB = "🌐 በ souk.et ይመልከቱ"
+
+# ══════════════════════════════════════════════════════════════
+# LOCATION (area names + GPS)
+# ══════════════════════════════════════════════════════════════
+
+LOC_BOLE = "ቦሌ"
+LOC_MEGENAGNA = "መገናኛ"
+LOC_CMC = "ሲኤምሲ"
+LOC_PIAZZA = "ፒያሳ"
+LOC_MERKATO = "መርካቶ"
+LOC_KAZANCHIS = "ካዛንቺስ"
+LOC_SARBET = "ሳርቤት"
+LOC_MEXICO = "ሜክሲኮ"
+LOC_4KILO = "4 ኪሎ"
+LOC_DIREDAWA = "ድሬዳዋ"
+LOC_BAHIRDAR = "ባህር ዳር"
+LOC_HAWASSA = "ሀዋሳ"
+LOC_MEKELLE = "መቀሌ"
+LOC_ADAMA = "አዳማ"
+LOC_JIMMA = "ጅማ"
+LOC_GONDAR = "ጎንደር"
+LOC_OTHER = "ሌላ"
+
+BTN_SHARE_LOCATION = "📍 የGPS ቦታ ያጋሩ"
+ASK_GPS_LOCATION = "📍 የሱቅዎን ቦታ በቴሌግራም location sharing ይላኩ።\n\nየ 📎 ምልክቱን ይንኩ → Location → ቦታዎን ይላኩ።\n\nለመሰረዝ /skip ይላኩ።"
+GPS_LOCATION_SAVED = "📍 የGPS ቦታ ተቀምጧል!"
+
 # ══════════════════════════════════════════════════════════════
 # MISC
 # ══════════════════════════════════════════════════════════════

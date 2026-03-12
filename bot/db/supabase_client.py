@@ -54,11 +54,16 @@ async def run_sync(func, *args, **kwargs):
 
 
 def slugify(name: str) -> str:
-    """Convert shop name to URL-safe slug."""
+    """Convert shop name to URL-safe slug.
+    For names with no Latin chars (e.g. Amharic), generates a hash-based slug."""
     slug = name.lower().strip()
     slug = re.sub(r"[^a-z0-9\s-]", "", slug)
     slug = re.sub(r"[\s-]+", "-", slug).strip("-")
-    return slug or "shop"
+    if not slug:
+        import hashlib
+        h = hashlib.md5(name.encode()).hexdigest()[:6]
+        slug = f"shop-{h}"
+    return slug
 
 
 def catalog_link(shop_slug: str) -> str:

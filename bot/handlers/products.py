@@ -223,7 +223,13 @@ async def recv_tag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     tag_key = query.data.replace("ptag_", "")
     context.user_data["product_tag"] = None if tag_key == "skip" else tag_key
 
-    # Show stock picker
+    # Services don't need stock — save immediately
+    if context.user_data.get("listing_type") == "service":
+        context.user_data["product_stock"] = None  # unlimited
+        await query.edit_message_text("✅")
+        return await _save_product(update, context, user, from_query=True)
+
+    # Show stock picker for products
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(
             getattr(t, "BTN_STOCK_UNLIMITED", "♾ Unlimited"),
@@ -334,6 +340,9 @@ async def _save_product(update, context, user, from_query=False):
 
         template_style = shop.get("template_style", "clean") if shop else "clean"
 
+        from bot.strings.lang import get_lang
+        lang = get_lang(user.id)
+
         images = await run_sync(
             generate_all,
             product_name=name,
@@ -343,6 +352,7 @@ async def _save_product(update, context, user, from_query=False):
             shop_slug=shop_slug,
             price_type=price_type,
             template_style=template_style,
+            lang=lang,
         )
 
         from telegram import InputMediaPhoto

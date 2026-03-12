@@ -151,7 +151,7 @@ export default function ProductDetailPage() {
   }
 
   async function submitInquiry() {
-    if (!buyerName.trim() || !shop || !product) return;
+    if (!buyerName.trim() || !buyerPhone.trim() || !shop || !product) return;
     setSubmitting(true);
     try {
       const res = await fetch("/api/order", {
@@ -631,7 +631,7 @@ export default function ProductDetailPage() {
                     onBlur={(e) => e.currentTarget.style.borderColor = "#E5E7EB"}
                   />
                   <input
-                    type="tel" placeholder="Phone (optional)" value={buyerPhone}
+                    type="tel" placeholder="Phone number" value={buyerPhone}
                     onChange={(e) => setBuyerPhone(e.target.value)}
                     style={{
                       width: "100%", padding: "12px 14px", borderRadius: "12px",
@@ -641,6 +641,9 @@ export default function ProductDetailPage() {
                     onFocus={(e) => e.currentTarget.style.borderColor = accent}
                     onBlur={(e) => e.currentTarget.style.borderColor = "#E5E7EB"}
                   />
+                  <p style={{ fontSize: "12px", color: "#9CA3AF", marginTop: "-4px", marginLeft: "4px" }}>
+                    So the seller can reach you back
+                  </p>
                   <textarea
                     placeholder="Message (optional)" value={buyerMessage}
                     onChange={(e) => setBuyerMessage(e.target.value)}
@@ -655,10 +658,10 @@ export default function ProductDetailPage() {
                   />
                   <button
                     onClick={submitInquiry}
-                    disabled={!buyerName.trim() || submitting}
+                    disabled={!buyerName.trim() || !buyerPhone.trim() || submitting}
                     style={{
                       width: "100%", padding: "14px", borderRadius: "12px",
-                      background: !buyerName.trim() || submitting ? "#D1D5DB" : accent,
+                      background: !buyerName.trim() || !buyerPhone.trim() || submitting ? "#D1D5DB" : accent,
                       color: "white", fontWeight: 700, fontSize: "14px",
                       border: "none", cursor: "pointer",
                       opacity: submitting ? 0.7 : 1,

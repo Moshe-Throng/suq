@@ -65,11 +65,11 @@ CATEGORY_TAGS: dict[str, list[tuple[str, str]]] = {
     ],
 }
 
-# Service-type shops
+# Service-type shops (tier tags like basic/premium available on web only)
 SERVICE_TAGS: list[tuple[str, str]] = [
-    ("basic", "✂️ Basic"),
-    ("premium", "⭐ Premium"),
-    ("package", "📦 Package"),
+    ("new", "🆕 New"),
+    ("popular", "🔥 Popular"),
+    ("sale", "🏷 Sale"),
     ("other", "📦 Other"),
 ]
 

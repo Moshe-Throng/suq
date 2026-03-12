@@ -231,6 +231,48 @@ THEME_UPDATED = "Theme color updated!"  # legacy
 
 SHARE_CARD_CAPTION = "Share this with your buyers and on social media!"
 
+BTN_MANAGE_WEB = "🌐 Manage on Web"
+
+# ══════════════════════════════════════════════════════════════
+# DEEP LINK MESSAGES
+# ══════════════════════════════════════════════════════════════
+
+NO_SHOP_YET = "You don't have a shop yet. Use /start to create one first."
+LOGIN_EXPIRED = "This login link has expired. Please try again from the website."
+LOGIN_SUCCESS = "You're now logged in on the web!\n\n🏪 {name}"
+PRODUCT_NOT_FOUND = "😕 Sorry, this product was not found or is no longer available."
+SHOP_NOT_FOUND = "😕 Sorry, this shop is no longer available."
+CONTACT_SELLER = "👤 Contact the seller directly:"
+BTN_MESSAGE_SHOP = "💬 Message {name}"
+NO_DIRECT_MSG = "ℹ️ This seller hasn't set up direct messaging yet."
+BTN_VIEW_WEB = "🌐 View on souk.et"
+
+# ══════════════════════════════════════════════════════════════
+# LOCATION (area names + GPS)
+# ══════════════════════════════════════════════════════════════
+
+LOC_BOLE = "Bole"
+LOC_MEGENAGNA = "Megenagna"
+LOC_CMC = "CMC"
+LOC_PIAZZA = "Piazza"
+LOC_MERKATO = "Merkato"
+LOC_KAZANCHIS = "Kazanchis"
+LOC_SARBET = "Sarbet"
+LOC_MEXICO = "Mexico"
+LOC_4KILO = "4 Kilo"
+LOC_DIREDAWA = "Dire Dawa"
+LOC_BAHIRDAR = "Bahir Dar"
+LOC_HAWASSA = "Hawassa"
+LOC_MEKELLE = "Mekelle"
+LOC_ADAMA = "Adama"
+LOC_JIMMA = "Jimma"
+LOC_GONDAR = "Gondar"
+LOC_OTHER = "Other"
+
+BTN_SHARE_LOCATION = "📍 Share GPS Location"
+ASK_GPS_LOCATION = "📍 Send your shop's location using Telegram's location sharing.\n\nTap the 📎 icon → Location → send your pin.\n\nOr /skip to cancel."
+GPS_LOCATION_SAVED = "📍 GPS location saved!"
+
 # ══════════════════════════════════════════════════════════════
 # MISC
 # ══════════════════════════════════════════════════════════════

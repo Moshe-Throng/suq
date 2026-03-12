@@ -26,7 +26,17 @@ COLORS = {
     "brown":    {"emoji": "🟤", "hex": "#92400E", "label": "Brown"},
 }
 
-# Location areas for the optional area picker
+# Location area keys + their string attribute names
+LOCATION_AREA_KEYS = [
+    ("bole", "LOC_BOLE"), ("megenagna", "LOC_MEGENAGNA"), ("cmc", "LOC_CMC"),
+    ("piazza", "LOC_PIAZZA"), ("merkato", "LOC_MERKATO"), ("kazanchis", "LOC_KAZANCHIS"),
+    ("sarbet", "LOC_SARBET"), ("mexico", "LOC_MEXICO"), ("4kilo", "LOC_4KILO"),
+    ("diredawa", "LOC_DIREDAWA"), ("bahirdar", "LOC_BAHIRDAR"), ("hawassa", "LOC_HAWASSA"),
+    ("mekelle", "LOC_MEKELLE"), ("adama", "LOC_ADAMA"), ("jimma", "LOC_JIMMA"),
+    ("gondar", "LOC_GONDAR"), ("other", "LOC_OTHER"),
+]
+
+# English fallback names (used for DB storage and legacy compat)
 LOCATION_AREAS = [
     ("bole", "Bole"), ("megenagna", "Megenagna"), ("cmc", "CMC"),
     ("piazza", "Piazza"), ("merkato", "Merkato"), ("kazanchis", "Kazanchis"),
@@ -130,11 +140,14 @@ async def _handle_weblogin_deeplink(update: Update, user, nonce: str) -> None:
     from bot.services.web_auth import generate_admin_token
 
     shop = await run_sync(get_shop, user.id)
+    t = s(user.id)
     if not shop:
         await update.message.reply_text(
-            "You don't have a shop yet. Use /menu to create one first."
+            getattr(t, "NO_SHOP_YET", "You don't have a shop yet. Use /start to create one first.")
         )
         return
+    seed_lang(user.id, shop.get("language", "am"))
+    t = s(user.id)
 
     # Generate JWT
     token = generate_admin_token(user.id, shop["id"], shop["shop_slug"])
@@ -148,13 +161,12 @@ async def _handle_weblogin_deeplink(update: Update, user, nonce: str) -> None:
 
     if not result.data:
         await update.message.reply_text(
-            "This login link has expired. Please try again from the website."
+            getattr(t, "LOGIN_EXPIRED", "This login link has expired. Please try again from the website.")
         )
         return
 
     await update.message.reply_text(
-        f"You're now logged in on the web! You can go back to your browser.\n\n"
-        f"🏪 {shop['shop_name']}"
+        getattr(t, "LOGIN_SUCCESS", "You're now logged in on the web!\n\n🏪 {name}").format(name=shop["shop_name"])
     )
 
 
@@ -162,10 +174,13 @@ async def _handle_contact_deeplink(update: Update, product_id: str) -> None:
     """Handle buyer clicking a product contact link from the web catalog."""
     from bot.db.supabase_client import get_client
 
+    user = update.effective_user
+    t = s(user.id)
+
     product = await run_sync(get_product, product_id)
     if not product:
         await update.message.reply_text(
-            "😕 Sorry, this product was not found or is no longer available."
+            getattr(t, "PRODUCT_NOT_FOUND", "😕 Sorry, this product was not found or is no longer available.")
         )
         return
 
@@ -178,7 +193,7 @@ async def _handle_contact_deeplink(update: Update, product_id: str) -> None:
 
     if not shop:
         await update.message.reply_text(
-            "😕 Sorry, this shop is no longer available."
+            getattr(t, "SHOP_NOT_FOUND", "😕 Sorry, this shop is no longer available.")
         )
         return
 
@@ -200,20 +215,20 @@ async def _handle_contact_deeplink(update: Update, product_id: str) -> None:
 
     # Direct link to seller's Telegram
     if shop.get("telegram_username"):
-        text += f"👤 Contact the seller directly:\n"
+        text += getattr(t, "CONTACT_SELLER", "👤 Contact the seller directly:") + "\n"
         buttons.append([
             InlineKeyboardButton(
-                f"💬 Message {shop['shop_name']}",
+                getattr(t, "BTN_MESSAGE_SHOP", "💬 Message {name}").format(name=shop["shop_name"]),
                 url=f"https://t.me/{shop['telegram_username']}"
             )
         ])
     else:
-        text += "ℹ️ This seller hasn't set up direct messaging yet.\n"
+        text += getattr(t, "NO_DIRECT_MSG", "ℹ️ This seller hasn't set up direct messaging yet.") + "\n"
 
     # Link to product on web
     buttons.append([
         InlineKeyboardButton(
-            "🌐 View on souk.et",
+            getattr(t, "BTN_VIEW_WEB", "🌐 View on souk.et"),
             url=catalog_link(f"{shop['shop_slug']}/{product_id}")
         )
     ])
@@ -406,8 +421,9 @@ def _location_keyboard(t, prefix: str = "loc_") -> InlineKeyboardMarkup:
     prefix: 'loc_' for onboarding, 'setloc_' for settings."""
     rows = []
     row = []
-    for key, name in LOCATION_AREAS:
-        row.append(InlineKeyboardButton(name, callback_data=f"{prefix}{key}"))
+    for key, attr in LOCATION_AREA_KEYS:
+        label = getattr(t, attr, LOCATION_MAP.get(key, key.title()))
+        row.append(InlineKeyboardButton(label, callback_data=f"{prefix}{key}"))
         if len(row) == 3:
             rows.append(row)
             row = []
