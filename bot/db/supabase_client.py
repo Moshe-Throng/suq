@@ -86,12 +86,17 @@ def get_shop_by_slug(slug: str) -> dict | None:
     return result.data[0] if result.data else None
 
 
+MAX_SHOPS = 50
+
+
 def create_shop(telegram_id: int, username: str | None, shop_name: str,
                 lang: str = "am", theme_color: str = "teal",
                 shop_type: str = "product", category: str | None = None,
                 template_style: str = "purple",
-                location_text: str | None = None) -> dict:
-    """Create a new shop. Returns the created row."""
+                location_text: str | None = None) -> dict | None:
+    """Create a new shop. Returns the created row, or None if at capacity."""
+    if get_total_shop_count() >= MAX_SHOPS:
+        return None
     slug = slugify(shop_name)
     existing = get_shop_by_slug(slug)
     if existing:
@@ -173,6 +178,14 @@ def get_product_count(shop_id: str) -> int:
     result = get_client().table("suq_products").select(
         "id", count="exact"
     ).eq("shop_id", shop_id).eq("is_active", True).execute()
+    return result.count or 0
+
+
+def get_total_shop_count() -> int:
+    """Get total number of shops on the platform."""
+    result = get_client().table("suq_shops").select(
+        "id", count="exact"
+    ).execute()
     return result.count or 0
 
 
@@ -334,6 +347,23 @@ def mark_inquiry_seen(inquiry_id: str) -> dict:
     result = get_client().table("suq_orders").update(
         {"status": "seen"}
     ).eq("id", inquiry_id).execute()
+    return result.data[0] if result.data else {}
+
+
+# ── Feedback operations ──────────────────────────────────────
+
+
+def create_feedback(shop_id: str | None, telegram_id: int,
+                    source: str, message: str) -> dict:
+    """Save user feedback to suq_feedback table."""
+    data = {
+        "telegram_id": telegram_id,
+        "source": source,
+        "message": message,
+    }
+    if shop_id:
+        data["shop_id"] = shop_id
+    result = get_client().table("suq_feedback").insert(data).execute()
     return result.data[0] if result.data else {}
 
 

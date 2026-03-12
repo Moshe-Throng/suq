@@ -30,6 +30,7 @@ from bot.handlers.callbacks import callback_router
 from bot.handlers.settings import (
     settings_recv_desc, settings_recv_logo, settings_recv_logo_skip,
 )
+from bot.handlers.feedback import feedback_command, feedback_text_handler
 
 # ── Config ────────────────────────────────────────────────────
 
@@ -88,6 +89,7 @@ def main():
     app.add_handler(CommandHandler("language", language_handler))
     app.add_handler(CommandHandler("help", help_handler))
     app.add_handler(CommandHandler("catalog", catalog_command))
+    app.add_handler(CommandHandler("feedback", feedback_command))
 
     # ── Photo handler for logo upload (settings) ──
     async def _photo_handler(update, context):
@@ -97,9 +99,13 @@ def main():
 
     app.add_handler(MessageHandler(filters.PHOTO & ~filters.COMMAND, _photo_handler))
 
-    # ── Text handler (description input → logo skip → shop name) ──
+    # ── Text handler (feedback → description → logo skip → shop name) ──
     async def _text_handler(update, context):
         text = update.message.text.strip() if update.message.text else ""
+
+        # Check feedback input
+        if await feedback_text_handler(update, context):
+            return
 
         # Check /skip during logo prompt
         if text.lower() == "/skip" and context.user_data.get("awaiting_logo"):

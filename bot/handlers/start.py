@@ -489,11 +489,16 @@ async def location_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             template_style=color_key,
             location_text=location_text,
         )
+        if shop is None:
+            waitlist_msg = getattr(t, "WAITLIST_MSG", "We're at capacity right now! We'll notify you when spots open up.")
+            await query.edit_message_text(waitlist_msg)
+            return
         link = catalog_link(shop["shop_slug"])
         item_type = t.SHOP_CREATED_SERVICE if shop_type == "service" else t.SHOP_CREATED_PRODUCT
         color_info = COLORS.get(color_key, COLORS["purple"])
+        free_plan = getattr(t, "FREE_PLAN_INFO", "Free plan: up to {max} products, free for 1 year.").format(max=15)
         await query.edit_message_text(
-            f"{color_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link, item_type=item_type)}"
+            f"{color_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link, item_type=item_type)}\n\n{free_plan}"
         )
         await _send_seller_menu_from_query(query, user.id, shop)
     except Exception as e:
@@ -535,11 +540,16 @@ async def theme_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             theme_color=theme,
             template_style=theme_to_tmpl.get(theme, "clean"),
         )
+        if shop is None:
+            waitlist_msg = getattr(t, "WAITLIST_MSG", "We're at capacity right now! We'll notify you when spots open up.")
+            await query.edit_message_text(waitlist_msg)
+            return
         link = catalog_link(shop["shop_slug"])
         theme_info = THEMES.get(theme, THEMES["teal"])
         item_type = getattr(t, "SHOP_CREATED_PRODUCT", "product")
+        free_plan = getattr(t, "FREE_PLAN_INFO", "Free plan: up to {max} products, free for 1 year.").format(max=15)
         await query.edit_message_text(
-            f"{theme_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link, item_type=item_type)}"
+            f"{theme_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link, item_type=item_type)}\n\n{free_plan}"
         )
         await _send_seller_menu_from_query(query, user.id, shop)
     except Exception as e:

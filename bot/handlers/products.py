@@ -11,8 +11,10 @@ from telegram.ext import (
 
 from bot.db.supabase_client import (
     run_sync, get_shop, get_products, get_product, create_product, delete_product,
-    format_price, catalog_link,
+    format_price, catalog_link, get_product_count,
 )
+
+MAX_PRODUCTS = 15
 from bot.strings.lang import s, seed_lang
 from bot.services.tag_registry import get_tags_for_category
 
@@ -270,9 +272,19 @@ async def recv_stock_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def _save_product(update, context, user, from_query=False):
     """Save the product and generate marketing images."""
     t = s(user.id)
+    reply_target = update.callback_query.message if from_query else update.message
+
+    # Check product limit
+    shop_id = context.user_data["shop_id"]
+    count = await run_sync(get_product_count, shop_id)
+    if count >= MAX_PRODUCTS:
+        limit_msg = getattr(t, "PRODUCT_LIMIT", "You've reached the free plan limit of {max} products. Remove some to add more.")
+        await reply_target.reply_text(limit_msg.format(max=MAX_PRODUCTS))
+        for key in _CLEANUP_KEYS:
+            context.user_data.pop(key, None)
+        return ConversationHandler.END
 
     # Gather all data
-    shop_id = context.user_data["shop_id"]
     name = context.user_data["product_name"]
     price = context.user_data.get("product_price")
     price_type = context.user_data.get("price_type", "fixed")
@@ -303,10 +315,16 @@ async def _save_product(update, context, user, from_query=False):
     )
 
     price_display = format_price(price, price_type)
-    reply_target = update.callback_query.message if from_query else update.message
+    new_count = await run_sync(get_product_count, shop_id)
+    count_info = getattr(t, "PRODUCT_COUNT", "({count}/{max} products used)").format(count=new_count, max=MAX_PRODUCTS)
     await reply_target.reply_text(
-        t.PRODUCT_SAVED.format(name=name, price_display=price_display)
+        t.PRODUCT_SAVED.format(name=name, price_display=price_display) + f"\n{count_info}"
     )
+
+    # Feedback nudge after 1st product
+    if new_count == 1:
+        nudge = getattr(t, "FEEDBACK_NUDGE", "How's your experience so far? Send /feedback anytime to share your thoughts.")
+        await reply_target.reply_text(nudge)
 
     # Generate marketing images
     try:

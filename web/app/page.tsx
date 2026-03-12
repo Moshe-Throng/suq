@@ -48,6 +48,7 @@ export default async function MarketplacePage() {
       price: p.price as number | null,
       price_type: p.price_type as string | null,
       photo_url: photoUrl,
+      photo_file_id: (p.photo_file_id as string) || null,
       stock: p.stock as number | null,
       tag: p.tag as string | null,
       created_at: p.created_at as string,
@@ -100,12 +101,18 @@ export default async function MarketplacePage() {
 
   const totalProducts = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
 
+  // Shop count for free tier CTA
+  const { count: shopCount } = await supabase
+    .from("suq_shops")
+    .select("id", { count: "exact", head: true });
+
   return (
     <MarketplaceClient
       initialProducts={products}
       initialShops={shopsWithCounts}
       categoryCounts={categoryCounts}
       totalProducts={totalProducts}
+      shopCount={shopCount || 0}
     />
   );
 }

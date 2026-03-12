@@ -57,6 +57,13 @@ interface ThemeColors {
   gradientCard: string;
 }
 
+/* ─── Image proxy helper ─────────────────────────────────── */
+
+function imgUrl(fileId: string | null, fallbackUrl: string | null): string | null {
+  if (fileId) return `/api/img/${fileId}`;
+  return fallbackUrl;
+}
+
 /* ─── Color Palette Map ────────────────────────────────────── */
 
 function buildTheme(
@@ -141,7 +148,7 @@ export default function ShopPage() {
 
   const [shop, setShop] = useState<Shop | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [crossSell, setCrossSell] = useState<{ id: string; name: string; price: number | null; price_type: string | null; photo_url: string | null; stock: number | null; tag: string | null; shop_name: string; shop_slug: string }[]>([]);
+  const [crossSell, setCrossSell] = useState<{ id: string; name: string; price: number | null; price_type: string | null; photo_url: string | null; photo_file_id: string | null; stock: number | null; tag: string | null; shop_name: string; shop_slug: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -176,6 +183,13 @@ export default function ShopPage() {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showShopSettings, setShowShopSettings] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginNonce, setLoginNonce] = useState<string | null>(null);
+  const [loginBotUrl, setLoginBotUrl] = useState<string | null>(null);
+  const [loginPolling, setLoginPolling] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackSent, setFeedbackSent] = useState(false);
   const router = useRouter();
 
   // Debounced search
@@ -265,10 +279,86 @@ export default function ShopPage() {
     setShowShopSettings(false);
   }
 
+  async function startWebLogin() {
+    setShowLoginModal(true);
+    try {
+      const res = await fetch("/api/auth/web-login", { method: "POST" });
+      const data = await res.json();
+      if (data.nonce && data.botUrl) {
+        setLoginNonce(data.nonce);
+        setLoginBotUrl(data.botUrl);
+        setLoginPolling(true);
+      }
+    } catch {
+      setShowLoginModal(false);
+    }
+  }
+
+  // Poll for login confirmation
+  useEffect(() => {
+    if (!loginPolling || !loginNonce) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/auth/check-login?nonce=${loginNonce}`);
+        const data = await res.json();
+        if (data.status === "ok") {
+          setLoginPolling(false);
+          setShowLoginModal(false);
+          setLoginNonce(null);
+          setIsAdmin(true);
+          // Reload to get admin data
+          const shopRes = await fetch(`/api/shop/${slug}`);
+          if (shopRes.ok) {
+            const shopData = await shopRes.json();
+            setShop(shopData.shop);
+            setProducts(shopData.products);
+          }
+          // Re-check session for adminShopId
+          const sessRes = await fetch("/api/auth/session");
+          const sessData = await sessRes.json();
+          if (sessData.authenticated) setAdminShopId(sessData.shopId);
+        }
+      } catch { /* keep polling */ }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [loginPolling, loginNonce, slug]);
+
   async function adminDeleteProduct(productId: string) {
     if (!confirm("Delete this product?")) return;
     await fetch(`/api/admin/products/${productId}`, { method: "DELETE" });
     adminRefresh();
+  }
+
+  async function toggleStock(productId: string, newStock: number | null) {
+    // Optimistic update
+    setProducts(prev => prev.map(p =>
+      p.id === productId ? { ...p, stock: newStock } : p
+    ));
+    try {
+      const res = await fetch(`/api/admin/products/${productId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stock: newStock }),
+      });
+      if (!res.ok) adminRefresh();
+    } catch { adminRefresh(); }
+  }
+
+  async function submitFeedback() {
+    if (!feedbackText.trim()) return;
+    try {
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: feedbackText.trim() }),
+      });
+      setFeedbackSent(true);
+      setTimeout(() => {
+        setShowFeedbackModal(false);
+        setFeedbackSent(false);
+        setFeedbackText("");
+      }, 2000);
+    } catch { /* silent */ }
   }
 
   async function submitInquiry() {
@@ -332,13 +422,13 @@ export default function ShopPage() {
     <div className="min-h-screen bg-white">
       <div className="h-40 animate-pulse" style={{ background: "linear-gradient(135deg, #e5e7eb, #f3f4f6)" }} />
       <div className="max-w-2xl mx-auto px-4 pt-4">
-        <div className="grid grid-cols-2 gap-3">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="rounded-2xl overflow-hidden animate-pulse">
+        <div className="grid grid-cols-3 gap-2">
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className="rounded-xl overflow-hidden animate-pulse">
               <div className="aspect-square bg-gray-100" />
-              <div className="pt-2.5 pb-1 space-y-2">
-                <div className="h-4 bg-gray-100 rounded w-3/4" />
-                <div className="h-9 bg-gray-100 rounded-xl" />
+              <div className="pt-1.5 pb-1 px-2 space-y-1.5">
+                <div className="h-3 bg-gray-100 rounded w-3/4" />
+                <div className="h-7 bg-gray-100 rounded-lg" />
               </div>
             </div>
           ))}
@@ -364,7 +454,8 @@ export default function ShopPage() {
 
   const itemCount = products.length;
   const itemLabel = isService ? (itemCount === 1 ? "service" : "services") : (itemCount === 1 ? "item" : "items");
-  const showLogo = shop.logo_url && !logoFailed;
+  const logoSrc = imgUrl(shop.logo_file_id, shop.logo_url);
+  const showLogo = logoSrc && !logoFailed;
 
   /* ─── Main render ───────────────────────────────────── */
   return (
@@ -400,14 +491,26 @@ export default function ShopPage() {
               </svg>
               souk.et
             </Link>
-            <button onClick={shareShop}
-              className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition-all active:scale-95"
-              style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}>
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
-              </svg>
-              Share
-            </button>
+            <div className="flex items-center gap-2">
+              {!isAdmin && !adminLoading && (
+                <button onClick={startWebLogin}
+                  className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition-all active:scale-95"
+                  style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}>
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" />
+                  </svg>
+                  Login
+                </button>
+              )}
+              <button onClick={shareShop}
+                className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition-all active:scale-95"
+                style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}>
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                </svg>
+                Share
+              </button>
+            </div>
           </div>
 
           {/* Shop info */}
@@ -416,7 +519,7 @@ export default function ShopPage() {
             <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center"
               style={{ background: showLogo ? "white" : "rgba(255,255,255,0.2)", boxShadow: "0 2px 12px rgba(0,0,0,0.15)" }}>
               {showLogo ? (
-                <img src={shop.logo_url!} alt={shop.shop_name} className="w-full h-full object-cover"
+                <img src={logoSrc!} alt={shop.shop_name} className="w-full h-full object-cover"
                   onError={() => setLogoFailed(true)} />
               ) : (
                 <span className="text-2xl font-bold text-white">{shop.shop_name.charAt(0).toUpperCase()}</span>
@@ -464,6 +567,11 @@ export default function ShopPage() {
               className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95"
               style={{ borderColor: theme.primary, color: theme.primary }}>
               Settings
+            </button>
+            <button onClick={() => setShowFeedbackModal(true)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95"
+              style={{ borderColor: "#F59E0B", color: "#F59E0B" }}>
+              Feedback
             </button>
             <button onClick={adminLogout}
               className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 border border-gray-200 transition-all active:scale-95">
@@ -537,28 +645,29 @@ export default function ShopPage() {
             <button onClick={() => { handleSearch(""); setActiveTag(null); }} className="mt-2 text-xs font-medium" style={{ color: theme.primary }}>Clear filters</button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {filteredProducts.map((p, idx) => {
               const priceDisplay = fmtPrice(p.price, p.price_type);
               const isSoldOut = p.stock === 0;
+              const src = imgUrl(p.photo_file_id, p.photo_url);
               return (
-                <div key={p.id} className="product-card rounded-2xl overflow-hidden card-enter"
-                  style={{ animationDelay: `${idx * 0.05}s`, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <div key={p.id} className="product-card rounded-xl overflow-hidden card-enter"
+                  style={{ animationDelay: `${idx * 0.03}s`, boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
 
-                  {/* Photo area — cinematic */}
+                  {/* Photo area — compact */}
                   <div className="relative aspect-square overflow-hidden cursor-pointer" onClick={() => setSelectedProduct(p)}>
-                    {p.photo_url ? (
-                      <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    {src ? (
+                      <img src={src} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center" style={{ background: theme.gradientCard }}>
-                        <svg className="w-12 h-12 opacity-30" style={{ color: theme.primary }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                        <svg className="w-8 h-8 opacity-30" style={{ color: theme.primary }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21z" />
                         </svg>
                       </div>
                     )}
 
                     {/* Dark gradient overlay on photo bottom */}
-                    {p.photo_url && (
+                    {src && (
                       <div className="absolute inset-0"
                         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 40%, transparent 60%)" }} />
                     )}
@@ -572,7 +681,7 @@ export default function ShopPage() {
 
                     {/* Low stock badge */}
                     {!isSoldOut && p.stock !== null && p.stock > 0 && p.stock <= 5 && (
-                      <div className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#FEF3C7", color: "#92400E" }}>
+                      <div className="absolute top-1 right-1 text-[8px] font-bold px-1 py-0.5 rounded-full" style={{ background: "#FEF3C7", color: "#92400E" }}>
                         {p.stock} left
                       </div>
                     )}
@@ -580,9 +689,9 @@ export default function ShopPage() {
                     {/* Share button */}
                     {!isAdmin && (
                     <button onClick={(e) => { e.stopPropagation(); shareProduct(p); }}
-                      className="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center transition-all"
+                      className="absolute top-1 left-1 w-6 h-6 rounded-full flex items-center justify-center transition-all"
                       style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(4px)" }}>
-                      <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="w-3 h-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
                       </svg>
                     </button>
@@ -590,18 +699,18 @@ export default function ShopPage() {
 
                     {/* Admin edit/delete buttons */}
                     {isAdmin && (
-                      <div className="absolute top-2 left-2 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <div className="absolute top-1 left-1 flex gap-1" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => setEditProduct(p)}
-                          className="w-7 h-7 rounded-full flex items-center justify-center"
+                          className="w-6 h-6 rounded-full flex items-center justify-center"
                           style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(4px)" }}>
-                          <svg className="w-3.5 h-3.5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="w-3 h-3 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
                           </svg>
                         </button>
                         <button onClick={() => adminDeleteProduct(p.id)}
-                          className="w-7 h-7 rounded-full flex items-center justify-center"
+                          className="w-6 h-6 rounded-full flex items-center justify-center"
                           style={{ background: "rgba(239,68,68,0.9)" }}>
-                          <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                           </svg>
                         </button>
@@ -610,29 +719,29 @@ export default function ShopPage() {
 
                     {/* Share dropdown */}
                     {shareProductId === p.id && (
-                      <div className="absolute top-10 left-2 bg-white rounded-xl shadow-lg p-2 z-20 flex flex-col gap-1 min-w-[140px]" onClick={(e) => e.stopPropagation()}>
+                      <div className="absolute top-8 left-1 bg-white rounded-lg shadow-lg p-1.5 z-20 flex flex-col gap-0.5 min-w-[120px]" onClick={(e) => e.stopPropagation()}>
                         <a href={`https://wa.me/?text=${encodeURIComponent(`${p.name}${p.price ? ` - ${p.price.toLocaleString()} Birr` : ""} at ${shop.shop_name} ${shopUrl}/${p.id}`)}`}
-                          target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50">
-                          <span className="text-base">💬</span> WhatsApp
+                          target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] font-medium text-gray-700 hover:bg-gray-50">
+                          <span className="text-xs">💬</span> WhatsApp
                         </a>
                         <button onClick={() => copyLink(`${shopUrl}/${p.id}`, p.id)}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 text-left">
-                          <span className="text-base">📋</span> {copiedId === p.id ? "Copied!" : "Copy Link"}
+                          className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] font-medium text-gray-700 hover:bg-gray-50 text-left">
+                          <span className="text-xs">📋</span> {copiedId === p.id ? "Copied!" : "Copy Link"}
                         </button>
                       </div>
                     )}
 
                     {/* Product name + price on gradient */}
-                    {p.photo_url && (
-                      <div className="absolute bottom-0 left-0 right-0 px-3 pb-2.5 pt-6">
-                        <p className="text-white font-bold text-sm leading-tight line-clamp-1 drop-shadow-sm">{p.name}</p>
-                        <p className="text-white font-bold text-xs mt-0.5" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>{priceDisplay}</p>
+                    {src && (
+                      <div className="absolute bottom-0 left-0 right-0 px-2 pb-1.5 pt-4">
+                        <p className="text-white font-bold text-[11px] leading-tight line-clamp-1 drop-shadow-sm">{p.name}</p>
+                        <p className="text-white font-bold text-[10px] mt-0.5" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>{priceDisplay}</p>
                       </div>
                     )}
 
                     {/* Tag */}
-                    {p.tag && !p.photo_url && (
-                      <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                    {p.tag && !src && (
+                      <div className="absolute bottom-1 right-1 px-1 py-0.5 rounded text-[8px] font-medium"
                         style={{ background: "rgba(255,255,255,0.85)", color: "#374151" }}>
                         {TAG_LABELS[p.tag] || p.tag}
                       </div>
@@ -640,20 +749,28 @@ export default function ShopPage() {
                   </div>
 
                   {/* Info below photo */}
-                  <div className="px-3 pt-2 pb-2.5" style={{ background: "white" }}>
-                    {!p.photo_url && (
+                  <div className="px-2 pt-1.5 pb-2" style={{ background: "white" }}>
+                    {!src && (
                       <>
-                        <h2 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-1">{p.name}</h2>
-                        <p className="text-xs font-bold mt-0.5" style={{ color: theme.primary }}>{priceDisplay}</p>
+                        <h2 className="font-semibold text-gray-900 text-[11px] leading-tight line-clamp-1">{p.name}</h2>
+                        <p className="text-[10px] font-bold mt-0.5" style={{ color: theme.primary }}>{priceDisplay}</p>
                       </>
                     )}
-                    <button onClick={() => isSoldOut ? null : openInquiry(p)} disabled={isSoldOut}
-                      className="w-full mt-1.5 py-2 rounded-xl text-white text-xs font-semibold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                      style={{ background: isSoldOut ? "#D1D5DB" : theme.primary }}
-                      onMouseEnter={(e) => { if (!isSoldOut) e.currentTarget.style.background = theme.primaryDark; }}
-                      onMouseLeave={(e) => { if (!isSoldOut) e.currentTarget.style.background = theme.primary; }}>
-                      {isSoldOut ? "Sold Out" : (p.price_type === "contact" ? "Inquire" : (isService ? "Book Now" : "Buy Now"))}
-                    </button>
+                    {isAdmin ? (
+                      <button onClick={() => toggleStock(p.id, isSoldOut ? null : 0)}
+                        className="w-full mt-1 py-1.5 rounded-lg text-white text-[10px] font-semibold transition-all active:scale-95"
+                        style={{ background: isSoldOut ? "#22C55E" : "#EF4444" }}>
+                        {isSoldOut ? "Restock" : "Mark Sold Out"}
+                      </button>
+                    ) : (
+                      <button onClick={() => isSoldOut ? null : openInquiry(p)} disabled={isSoldOut}
+                        className="w-full mt-1 py-1.5 rounded-lg text-white text-[10px] font-semibold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{ background: isSoldOut ? "#D1D5DB" : theme.primary }}
+                        onMouseEnter={(e) => { if (!isSoldOut) e.currentTarget.style.background = theme.primaryDark; }}
+                        onMouseLeave={(e) => { if (!isSoldOut) e.currentTarget.style.background = theme.primary; }}>
+                        {isSoldOut ? "Sold Out" : (p.price_type === "contact" ? "Inquire" : (isService ? "Book" : "Buy"))}
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -672,14 +789,16 @@ export default function ShopPage() {
                 </Link>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {crossSell.map((p) => (
+            <div className="grid grid-cols-3 gap-2">
+              {crossSell.map((p) => {
+                const csSrc = imgUrl(p.photo_file_id, p.photo_url);
+                return (
                 <Link key={p.id} href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                  <div className="product-card rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                  <div className="product-card rounded-xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
                     <div className="relative aspect-square overflow-hidden">
-                      {p.photo_url ? (
+                      {csSrc ? (
                         <>
-                          <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                          <img src={csSrc} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
                           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)" }} />
                           <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2">
                             <p className="text-white font-bold text-xs leading-tight line-clamp-1">{p.name}</p>
@@ -692,18 +811,19 @@ export default function ShopPage() {
                         </div>
                       )}
                     </div>
-                    {!p.photo_url && (
-                      <div className="p-2.5">
-                        <p className="font-semibold text-gray-900 text-xs leading-tight line-clamp-1">{p.name}</p>
-                        <p className="text-xs font-bold mt-0.5" style={{ color: theme.primary }}>{fmtPrice(p.price, p.price_type)}</p>
+                    {!csSrc && (
+                      <div className="p-2">
+                        <p className="font-semibold text-gray-900 text-[11px] leading-tight line-clamp-1">{p.name}</p>
+                        <p className="text-[10px] font-bold mt-0.5" style={{ color: theme.primary }}>{fmtPrice(p.price, p.price_type)}</p>
                       </div>
                     )}
-                    <div className="px-2.5 pb-2">
-                      <p className="text-[10px] text-gray-400">{p.shop_name}</p>
+                    <div className="px-2 pb-1.5">
+                      <p className="text-[9px] text-gray-400">{p.shop_name}</p>
                     </div>
                   </div>
                 </Link>
-              ))}
+              );
+              })}
             </div>
           </div>
         )}
@@ -761,9 +881,9 @@ export default function ShopPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
             </button>
-            {selectedProduct.photo_url && (
+            {imgUrl(selectedProduct.photo_file_id, selectedProduct.photo_url) && (
               <div className="w-full aspect-[4/3] overflow-hidden rounded-t-3xl relative">
-                <img src={selectedProduct.photo_url} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                <img src={imgUrl(selectedProduct.photo_file_id, selectedProduct.photo_url)!} alt={selectedProduct.name} className="w-full h-full object-cover" />
                 <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 40%)" }} />
               </div>
             )}
@@ -919,6 +1039,41 @@ export default function ShopPage() {
       )}
 
       {/* ═══ Admin: Shop Settings Modal ═══ */}
+      {/* ═══ Login Modal ═══ */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setShowLoginModal(false); setLoginPolling(false); setLoginNonce(null); }}>
+          <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: theme.bgSoft }}>
+              <svg className="w-7 h-7" style={{ color: theme.primary }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Login via Telegram</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {loginBotUrl
+                ? "Click below to open Telegram and confirm your identity. Then come back here."
+                : "Setting up login..."}
+            </p>
+            {loginBotUrl && (
+              <a href={loginBotUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
+                style={{ background: "#0088cc" }}>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                </svg>
+                Open Telegram
+              </a>
+            )}
+            {loginPolling && (
+              <p className="text-xs text-gray-400 mt-3 flex items-center justify-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: theme.primary }} />
+                Waiting for confirmation...
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {showShopSettings && shop && (
         <ShopSettings
           shop={{
@@ -935,6 +1090,57 @@ export default function ShopPage() {
           onSave={adminRefresh}
           onClose={() => setShowShopSettings(false)}
         />
+      )}
+
+      {/* ═══ Feedback Modal ═══ */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowFeedbackModal(false); setFeedbackText(""); } }}>
+          <div className="absolute inset-0 modal-backdrop" style={{ background: "rgba(0,0,0,0.4)" }} />
+          <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl modal-sheet sm:mx-4">
+            <div className="flex justify-center pt-3 sm:hidden"><div className="w-10 h-1 rounded-full bg-gray-200" /></div>
+            {feedbackSent ? (
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 check-pop" style={{ background: "#FEF3C7" }}>
+                  <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Thank you!</h3>
+                <p className="text-gray-400 text-sm mt-1">We read every message.</p>
+              </div>
+            ) : (
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Share Feedback</h3>
+                    <p className="text-sm text-gray-400 mt-0.5">What should we improve?</p>
+                  </div>
+                  <button onClick={() => { setShowFeedbackModal(false); setFeedbackText(""); }}
+                    className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors -mt-1">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <textarea
+                  placeholder="What's working, what's not, or what would you like us to add?"
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:outline-none resize-none transition-shadow"
+                  style={{ boxShadow: feedbackText ? "0 0 0 2px #F59E0B44" : undefined }}
+                  autoFocus
+                />
+                <button onClick={submitFeedback} disabled={!feedbackText.trim()}
+                  className="w-full mt-3 py-3 rounded-xl text-white text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: feedbackText.trim() ? "#F59E0B" : "#D1D5DB" }}>
+                  Send Feedback
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

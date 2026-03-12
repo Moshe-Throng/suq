@@ -111,6 +111,7 @@ export async function GET(req: NextRequest) {
         price: p.price,
         price_type: p.price_type,
         photo_url: p.photo_url,
+        photo_file_id: p.photo_file_id || null,
         stock: p.stock,
         tag: p.tag,
         created_at: p.created_at,
@@ -142,10 +143,16 @@ export async function GET(req: NextRequest) {
     })
   );
 
+  // Total shop count (for free tier CTA)
+  const { count: shopCount } = await supabase
+    .from("suq_shops")
+    .select("id", { count: "exact", head: true });
+
   return NextResponse.json({
     products: resolved,
     shops: shopsWithCounts,
     categoryCounts,
     total: count || 0,
+    shopCount: shopCount || 0,
   });
 }

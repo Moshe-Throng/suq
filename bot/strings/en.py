@@ -269,3 +269,20 @@ CATALOG_VIEW_BTN = "🛍 View Full Catalog"
 
 ALREADY_ADDING = "⚠️ You're already adding a listing. Complete the current step or /cancel to stop."
 REMIND_PHOTO = "📸 Please send a photo to continue.\n\n(/cancel to stop)"
+
+# ══════════════════════════════════════════════════════════════
+# FEEDBACK
+# ══════════════════════════════════════════════════════════════
+
+FEEDBACK_PROMPT = "We'd love to hear your thoughts! What's working, what's not, or what would you like us to add?"
+FEEDBACK_THANKS = "Thank you for your feedback! We read every message."
+FEEDBACK_NUDGE = "How's your experience so far? Send /feedback anytime to share your thoughts."
+
+# ══════════════════════════════════════════════════════════════
+# FREE TIER LIMITS
+# ══════════════════════════════════════════════════════════════
+
+WAITLIST_MSG = "We're at capacity right now! We'll notify you when spots open up."
+PRODUCT_LIMIT = "You've reached the free plan limit of {max} products. Remove some to add more."
+FREE_PLAN_INFO = "Free plan: up to {max} products, free for 1 year."
+PRODUCT_COUNT = "({count}/{max} products used)"

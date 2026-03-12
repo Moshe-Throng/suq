@@ -12,6 +12,7 @@ COMMANDS_EN = [
     BotCommand("orders", "View inquiries"),
     BotCommand("shop", "Your shop link"),
     BotCommand("catalog", "Share product catalog"),
+    BotCommand("feedback", "Share your feedback"),
     BotCommand("language", "Change language"),
     BotCommand("help", "List commands"),
 ]
@@ -23,6 +24,7 @@ COMMANDS_AM = [
     BotCommand("orders", "ጥያቄዎች ይመልከቱ"),
     BotCommand("shop", "የሱቅ ሊንክ"),
     BotCommand("catalog", "ካታሎግ ያጋሩ"),
+    BotCommand("feedback", "ግብረመልስ ያጋሩ"),
     BotCommand("language", "ቋንቋ ቀይር"),
     BotCommand("help", "ትዕዛዞች ዝርዝር"),
 ]

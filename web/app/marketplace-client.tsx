@@ -11,6 +11,7 @@ interface MarketProduct {
   price: number | null;
   price_type: string | null;
   photo_url: string | null;
+  photo_file_id: string | null;
   stock: number | null;
   tag: string | null;
   created_at: string;
@@ -18,6 +19,11 @@ interface MarketProduct {
   shop_slug: string;
   shop_category: string;
   shop_template_style: string;
+}
+
+function imgUrl(fileId: string | null, fallbackUrl: string | null): string | null {
+  if (fileId) return `/api/img/${fileId}`;
+  return fallbackUrl;
 }
 
 interface MarketShop {
@@ -36,6 +42,7 @@ interface Props {
   initialShops: MarketShop[];
   categoryCounts: Record<string, number>;
   totalProducts: number;
+  shopCount?: number;
 }
 
 /* ─── Design tokens ──────────────────────────────────────── */
@@ -203,8 +210,8 @@ function ProductCard({ p, delay = 0 }: { p: MarketProduct; delay?: number }) {
       }}>
         {/* Image */}
         <div style={{ position: "relative", width: "100%", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
-          {p.photo_url && !imgFailed ? (
-            <img src={p.photo_url} alt={p.name} loading="lazy" decoding="async"
+          {imgUrl(p.photo_file_id, p.photo_url) && !imgFailed ? (
+            <img src={imgUrl(p.photo_file_id, p.photo_url)!} alt={p.name} loading="lazy" decoding="async"
               onError={() => setImgFailed(true)}
               style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
@@ -303,7 +310,7 @@ function ShopCard({ s, lang }: { s: MarketShop; lang: "en" | "am" }) {
 
 /* ─── Main component ─────────────────────────────────────── */
 
-export default function MarketplaceClient({ initialProducts, initialShops, categoryCounts, totalProducts }: Props) {
+export default function MarketplaceClient({ initialProducts, initialShops, categoryCounts, totalProducts, shopCount = 0 }: Props) {
   const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<"en" | "am">("en");
   const [browseMode, setBrowseMode] = useState(false);
@@ -322,7 +329,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
 
   const t = T[lang];
 
-  const featuredProducts = useMemo(() => initialProducts.filter(p => p.photo_url).slice(0, 8), [initialProducts]);
+  const featuredProducts = useMemo(() => initialProducts.filter(p => p.photo_url || p.photo_file_id).slice(0, 8), [initialProducts]);
   const featuredShops = useMemo(() => initialShops.slice(0, 10), [initialShops]);
   const totalShops = initialShops.length;
 
@@ -868,8 +875,13 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
             <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.07-.18c-.08-.05-.19-.03-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.46-.01.06.01.24 0 .37z" />
             </svg>
-            {t.createShopFree}
+            {shopCount >= 50 ? (lang === "am" ? "ቦታ ተሞልቷል — ተመዝገቡ" : "All spots taken — join waitlist") : t.createShopFree}
           </a>
+          {shopCount > 0 && shopCount < 50 && (
+            <p style={{ textAlign: "center", fontSize: "12px", color: C.muted, marginTop: "8px" }}>
+              {50 - shopCount} / 50 {lang === "am" ? "ነፃ ቦታዎች ይቀራሉ" : "free spots remaining"}
+            </p>
+          )}
         </div>
       </section>
 
@@ -987,26 +999,27 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               </div>
             ) : (
               <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
                   {browseProducts.map((p) => {
                     const isSoldOut = p.stock === 0;
+                    const src = imgUrl(p.photo_file_id, p.photo_url);
                     return (
                       <Link key={p.id} href={`/${p.shop_slug}/${p.id}`}
                         style={{ textDecoration: "none", color: "inherit" }}>
                         <div className="browse-card" style={{
-                          background: C.white, borderRadius: "16px", overflow: "hidden",
-                          border: `1.5px solid ${C.border}`,
+                          background: C.white, borderRadius: "12px", overflow: "hidden",
+                          border: `1px solid ${C.border}`,
                         }}>
                           <div style={{ position: "relative", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
-                            {p.photo_url ? (
-                              <img src={p.photo_url} alt={p.name} loading="lazy"
+                            {src ? (
+                              <img src={src} alt={p.name} loading="lazy"
                                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                                 style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             ) : null}
-                            {!p.photo_url && (
+                            {!src && (
                               <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
                                 justifyContent: "center" }}>
-                                <span style={{ fontSize: "28px", opacity: 0.3 }}>📦</span>
+                                <span style={{ fontSize: "22px", opacity: 0.3 }}>📦</span>
                               </div>
                             )}
                             {isSoldOut && (
@@ -1026,16 +1039,16 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                               </div>
                             )}
                           </div>
-                          <div style={{ padding: "10px 11px 12px" }}>
-                            <p style={{ fontSize: "13px", fontWeight: 700, color: C.dark, lineHeight: 1.3,
-                              marginBottom: "3px", display: "-webkit-box", WebkitLineClamp: 2,
+                          <div style={{ padding: "6px 8px 8px" }}>
+                            <p style={{ fontSize: "11px", fontWeight: 700, color: C.dark, lineHeight: 1.3,
+                              marginBottom: "2px", display: "-webkit-box", WebkitLineClamp: 1,
                               WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                               {p.name}
                             </p>
-                            <p style={{ fontSize: "13px", fontWeight: 800, color: C.terra }}>
+                            <p style={{ fontSize: "11px", fontWeight: 800, color: C.terra }}>
                               {fmtPrice(p.price, p.price_type)}
                             </p>
-                            <p style={{ fontSize: "11px", color: C.muted, marginTop: "2px",
+                            <p style={{ fontSize: "9px", color: C.muted, marginTop: "1px",
                               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {p.shop_name}
                             </p>
