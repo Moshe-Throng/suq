@@ -368,9 +368,9 @@ export default function ProductDetailPage() {
 
       {/* ═══ CTA buttons ═══ */}
       <div className="fade-in" style={{ animationDelay: ".2s", padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
-        {/* Primary: Telegram deep link */}
+        {/* Primary: Telegram — seller DM if username exists, else bot deep link */}
         <a
-          href={`https://t.me/SoukEtBot?start=contact_${product.id}`}
+          href={shop.telegram_username ? `https://t.me/${shop.telegram_username}` : `https://t.me/SoukEtBot?start=contact_${product.id}`}
           target="_blank"
           rel="noopener noreferrer"
           style={{
