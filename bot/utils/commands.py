@@ -6,6 +6,7 @@ Sets the Telegram "/" command list for a specific user in their chosen language.
 from telegram import BotCommand, BotCommandScopeChat
 
 COMMANDS_EN = [
+    BotCommand("menu", "Open seller dashboard"),
     BotCommand("add", "Add a product or service"),
     BotCommand("products", "View your items"),
     BotCommand("orders", "View inquiries"),
@@ -16,6 +17,7 @@ COMMANDS_EN = [
 ]
 
 COMMANDS_AM = [
+    BotCommand("menu", "የሻጭ ዳሽቦርድ ክፈት"),
     BotCommand("add", "ምርት ወይም አገልግሎት ጨምር"),
     BotCommand("products", "ዝርዝሮችዎን ይመልከቱ"),
     BotCommand("orders", "ጥያቄዎች ይመልከቱ"),

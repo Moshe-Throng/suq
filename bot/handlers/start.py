@@ -88,8 +88,16 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     """Handle /start — language picker, seller menu, or buyer contact deep link."""
     user = update.effective_user
 
-    # ── Check for buyer contact deep link: /start contact_{product_id} ──
+    # ── Check for deep links ──
     args = context.args
+
+    # Web login deep link: /start weblogin_<nonce>
+    if args and args[0].startswith("weblogin_"):
+        nonce = args[0][len("weblogin_"):]
+        await _handle_weblogin_deeplink(update, user, nonce)
+        return
+
+    # Buyer contact deep link: /start contact_{product_id}
     if args and args[0].startswith("contact_"):
         product_id = args[0][len("contact_"):]
         await _handle_contact_deeplink(update, product_id)
@@ -113,6 +121,40 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text(
         "🌍 ቋንቋ ይምረጡ / Choose your language:",
         reply_markup=keyboard,
+    )
+
+
+async def _handle_weblogin_deeplink(update: Update, user, nonce: str) -> None:
+    """Handle web login deep link: verify seller, write JWT to suq_web_logins."""
+    from bot.db.supabase_client import get_client
+    from bot.services.web_auth import generate_admin_token
+
+    shop = await run_sync(get_shop, user.id)
+    if not shop:
+        await update.message.reply_text(
+            "You don't have a shop yet. Use /menu to create one first."
+        )
+        return
+
+    # Generate JWT
+    token = generate_admin_token(user.id, shop["id"], shop["shop_slug"])
+
+    # Write JWT back to suq_web_logins
+    client = get_client()
+    result = client.table("suq_web_logins").update({
+        "jwt": token,
+        "shop_slug": shop["shop_slug"],
+    }).eq("nonce", nonce).execute()
+
+    if not result.data:
+        await update.message.reply_text(
+            "This login link has expired. Please try again from the website."
+        )
+        return
+
+    await update.message.reply_text(
+        f"You're now logged in on the web! You can go back to your browser.\n\n"
+        f"🏪 {shop['shop_name']}"
     )
 
 

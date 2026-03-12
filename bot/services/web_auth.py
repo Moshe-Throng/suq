@@ -16,7 +16,7 @@ def generate_admin_token(telegram_id: int, shop_id: str, shop_slug: str) -> str:
     Secret: BOT_TOKEN (same as web side uses via jose)
     """
     secret = os.environ.get("BOT_TOKEN", "")
-    ttl = 300  # 5 minutes
+    ttl = 7 * 24 * 3600  # 7 days (one-time use, converted to session on click)
 
     payload = {
         "tid": telegram_id,

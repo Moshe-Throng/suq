@@ -81,6 +81,7 @@ def main():
     # ── Command Handlers ──
 
     app.add_handler(CommandHandler("start", start_handler))
+    app.add_handler(CommandHandler("menu", start_handler))
     app.add_handler(CommandHandler("products", list_products))
     app.add_handler(CommandHandler("orders", list_orders))
     app.add_handler(CommandHandler("shop", shop_handler))
