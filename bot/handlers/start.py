@@ -3,6 +3,10 @@ Handlers for /start, /help, /language, /shop.
 Onboarding flow: language → type → shop name → category → template style → done.
 """
 
+import os
+import asyncio
+import logging
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
@@ -11,6 +15,34 @@ from bot.db.supabase_client import (
     update_shop_theme, update_shop_template, get_product,
 )
 from bot.strings.lang import s, set_lang, seed_lang
+
+_log = logging.getLogger("suq.start")
+_ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID") or os.getenv("OWNER_CHAT_ID")
+
+
+async def _notify_admin_new_shop(bot, shop: dict, user) -> None:
+    """Send real-time notification to admin when a new shop is created."""
+    if not _ADMIN_CHAT_ID:
+        return
+    try:
+        link = catalog_link(shop["shop_slug"])
+        username = f"@{user.username}" if user.username else "no username"
+        lines = [
+            "🆕 <b>New Shop Created!</b>",
+            f"🏪 {shop['shop_name']}",
+            f"👤 {username} (ID: {user.id})",
+            f"📂 {shop.get('category', '—')} | {shop.get('shop_type', 'product')}",
+        ]
+        if shop.get("location_text"):
+            lines.append(f"📍 {shop['location_text']}")
+        lines.append(f"🔗 {link}")
+        await bot.send_message(
+            chat_id=int(_ADMIN_CHAT_ID),
+            text="\n".join(lines),
+            parse_mode="HTML",
+        )
+    except Exception as e:
+        _log.warning(f"Admin notification failed: {e}")
 
 # 10 color options for brand color picker
 COLORS = {
@@ -517,6 +549,8 @@ async def location_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             f"{color_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link, item_type=item_type)}\n\n{free_plan}"
         )
         await _send_seller_menu_from_query(query, user.id, shop)
+        # Notify admin in real-time
+        asyncio.create_task(_notify_admin_new_shop(context.bot, shop, user))
     except Exception as e:
         if "duplicate" in str(e).lower() or "unique" in str(e).lower():
             await query.edit_message_text(t.SHOP_NAME_TAKEN)
@@ -568,6 +602,8 @@ async def theme_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             f"{theme_info['emoji']} {t.SHOP_CREATED.format(name=shop['shop_name'], link=link, item_type=item_type)}\n\n{free_plan}"
         )
         await _send_seller_menu_from_query(query, user.id, shop)
+        # Notify admin in real-time
+        asyncio.create_task(_notify_admin_new_shop(context.bot, shop, user))
     except Exception as e:
         if "duplicate" in str(e).lower() or "unique" in str(e).lower():
             await query.edit_message_text(t.SHOP_NAME_TAKEN)
