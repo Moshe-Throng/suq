@@ -235,6 +235,21 @@ SHARE_CARD_CAPTION = "ይህን ለገዢዎችዎ እና በማህበራዊ ሚ
 BTN_MANAGE_WEB = "🌐 በድረ-ገጽ ያስተዳድሩ"
 
 # ══════════════════════════════════════════════════════════════
+# TIKTOK
+# ══════════════════════════════════════════════════════════════
+
+ASK_TIKTOK = "🎬 የTikTok መገለጫ URL ይላኩ (ምሳሌ: https://www.tiktok.com/@yourshop)።\n\nለማስወገድ /skip ይላኩ።"
+BTN_CHANGE_TIKTOK = "TikTok 🎬"
+TIKTOK_SAVED = "🎬 TikTok ሊንክ ተዘምኗል!"
+TIKTOK_REMOVED = "TikTok ሊንክ ተወግዷል።"
+TIKTOK_INVALID = "እባክዎ ትክክለኛ TikTok URL ይላኩ (https://tiktok.com/ ወይም https://www.tiktok.com/ ይጀምር)።"
+TIKTOK_TOO_LONG = "TikTok URL በጣም ረጅም ነው (ከ255 ፊደላት በታች)።"
+BTN_TIKTOK_BIO = "📋 ለTikTok Bio ሊንክ ቅዳ"
+TIKTOK_BIO_TEXT = "🏪 {shop_name}\n🛍 ያስሱ እና ይዘዙ: {link}"
+ASK_PRODUCT_TIKTOK = "🎬 ለዚህ ምርት TikTok ቪዲዮ? URL ይላኩ ወይም /skip።"
+PRODUCT_TIKTOK_SAVED = "🎬 TikTok ቪዲዮ ተያይዟል!"
+
+# ══════════════════════════════════════════════════════════════
 # DEEP LINK MESSAGES
 # ══════════════════════════════════════════════════════════════
 

@@ -178,6 +178,13 @@ def update_shop_logo(shop_id: str, logo_file_id: str | None,
     ).eq("id", shop_id).execute()
 
 
+def update_shop_tiktok(shop_id: str, tiktok_url: str | None) -> None:
+    """Update a shop's TikTok URL. Pass None to remove."""
+    get_client().table("suq_shops").update(
+        {"tiktok_url": tiktok_url}
+    ).eq("id", shop_id).execute()
+
+
 def get_product_count(shop_id: str) -> int:
     """Get count of active products for a shop."""
     result = get_client().table("suq_products").select(
@@ -259,6 +266,13 @@ def update_product_stock(product_id: str, stock: int | None) -> None:
     """Update a product's stock count. Pass None for unlimited."""
     get_client().table("suq_products").update(
         {"stock": stock}
+    ).eq("id", product_id).execute()
+
+
+def update_product_tiktok(product_id: str, tiktok_url: str | None) -> None:
+    """Update a product's TikTok video URL. Pass None to remove."""
+    get_client().table("suq_products").update(
+        {"tiktok_url": tiktok_url}
     ).eq("id", product_id).execute()
 
 

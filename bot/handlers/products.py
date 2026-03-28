@@ -9,9 +9,11 @@ from telegram.ext import (
     CallbackQueryHandler,
 )
 
+import re
+
 from bot.db.supabase_client import (
     run_sync, get_shop, get_products, get_product, create_product, delete_product,
-    format_price, catalog_link, get_product_count,
+    update_product_tiktok, format_price, catalog_link, get_product_count,
 )
 
 MAX_PRODUCTS = 15
@@ -19,12 +21,12 @@ from bot.strings.lang import s, seed_lang
 from bot.services.tag_registry import get_tags_for_category
 
 # Conversation states
-PHOTO, NAME, PRICE_TYPE, PRICE, DESC, TAG, STOCK = range(7)
+PHOTO, NAME, PRICE_TYPE, PRICE, DESC, TAG, STOCK, TIKTOK_VIDEO = range(8)
 
 _CLEANUP_KEYS = (
     "shop_id", "product_name", "product_price", "photo_file_id",
     "listing_type", "price_type", "product_tag", "product_stock",
-    "product_desc",
+    "product_desc", "product_tiktok_url",
 )
 
 
@@ -223,11 +225,11 @@ async def recv_tag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     tag_key = query.data.replace("ptag_", "")
     context.user_data["product_tag"] = None if tag_key == "skip" else tag_key
 
-    # Services don't need stock — save immediately
+    # Services don't need stock — ask for TikTok video
     if context.user_data.get("listing_type") == "service":
         context.user_data["product_stock"] = None  # unlimited
         await query.edit_message_text("✅")
-        return await _save_product(update, context, user, from_query=True)
+        return await _ask_tiktok_video(update, context, user, from_query=True)
 
     # Show stock picker for products
     keyboard = InlineKeyboardMarkup([
@@ -258,7 +260,7 @@ async def recv_stock_text(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return STOCK
 
     context.user_data["product_stock"] = stock
-    return await _save_product(update, context, user)
+    return await _ask_tiktok_video(update, context, user)
 
 
 async def recv_stock_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -272,7 +274,37 @@ async def recv_stock_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.edit_message_text(
         getattr(t, "BTN_STOCK_UNLIMITED", "♾ Unlimited") + " ✓"
     )
-    return await _save_product(update, context, user, from_query=True)
+    return await _ask_tiktok_video(update, context, user, from_query=True)
+
+
+async def _ask_tiktok_video(update, context, user, from_query=False):
+    """Ask for optional TikTok video link before saving."""
+    t = s(user.id)
+    reply_target = update.callback_query.message if from_query else update.message
+
+    prompt = getattr(t, "ASK_PRODUCT_TIKTOK",
+        "🎬 TikTok video for this product? Send the URL or /skip.")
+    await reply_target.reply_text(prompt)
+    return TIKTOK_VIDEO
+
+
+async def recv_tiktok_video(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Receive TikTok video URL or /skip."""
+    user = update.effective_user
+    t = s(user.id)
+    text = update.message.text.strip()
+
+    if text.startswith("/"):
+        # /skip or any command — skip TikTok
+        context.user_data["product_tiktok_url"] = None
+    elif re.match(r'^https?://(www\.|vm\.)?tiktok\.com/', text):
+        context.user_data["product_tiktok_url"] = text
+    else:
+        await update.message.reply_text(getattr(t, "TIKTOK_INVALID",
+            "Please send a valid TikTok URL or /skip."))
+        return TIKTOK_VIDEO
+
+    return await _save_product(update, context, user)
 
 
 async def _save_product(update, context, user, from_query=False):
@@ -319,6 +351,11 @@ async def _save_product(update, context, user, from_query=False):
         listing_type=listing_type, price_type=price_type,
         tag=tag, stock=stock,
     )
+
+    # Save TikTok video URL if provided
+    tiktok_url = context.user_data.get("product_tiktok_url")
+    if tiktok_url:
+        await run_sync(update_product_tiktok, product["id"], tiktok_url)
 
     price_display = format_price(price, price_type)
     new_count = await run_sync(get_product_count, shop_id)
@@ -585,6 +622,9 @@ def build_add_product_conv() -> ConversationHandler:
                 CallbackQueryHandler(recv_stock_callback, pattern="^pstock_"),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, recv_stock_text),
                 CommandHandler("add", _remind_in_progress),
+            ],
+            TIKTOK_VIDEO: [
+                MessageHandler(filters.TEXT, recv_tiktok_video),
             ],
         },
         fallbacks=[

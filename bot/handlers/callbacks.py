@@ -23,6 +23,7 @@ from bot.handlers.settings import (
     settings_change_location, settings_location_selected,
     settings_change_category, settings_category_selected,
     settings_change_type, settings_type_selected,
+    settings_ask_tiktok, tiktok_bio_link,
 )
 from bot.db.supabase_client import run_sync, get_shop, catalog_link
 from bot.strings.lang import s, seed_lang
@@ -139,6 +140,12 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     elif data == "settings_logo":
         await settings_ask_logo(update, context)
+
+    elif data == "settings_tiktok":
+        await settings_ask_tiktok(update, context)
+
+    elif data == "tiktok_bio":
+        await tiktok_bio_link(update, context)
 
     elif data == "settings_back":
         await query.answer()

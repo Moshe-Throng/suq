@@ -30,6 +30,7 @@ from bot.handlers.callbacks import callback_router
 from bot.handlers.settings import (
     settings_recv_desc, settings_recv_logo, settings_recv_logo_skip,
     settings_recv_gps_location, settings_recv_gps_skip,
+    settings_recv_tiktok, settings_recv_tiktok_skip,
 )
 from bot.handlers.feedback import feedback_command, feedback_text_handler
 
@@ -125,6 +126,15 @@ def main():
             await settings_recv_gps_skip(update, context)
             return
 
+        # Check /skip during TikTok prompt
+        if text.lower() == "/skip" and context.user_data.get("awaiting_tiktok"):
+            await settings_recv_tiktok_skip(update, context)
+            return
+
+        # Check TikTok URL input
+        if await settings_recv_tiktok(update, context):
+            return
+
         # Check description input
         if await settings_recv_desc(update, context):
             return
@@ -144,6 +154,9 @@ def main():
             return
         if context.user_data.get("awaiting_gps_location"):
             await settings_recv_gps_skip(update, context)
+            return
+        if context.user_data.get("awaiting_tiktok"):
+            await settings_recv_tiktok_skip(update, context)
             return
 
     app.add_handler(CommandHandler("skip", _skip_handler))

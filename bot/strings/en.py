@@ -234,6 +234,21 @@ SHARE_CARD_CAPTION = "Share this with your buyers and on social media!"
 BTN_MANAGE_WEB = "🌐 Manage on Web"
 
 # ══════════════════════════════════════════════════════════════
+# TIKTOK
+# ══════════════════════════════════════════════════════════════
+
+ASK_TIKTOK = "🎬 Send your TikTok profile URL (e.g. https://www.tiktok.com/@yourshop).\n\nSend /skip to remove it."
+BTN_CHANGE_TIKTOK = "TikTok 🎬"
+TIKTOK_SAVED = "🎬 TikTok link updated!"
+TIKTOK_REMOVED = "TikTok link removed."
+TIKTOK_INVALID = "Please send a valid TikTok URL (must start with https://tiktok.com/ or https://www.tiktok.com/)."
+TIKTOK_TOO_LONG = "TikTok URL is too long (max 255 characters)."
+BTN_TIKTOK_BIO = "📋 Copy Link for TikTok Bio"
+TIKTOK_BIO_TEXT = "🏪 {shop_name}\n🛍 Browse & order: {link}"
+ASK_PRODUCT_TIKTOK = "🎬 TikTok video for this product? Send the URL or /skip."
+PRODUCT_TIKTOK_SAVED = "🎬 TikTok video linked!"
+
+# ══════════════════════════════════════════════════════════════
 # DEEP LINK MESSAGES
 # ══════════════════════════════════════════════════════════════
 

@@ -11,6 +11,7 @@ interface ShopData {
   phone: string | null;
   email: string | null;
   shop_type: string | null;
+  tiktok_url: string | null;
 }
 
 interface Props {
@@ -47,6 +48,7 @@ export default function ShopSettings({ shop, themeColor, onSave, onClose }: Prop
   const [color, setColor] = useState(shop.template_style || "purple");
   const [phone, setPhone] = useState(shop.phone || "");
   const [email, setEmail] = useState(shop.email || "");
+  const [tiktokUrl, setTiktokUrl] = useState(shop.tiktok_url || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -67,6 +69,7 @@ export default function ShopSettings({ shop, themeColor, onSave, onClose }: Prop
           template_style: color,
           phone: phone.trim() || null,
           email: email.trim() || null,
+          tiktok_url: tiktokUrl.trim() || null,
         }),
       });
       if (res.ok) onSave();
@@ -151,6 +154,14 @@ export default function ShopSettings({ shop, themeColor, onSave, onClose }: Prop
                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2"
                 style={{ "--tw-ring-color": themeColor } as React.CSSProperties} />
               <p className="text-[10px] text-gray-400 mt-1">Set an email to log in from any browser without Telegram</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">TikTok</label>
+              <input type="url" value={tiktokUrl} onChange={(e) => setTiktokUrl(e.target.value)} placeholder="https://www.tiktok.com/@yourshop"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2"
+                style={{ "--tw-ring-color": themeColor } as React.CSSProperties} />
+              <p className="text-[10px] text-gray-400 mt-1">Link your TikTok to showcase videos on your shop page</p>
             </div>
 
             {error && <p className="text-red-500 text-xs">{error}</p>}
