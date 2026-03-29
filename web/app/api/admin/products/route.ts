@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { name, price, price_type, description, tag, stock, photo_url, photo_file_id, listing_type } = body;
+  const { name, price, price_type, description, tag, stock, photo_url, photo_file_id, listing_type, tiktok_url, extra_photos } = body;
 
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "Product name is required" }, { status: 400 });
@@ -75,6 +75,8 @@ export async function POST(req: NextRequest) {
       photo_url: photo_url || null,
       photo_file_id: photo_file_id || null,
       listing_type: listing_type || "product",
+      tiktok_url: tiktok_url || null,
+      extra_photos: extra_photos || null,
       is_active: true,
     })
     .select()

@@ -23,6 +23,7 @@ interface Product {
   tag: string | null;
   stock: number | null;
   tiktok_url: string | null;
+  extra_photos: string[] | null;
 }
 
 interface Shop {
@@ -835,7 +836,7 @@ export default function ShopPage() {
                         {isSoldOut ? t.restock : t.markSoldOut}
                       </button>
                     ) : (
-                      <button onClick={() => isSoldOut ? null : openInquiry(p)} disabled={isSoldOut}
+                      <button onClick={() => isSoldOut ? null : setSelectedProduct(p)} disabled={isSoldOut}
                         className="w-full mt-1 py-1.5 rounded-lg text-white text-[10px] font-semibold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{ background: isSoldOut ? "#D1D5DB" : theme.primary }}
                         onMouseEnter={(e) => { if (!isSoldOut) e.currentTarget.style.background = theme.primaryDark; }}
@@ -953,12 +954,29 @@ export default function ShopPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
             </button>
-            {imgUrl(selectedProduct.photo_file_id, selectedProduct.photo_url) && (
-              <div className="w-full aspect-[4/3] overflow-hidden rounded-t-3xl relative">
-                <img src={imgUrl(selectedProduct.photo_file_id, selectedProduct.photo_url)!} alt={selectedProduct.name} className="w-full h-full object-cover" />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 40%)" }} />
-              </div>
-            )}
+            {imgUrl(selectedProduct.photo_file_id, selectedProduct.photo_url) && (() => {
+              const allPhotos = [
+                imgUrl(selectedProduct.photo_file_id, selectedProduct.photo_url)!,
+                ...(selectedProduct.extra_photos || []).map(fid => `/api/img/${fid}`),
+              ];
+              return (
+                <div className="w-full aspect-[4/3] overflow-hidden rounded-t-3xl relative">
+                  <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory hide-scrollbar">
+                    {allPhotos.map((src, i) => (
+                      <img key={i} src={src} alt={`${selectedProduct.name} ${i + 1}`} className="w-full h-full object-cover flex-shrink-0 snap-center" />
+                    ))}
+                  </div>
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 40%)" }} />
+                  {allPhotos.length > 1 && (
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                      {allPhotos.map((_, i) => (
+                        <div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: i === 0 ? "white" : "rgba(255,255,255,0.4)" }} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <div className="p-5">
               <div className="flex items-center gap-2 mb-2">
                 {selectedProduct.tag && (
@@ -974,18 +992,39 @@ export default function ShopPage() {
               <h2 className="text-xl font-bold text-gray-900">{selectedProduct.name}</h2>
               <p className="text-lg font-bold mt-1" style={{ color: theme.primary }}>{fmtPrice(selectedProduct.price, selectedProduct.price_type, t)}</p>
               {selectedProduct.description && <p className="text-sm text-gray-500 mt-3 leading-relaxed">{selectedProduct.description}</p>}
-              <button onClick={() => selectedProduct.stock !== 0 ? openInquiry(selectedProduct) : null}
-                disabled={selectedProduct.stock === 0}
-                className="w-full mt-5 py-3.5 rounded-xl text-white text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ background: selectedProduct.stock === 0 ? "#D1D5DB" : theme.primary }}>
-                {selectedProduct.stock === 0 ? t.soldOut : (selectedProduct.price_type === "contact" ? t.sendInquiry : isService ? t.bookNow : t.buyNow)}
-              </button>
+              {selectedProduct.stock === 0 ? (
+                <div className="w-full mt-5 py-3.5 rounded-xl text-center text-sm font-semibold text-gray-400" style={{ background: "#F3F4F6" }}>{t.soldOut}</div>
+              ) : (
+                <div className="mt-5 space-y-2">
+                  {shop.telegram_username && (
+                    <a href={`https://t.me/${shop.telegram_username}?text=${encodeURIComponent(`Hi, I'm interested in: ${selectedProduct.name}${selectedProduct.price ? ` (${selectedProduct.price.toLocaleString()} Birr)` : ""}`)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white text-sm font-semibold transition-all active:scale-[0.98]"
+                      style={{ background: theme.primary }}>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.46-.01.06.01.24 0 .37z"/>
+                      </svg>
+                      {t.chat} on Telegram
+                    </a>
+                  )}
+                  {shop.phone && (
+                    <a href={`https://wa.me/${shop.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hi, I'm interested in: ${selectedProduct.name}${selectedProduct.price ? ` (${selectedProduct.price.toLocaleString()} Birr)` : ""}\n${shopUrl}/${selectedProduct.id}`)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border transition-all active:scale-[0.98]"
+                      style={{ borderColor: "#25D366", color: "#25D366" }}>
+                      💬 WhatsApp
+                    </a>
+                  )}
+                  {shop.phone && (
+                    <a href={`tel:${shop.phone}`}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border transition-all active:scale-[0.98]"
+                      style={{ borderColor: theme.primary, color: theme.primary }}>
+                      📞 {t.call}
+                    </a>
+                  )}
+                </div>
+              )}
               <div className="flex items-center gap-3 mt-4 justify-center">
-                <a href={`https://wa.me/?text=${encodeURIComponent(`${selectedProduct.name}${selectedProduct.price ? ` - ${selectedProduct.price.toLocaleString()} Birr` : ""} at ${shop.shop_name} ${shopUrl}/${selectedProduct.id}`)}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50 border border-gray-100">
-                  💬 WhatsApp
-                </a>
                 <button onClick={() => copyLink(`${shopUrl}/${selectedProduct.id}`, `detail-${selectedProduct.id}`)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50 border border-gray-100">
                   📋 {copiedId === `detail-${selectedProduct.id}` ? t.copied : t.copyLink}
@@ -1103,6 +1142,8 @@ export default function ShopPage() {
             stock: editProduct.stock,
             photo_url: editProduct.photo_url,
             listing_type: editProduct.listing_type || "product",
+            tiktok_url: editProduct.tiktok_url,
+            extra_photos: editProduct.extra_photos,
           } : undefined}
           tags={availableTags}
           themeColor={theme.primary}

@@ -100,6 +100,7 @@ export interface ShopStrings {
   watchVideo: string;
   tiktokVideo: string;
   shareForTiktok: string;
+  contactSeller: string;
 }
 
 const TRANSLATIONS: Record<Lang, ShopStrings> = {
@@ -195,6 +196,7 @@ const TRANSLATIONS: Record<Lang, ShopStrings> = {
     watchVideo: "Watch Video",
     tiktokVideo: "TikTok Video",
     shareForTiktok: "Copy for TikTok",
+    contactSeller: "Contact Seller",
   },
   am: {
     login: "ግባ",
@@ -288,6 +290,7 @@ const TRANSLATIONS: Record<Lang, ShopStrings> = {
     watchVideo: "ቪዲዮ ይመልከቱ",
     tiktokVideo: "TikTok ቪዲዮ",
     shareForTiktok: "ለTikTok ቅዳ",
+    contactSeller: "ሻጩን ያግኙ",
   },
 };
 
