@@ -33,6 +33,8 @@ from bot.handlers.settings import (
     settings_recv_tiktok, settings_recv_tiktok_skip,
 )
 from bot.handlers.feedback import feedback_command, feedback_text_handler
+from bot.handlers.channel_import import import_recv_channel
+from bot.handlers.channel_sync import channel_post_handler
 
 # ── Config ────────────────────────────────────────────────────
 
@@ -63,6 +65,17 @@ async def post_init(application) -> None:
     """Set default bot commands (Amharic) for all users after startup."""
     await application.bot.set_my_commands(COMMANDS_AM)
     logger.info("Bot commands menu set.")
+
+    # Schedule weekly digest — Monday 5:00 UTC = 8:00 EAT
+    import datetime
+    from bot.services.weekly_digest import send_weekly_digests
+    application.job_queue.run_daily(
+        send_weekly_digests,
+        time=datetime.time(hour=5, minute=0, tzinfo=datetime.timezone.utc),
+        days=(0,),  # Monday
+        name="weekly_digest",
+    )
+    logger.info("Weekly digest scheduled: Monday 8:00 EAT")
 
 
 # ── Main ──────────────────────────────────────────────────────
@@ -131,6 +144,10 @@ def main():
             await settings_recv_tiktok_skip(update, context)
             return
 
+        # Check channel import input
+        if await import_recv_channel(update, context):
+            return
+
         # Check TikTok URL input
         if await settings_recv_tiktok(update, context):
             return
@@ -161,12 +178,15 @@ def main():
 
     app.add_handler(CommandHandler("skip", _skip_handler))
 
+    # ── Channel post handler (auto-sync from linked channels) ──
+    app.add_handler(MessageHandler(filters.ChatType.CHANNEL & filters.PHOTO, channel_post_handler))
+
     # ── Callback Query Handler (all inline buttons) ──
     app.add_handler(CallbackQueryHandler(callback_router))
 
     # ── Start Polling ──
     logger.info("Suq bot starting... (polling mode)")
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=True, allowed_updates=["message", "callback_query", "channel_post"])
 
 
 if __name__ == "__main__":

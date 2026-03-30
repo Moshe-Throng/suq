@@ -238,6 +238,12 @@ export default function ShopPage() {
         setShop(data.shop);
         setProducts(data.products);
         if (data.crossSell) setCrossSell(data.crossSell);
+        // Track shop view (fire-and-forget)
+        fetch("/api/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ shop_id: data.shop.id, event_type: "view" }),
+        }).catch(() => {});
       } catch { setError("Failed to load shop"); }
       finally { setLoading(false); }
     }
@@ -1059,6 +1065,7 @@ export default function ShopPage() {
                   {shop.telegram_username && (
                     <a href={`https://t.me/${shop.telegram_username}?text=${encodeURIComponent(`Hi, I'm interested in: ${selectedProduct.name}${selectedProduct.price ? ` (${selectedProduct.price.toLocaleString()} Birr)` : ""}`)}`}
                       target="_blank" rel="noopener noreferrer"
+                      onClick={() => fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shop_id: shop.id, product_id: selectedProduct.id, event_type: "contact_tap" }) }).catch(() => {})}
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white text-sm font-semibold transition-all active:scale-[0.98]"
                       style={{ background: theme.primary }}>
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">

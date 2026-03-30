@@ -343,3 +343,29 @@ WAITLIST_MSG = "We're at capacity right now! We'll notify you when spots open up
 PRODUCT_LIMIT = "You've reached the free plan limit of {max} products. Remove some to add more."
 FREE_PLAN_INFO = "Free plan: up to {max} products, free for 1 year."
 PRODUCT_COUNT = "({count}/{max} products used)"
+
+# ══════════════════════════════════════════════════════════════
+# CHANNEL IMPORT
+# ══════════════════════════════════════════════════════════════
+
+BTN_IMPORT_CHANNEL = "Import from Channel"
+ASK_CHANNEL_LINK = "Send your Telegram channel link or @username.\n\nWe'll import your products automatically.\n\nExample: @MyShopChannel or https://t.me/MyShopChannel"
+CHANNEL_INVALID = "That doesn't look like a valid channel link.\nSend @username or https://t.me/channel"
+CHANNEL_IMPORTING = "Importing from @{channel}..."
+CHANNEL_SCRAPE_FAILED = "Failed to access @{channel}. Make sure it's a public channel."
+CHANNEL_NO_PRODUCTS = "No product posts found in @{channel}."
+CHANNEL_PARSING = "Found {count} posts. Extracting products..."
+CHANNEL_IMPORT_DONE = "Imported {count} products from @{channel}!\n\nYour shop: {link}\n\nAdd @SoukEtBot as admin to your channel for auto-sync."
+CHANNEL_IMPORT_ERRORS = "\n({errors} posts skipped — no product info found)"
+SYNC_PRODUCT_ADDED = "New product from your channel: {name}"
+
+# ══════════════════════════════════════════════════════════════
+# WEEKLY DIGEST
+# ══════════════════════════════════════════════════════════════
+
+DIGEST_HEADER = "Weekly Report — {shop_name}"
+DIGEST_VIEWS = "Views: {views}"
+DIGEST_TAPS = "Contact taps: {taps}"
+DIGEST_BEST = "Best: {name} ({views} views)"
+DIGEST_TIP_NO_TAPS = "Tip: Try better photos or descriptions to convert views to contacts."
+DIGEST_TIP_NO_VIEWS = "Tip: Share your shop link on social media to get more views."

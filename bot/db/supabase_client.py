@@ -231,7 +231,9 @@ def create_product(shop_id: str, name: str, price: int | None = None,
                    photo_file_id: str | None = None, photo_url: str | None = None,
                    description: str | None = None, listing_type: str = "product",
                    price_type: str = "fixed", tag: str | None = None,
-                   stock: int | None = None) -> dict:
+                   stock: int | None = None,
+                   source_channel_msg_id: int | None = None,
+                   imported_from: str | None = None) -> dict:
     """Create a new product or service listing."""
     data = {
         "shop_id": shop_id,
@@ -251,6 +253,10 @@ def create_product(shop_id: str, name: str, price: int | None = None,
         data["tag"] = tag
     if stock is not None:
         data["stock"] = stock
+    if source_channel_msg_id is not None:
+        data["source_channel_msg_id"] = source_channel_msg_id
+    if imported_from:
+        data["imported_from"] = imported_from
     result = get_client().table("suq_products").insert(data).execute()
     return result.data[0]
 
@@ -396,3 +402,92 @@ def format_price(price: int | None, price_type: str = "fixed") -> str:
     if price_type == "starting_from":
         return f"Starting from {price:,} Birr"
     return f"{price:,} Birr"
+
+
+# ── Channel import operations ───────────────────────────────
+
+
+def update_shop_source_channel(shop_id: str, channel_username: str | None,
+                                sync_enabled: bool = False) -> None:
+    """Link a Telegram channel to a shop."""
+    get_client().table("suq_shops").update({
+        "source_channel": channel_username,
+        "channel_sync_enabled": sync_enabled,
+    }).eq("id", shop_id).execute()
+
+
+def get_shop_by_source_channel(channel_username: str) -> dict | None:
+    """Get shop linked to a Telegram channel."""
+    result = get_client().table("suq_shops").select("*").eq(
+        "source_channel", channel_username
+    ).execute()
+    return result.data[0] if result.data else None
+
+
+def product_exists_by_channel_msg(shop_id: str, msg_id: int) -> bool:
+    """Check if a product from a specific channel message already exists."""
+    result = get_client().table("suq_products").select("id", count="exact").eq(
+        "shop_id", shop_id
+    ).eq("source_channel_msg_id", msg_id).execute()
+    return (result.count or 0) > 0
+
+
+# ── View tracking operations ────────────────────────────────
+
+
+def track_view(shop_id: str, product_id: str | None = None,
+               event_type: str = "view") -> None:
+    """Record a view/contact_tap/share event."""
+    data = {"shop_id": shop_id, "event_type": event_type}
+    if product_id:
+        data["product_id"] = product_id
+    get_client().table("suq_views").insert(data).execute()
+
+
+def get_all_active_shops() -> list[dict]:
+    """Get all shops that have at least one active product."""
+    result = get_client().table("suq_shops").select("*").execute()
+    return result.data or []
+
+
+def get_weekly_stats(shop_id: str) -> dict:
+    """Get view/tap stats for the last 7 days."""
+    from datetime import datetime, timedelta, timezone
+    week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+
+    client = get_client()
+
+    # Total views
+    views_result = client.table("suq_views").select("id", count="exact").eq(
+        "shop_id", shop_id
+    ).eq("event_type", "view").gte("created_at", week_ago).execute()
+    total_views = views_result.count or 0
+
+    # Contact taps
+    taps_result = client.table("suq_views").select("id", count="exact").eq(
+        "shop_id", shop_id
+    ).eq("event_type", "contact_tap").gte("created_at", week_ago).execute()
+    contact_taps = taps_result.count or 0
+
+    # Best product (most views)
+    best_product = None
+    products_result = client.table("suq_views").select(
+        "product_id"
+    ).eq("shop_id", shop_id).eq("event_type", "view").gte(
+        "created_at", week_ago
+    ).not_.is_("product_id", "null").execute()
+
+    if products_result.data:
+        from collections import Counter
+        counts = Counter(r["product_id"] for r in products_result.data)
+        if counts:
+            best_id, best_count = counts.most_common(1)[0]
+            product = get_product(best_id)
+            if product:
+                best_product = {"name": product["name"], "views": best_count}
+
+    return {
+        "total_views": total_views,
+        "contact_taps": contact_taps,
+        "best_product": best_product,
+    }

@@ -344,3 +344,29 @@ WAITLIST_MSG = "በአሁኑ ጊዜ ሙሉ ነን! ቦታ ሲከፈት እናሳ
 PRODUCT_LIMIT = "የነፃ ዕቅድ ገደብ {max} ምርቶች ደርሰዋል። ለመጨመር አንዳንዶችን ያስወግዱ።"
 FREE_PLAN_INFO = "ነፃ ዕቅድ: እስከ {max} ምርቶች፣ ለ1 ዓመት ነፃ።"
 PRODUCT_COUNT = "({count}/{max} ምርቶች ጥቅም ላይ ውለዋል)"
+
+# ══════════════════════════════════════════════════════════════
+# CHANNEL IMPORT
+# ══════════════════════════════════════════════════════════════
+
+BTN_IMPORT_CHANNEL = "ከቻናል አስገባ"
+ASK_CHANNEL_LINK = "የቴሌግራም ቻናል ሊንክ ወይም @username ይላኩ።\n\nምርቶችዎን በራስ-ሰር እናስገባለን።\n\nምሳሌ: @MyShopChannel ወይም https://t.me/MyShopChannel"
+CHANNEL_INVALID = "ይህ ትክክለኛ ቻናል ሊንክ አይመስልም።\n@username ወይም https://t.me/channel ይላኩ"
+CHANNEL_IMPORTING = "ከ @{channel} በማስገባት ላይ..."
+CHANNEL_SCRAPE_FAILED = "@{channel} መድረስ አልተቻለም። ይፋዊ ቻናል መሆኑን ያረጋግጡ።"
+CHANNEL_NO_PRODUCTS = "በ @{channel} ውስጥ ምርት ልጥፎች አልተገኙም።"
+CHANNEL_PARSING = "{count} ልጥፎች ተገኝተዋል። ምርቶችን በማውጣት ላይ..."
+CHANNEL_IMPORT_DONE = "ከ @{channel} {count} ምርቶች ገብተዋል!\n\nሱቅዎ: {link}\n\nለራስ-ሰር ማመሳሰል @SoukEtBot ን እንደ አስተዳዳሪ ወደ ቻናልዎ ይጨምሩ።"
+CHANNEL_IMPORT_ERRORS = "\n({errors} ልጥፎች ተዘልለዋል — የምርት መረጃ አልተገኘም)"
+SYNC_PRODUCT_ADDED = "ከቻናልዎ አዲስ ምርት: {name}"
+
+# ══════════════════════════════════════════════════════════════
+# WEEKLY DIGEST
+# ══════════════════════════════════════════════════════════════
+
+DIGEST_HEADER = "ሳምንታዊ ሪፖርት — {shop_name}"
+DIGEST_VIEWS = "ዕይታዎች: {views}"
+DIGEST_TAPS = "የእውቂያ ክሊኮች: {taps}"
+DIGEST_BEST = "ምርጥ: {name} ({views} ዕይታዎች)"
+DIGEST_TIP_NO_TAPS = "ምክር: ዕይታዎችን ወደ እውቂያ ለመቀየር የተሻለ ፎቶ ወይም መግለጫ ይሞክሩ።"
+DIGEST_TIP_NO_VIEWS = "ምክር: ተጨማሪ ዕይታዎች ለማግኘት የሱቅ ሊንክዎን በማህበራዊ ሚዲያ ላይ ያጋሩ።"

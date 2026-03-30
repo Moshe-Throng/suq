@@ -685,6 +685,11 @@ def _seller_keyboard(t, shop: dict | None = None):
         [
             InlineKeyboardButton(web_label, callback_data="menu_manage_web"),
         ],
+        [
+            InlineKeyboardButton(
+                getattr(t, "BTN_IMPORT_CHANNEL", "Import from Channel"),
+                callback_data="menu_import_channel"),
+        ],
     ])
 
 

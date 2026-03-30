@@ -25,6 +25,7 @@ from bot.handlers.settings import (
     settings_change_type, settings_type_selected,
     settings_ask_tiktok, tiktok_bio_link,
 )
+from bot.handlers.channel_import import import_ask_channel
 from bot.db.supabase_client import run_sync, get_shop, catalog_link
 from bot.strings.lang import s, seed_lang
 
@@ -105,6 +106,9 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if shop:
             link = catalog_link(shop["shop_slug"])
             await query.edit_message_text(f"🔗 {link}")
+
+    elif data == "menu_import_channel":
+        await import_ask_channel(update, context)
 
     elif data == "menu_settings":
         await settings_menu(update, context)
