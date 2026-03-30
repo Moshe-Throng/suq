@@ -396,11 +396,6 @@ export default function ShopPage() {
     } catch { /* silent */ } finally { setSubmitting(false); }
   }
 
-  function openInquiry(p: Product) {
-    setSelectedProduct(null);
-    setInquiryForm({ productId: p.id, productName: p.name, price: p.price, priceType: p.price_type || "fixed" });
-  }
-
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const shopUrl = `${baseUrl}/${slug}`;
 
@@ -427,6 +422,11 @@ export default function ShopPage() {
   function tiktokHandle(url: string): string {
     const m = url.match(/tiktok\.com\/@([^/?]+)/);
     return m ? `@${m[1]}` : "TikTok";
+  }
+
+  function tiktokVideoId(url: string): string | null {
+    const m = url.match(/\/video\/(\d+)/) || url.match(/tiktok\.com\/.*?(\d{15,})/) || url.match(/vm\.tiktok\.com\/(\w+)/);
+    return m ? m[1] : null;
   }
 
   async function openTiktokVideo(url: string) {
@@ -851,6 +851,43 @@ export default function ShopPage() {
           </div>
         )}
 
+        {/* ═══ TikTok Videos Section ═══ */}
+        {(() => {
+          const videoProd = products.filter(p => p.tiktok_url && tiktokVideoId(p.tiktok_url));
+          if (videoProd.length === 0) return null;
+          return (
+            <div className="mt-8 pt-6">
+              <div className="flex items-center gap-2 mb-3">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#000">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.86a8.28 8.28 0 0 0 4.76 1.51v-3.45a4.85 4.85 0 0 1-1-.23z"/>
+                </svg>
+                <h2 className="text-sm font-bold text-gray-900">{t.tiktokVideo}s</h2>
+              </div>
+              <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
+                {videoProd.map(p => {
+                  const vid = tiktokVideoId(p.tiktok_url!);
+                  return (
+                    <div key={p.id} className="flex-shrink-0 w-[280px] rounded-xl overflow-hidden" style={{ background: "#000", boxShadow: "0 2px 12px rgba(0,0,0,0.15)" }}>
+                      <iframe
+                        src={`https://www.tiktok.com/embed/v2/${vid}?lang=en`}
+                        className="w-full"
+                        style={{ height: "440px", border: "none" }}
+                        allow="accelerometer; autoplay; encrypted-media; gyroscope"
+                        allowFullScreen
+                        loading="lazy"
+                      />
+                      <div className="px-3 py-2 bg-white">
+                        <p className="text-xs font-semibold text-gray-900 truncate">{p.name}</p>
+                        <p className="text-[10px] font-bold" style={{ color: theme.primary }}>{fmtPrice(p.price, p.price_type, t)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ═══ More on souk.et (cross-sell) ═══ */}
         {crossSell.length > 0 && (
           <div className="mt-8 pt-6">
@@ -992,6 +1029,29 @@ export default function ShopPage() {
               <h2 className="text-xl font-bold text-gray-900">{selectedProduct.name}</h2>
               <p className="text-lg font-bold mt-1" style={{ color: theme.primary }}>{fmtPrice(selectedProduct.price, selectedProduct.price_type, t)}</p>
               {selectedProduct.description && <p className="text-sm text-gray-500 mt-3 leading-relaxed">{selectedProduct.description}</p>}
+              {selectedProduct.tiktok_url && (() => {
+                const vid = tiktokVideoId(selectedProduct.tiktok_url!);
+                return vid ? (
+                  <div className="mt-4 rounded-xl overflow-hidden" style={{ background: "#000" }}>
+                    <iframe
+                      src={`https://www.tiktok.com/embed/v2/${vid}?lang=en`}
+                      className="w-full"
+                      style={{ height: "500px", border: "none" }}
+                      allow="accelerometer; autoplay; encrypted-media; gyroscope"
+                      allowFullScreen
+                    />
+                  </div>
+                ) : (
+                  <a href={selectedProduct.tiktok_url!} target="_blank" rel="noopener noreferrer"
+                    className="mt-4 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]"
+                    style={{ background: "#000", color: "#fff" }}>
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="white">
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.86a8.28 8.28 0 0 0 4.76 1.51v-3.45a4.85 4.85 0 0 1-1-.23z"/>
+                    </svg>
+                    {t.watchVideo}
+                  </a>
+                );
+              })()}
               {selectedProduct.stock === 0 ? (
                 <div className="w-full mt-5 py-3.5 rounded-xl text-center text-sm font-semibold text-gray-400" style={{ background: "#F3F4F6" }}>{t.soldOut}</div>
               ) : (
