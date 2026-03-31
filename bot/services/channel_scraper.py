@@ -54,12 +54,12 @@ async def scrape_channel_posts(channel_username: str, limit: int = 50) -> list[d
     if not api_id or not api_hash or not bot_token:
         raise RuntimeError("TELEGRAM_API_ID, TELEGRAM_API_HASH, and BOT_TOKEN required")
 
+    # User session for reading channel history (bots can't use messages.GetHistory)
+    session_path = os.getenv("PYROGRAM_SESSION_PATH", "/root/suq/suq_user")
     app = Client(
-        name="suq_scraper",
+        name=session_path,
         api_id=int(api_id),
         api_hash=api_hash,
-        bot_token=bot_token,
-        in_memory=True,
     )
 
     posts = []
