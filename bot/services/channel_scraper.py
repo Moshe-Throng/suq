@@ -71,19 +71,67 @@ async def scrape_channel_posts(channel_username: str, limit: int = 50) -> list[d
             logger.error(f"Cannot access channel @{channel_username}: {e}")
             raise ValueError(f"Cannot access channel @{channel_username}. Make sure it's a public channel.")
 
-        async for msg in app.get_chat_history(channel_username, limit=limit):
-            if not msg.photo:
-                continue
-            caption = msg.caption or msg.text or ""
+        # First pass: collect all messages, group by media_group_id
+        raw_msgs = []
+        async for msg in app.get_chat_history(channel_username, limit=limit * 3):
+            if msg.photo:
+                raw_msgs.append(msg)
+
+        # Group album photos together (same media_group_id = one product)
+        groups: dict[str, list] = {}
+        singles = []
+        for msg in raw_msgs:
+            if msg.media_group_id:
+                gid = str(msg.media_group_id)
+                if gid not in groups:
+                    groups[gid] = []
+                groups[gid].append(msg)
+            else:
+                singles.append(msg)
+
+        # Process grouped albums — first msg with caption is the product, rest are extra photos
+        for gid, msgs in groups.items():
+            msgs.sort(key=lambda m: m.id)  # chronological order
+            caption = ""
+            for m in msgs:
+                if m.caption:
+                    caption = m.caption
+                    break
             if not caption.strip():
                 continue
 
-            # Download photo to bytes
+            # Download all photos in the group
+            all_photos = []
+            for m in msgs:
+                try:
+                    photo_bytes = await app.download_media(m, in_memory=True)
+                    if isinstance(photo_bytes, io.BytesIO):
+                        photo_bytes = photo_bytes.getvalue()
+                    if photo_bytes:
+                        all_photos.append(photo_bytes)
+                except Exception as e:
+                    logger.warning(f"Failed to download photo for msg {m.id}: {e}")
+                await asyncio.sleep(0.05)
+
+            if all_photos:
+                posts.append({
+                    "photo_bytes": all_photos[0],  # main photo
+                    "extra_photos": all_photos[1:],  # additional photos
+                    "caption": caption,
+                    "message_id": msgs[0].id,
+                    "date": msgs[0].date,
+                })
+
+        # Process single-photo messages
+        for msg in singles:
+            caption = msg.caption or msg.text or ""
+            if not caption.strip():
+                continue
             try:
                 photo_bytes = await app.download_media(msg, in_memory=True)
                 if isinstance(photo_bytes, io.BytesIO):
                     photo_bytes = photo_bytes.getvalue()
-                elif photo_bytes is None:
+                if not photo_bytes:
                     continue
             except Exception as e:
                 logger.warning(f"Failed to download photo for msg {msg.id}: {e}")
@@ -91,15 +139,17 @@ async def scrape_channel_posts(channel_username: str, limit: int = 50) -> list[d
 
             posts.append({
                 "photo_bytes": photo_bytes,
+                "extra_photos": [],
                 "caption": caption,
                 "message_id": msg.id,
                 "date": msg.date,
             })
-
-            # Small delay to be respectful
             await asyncio.sleep(0.05)
 
-    logger.info(f"Scraped {len(posts)} posts with photos from @{channel_username}")
+        # Sort by date (newest first)
+        posts.sort(key=lambda p: p["date"], reverse=True)
+
+    logger.info(f"Scraped {len(posts)} products ({sum(1 + len(p['extra_photos']) for p in posts)} total photos) from @{channel_username}")
     return posts
 
 

@@ -233,7 +233,8 @@ def create_product(shop_id: str, name: str, price: int | None = None,
                    price_type: str = "fixed", tag: str | None = None,
                    stock: int | None = None,
                    source_channel_msg_id: int | None = None,
-                   imported_from: str | None = None) -> dict:
+                   imported_from: str | None = None,
+                   extra_photos: list[str] | None = None) -> dict:
     """Create a new product or service listing."""
     data = {
         "shop_id": shop_id,
@@ -257,6 +258,8 @@ def create_product(shop_id: str, name: str, price: int | None = None,
         data["source_channel_msg_id"] = source_channel_msg_id
     if imported_from:
         data["imported_from"] = imported_from
+    if extra_photos:
+        data["extra_photos"] = extra_photos
     result = get_client().table("suq_products").insert(data).execute()
     return result.data[0]
 

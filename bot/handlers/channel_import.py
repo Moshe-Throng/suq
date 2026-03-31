@@ -71,22 +71,13 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
         context.user_data["awaiting_channel_link"] = True
         return True
 
-    # Check product limit
-    current_count = await run_sync(get_product_count, shop["id"])
-    remaining = MAX_PRODUCTS - current_count
-    if remaining <= 0:
-        await update.message.reply_text(
-            getattr(t, "PRODUCT_LIMIT",
-                "You've reached the free plan limit of {max} products.").format(max=MAX_PRODUCTS))
-        return True
-
-    # Start scraping
+    # Start scraping (import up to 50 products regardless of plan limit for now)
     progress_msg = await update.message.reply_text(
         getattr(t, "CHANNEL_IMPORTING",
             "Importing from @{channel}...").format(channel=channel))
 
     try:
-        posts = await scrape_channel_posts(channel, limit=remaining + 10)
+        posts = await scrape_channel_posts(channel, limit=50)
     except ValueError as e:
         await progress_msg.edit_text(str(e))
         return True
@@ -112,7 +103,7 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
         getattr(t, "CHANNEL_PARSING",
             "Found {count} posts. Extracting products...").format(count=len(posts)))
 
-    for post in posts[:remaining]:
+    for post in posts:
         try:
             # Parse caption
             info = parse_caption(post["caption"])
@@ -120,9 +111,18 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
                 errors += 1
                 continue
 
-            # Upload photo to get PTB file_id
+            # Upload main photo to get PTB file_id
             file_id, file_url = await upload_photo_to_bot(
                 post["photo_bytes"], bot_token, user.id)
+
+            # Upload extra photos (from album/media group)
+            extra_file_ids = []
+            for extra_bytes in post.get("extra_photos", [])[:4]:  # max 4 extra
+                try:
+                    extra_fid, _ = await upload_photo_to_bot(extra_bytes, bot_token, user.id)
+                    extra_file_ids.append(extra_fid)
+                except Exception:
+                    pass
 
             # Create product
             product = await run_sync(
@@ -136,6 +136,7 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
                 price_type=info.get("price_type", "fixed"),
                 source_channel_msg_id=post["message_id"],
                 imported_from="channel_import",
+                extra_photos=extra_file_ids if extra_file_ids else None,
             )
 
             imported += 1
