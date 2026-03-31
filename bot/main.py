@@ -35,6 +35,7 @@ from bot.handlers.settings import (
 from bot.handlers.feedback import feedback_command, feedback_text_handler
 from bot.handlers.channel_import import import_recv_channel
 from bot.handlers.channel_sync import channel_post_handler
+from bot.handlers.buyer import buyer_start, buyer_browse
 
 # ── Config ────────────────────────────────────────────────────
 
@@ -77,6 +78,16 @@ async def post_init(application) -> None:
     )
     logger.info("Weekly digest scheduled: Monday 8:00 EAT")
 
+    # Schedule stock check — Wednesday 5:00 UTC = 8:00 EAT
+    from bot.services.stock_check import send_stock_checks
+    application.job_queue.run_daily(
+        send_stock_checks,
+        time=datetime.time(hour=5, minute=0, tzinfo=datetime.timezone.utc),
+        days=(2,),  # Wednesday
+        name="stock_check",
+    )
+    logger.info("Stock check scheduled: Wednesday 8:00 EAT")
+
 
 # ── Main ──────────────────────────────────────────────────────
 
@@ -105,6 +116,7 @@ def main():
     app.add_handler(CommandHandler("help", help_handler))
     app.add_handler(CommandHandler("catalog", catalog_command))
     app.add_handler(CommandHandler("feedback", feedback_command))
+    app.add_handler(CommandHandler("browse", buyer_browse))
 
     # ── Photo handler for logo upload (settings) ──
     async def _photo_handler(update, context):

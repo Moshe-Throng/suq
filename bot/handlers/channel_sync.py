@@ -16,6 +16,7 @@ from bot.db.supabase_client import (
 )
 from bot.services.caption_parser import parse_caption
 from bot.services.category_channels import repost_to_category_channel
+from bot.services.buyer_push import push_product_to_buyers
 from bot.strings.lang import s, seed_lang
 
 logger = logging.getLogger("suq.channel_sync")
@@ -99,10 +100,12 @@ async def channel_post_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         except Exception:
             pass
 
-        # Auto-repost to category channel
+        # Auto-repost to category channel + push to buyers
         if product:
             asyncio.create_task(
                 repost_to_category_channel(context.bot, product, shop))
+            asyncio.create_task(
+                push_product_to_buyers(context.bot, product, shop))
 
         logger.info(f"Auto-synced product '{name}' from @{channel_username} to shop {shop['shop_name']}")
 

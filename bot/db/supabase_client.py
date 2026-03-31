@@ -494,3 +494,124 @@ def get_weekly_stats(shop_id: str) -> dict:
         "contact_taps": contact_taps,
         "best_product": best_product,
     }
+
+
+# ── Buyer operations ────────────────────────────────────────
+
+
+def upsert_buyer(telegram_id: int, username: str | None, first_name: str | None) -> dict:
+    """Create or update a buyer profile."""
+    data = {"telegram_id": telegram_id}
+    if username:
+        data["username"] = username
+    if first_name:
+        data["first_name"] = first_name
+    result = get_client().table("suq_buyers").upsert(
+        data, on_conflict="telegram_id"
+    ).execute()
+    return result.data[0] if result.data else {}
+
+
+def get_buyer(telegram_id: int) -> dict | None:
+    """Get buyer by Telegram ID."""
+    result = get_client().table("suq_buyers").select("*").eq(
+        "telegram_id", telegram_id
+    ).execute()
+    return result.data[0] if result.data else None
+
+
+def toggle_buyer_intent(telegram_id: int, intent_type: str) -> bool:
+    """Toggle a buyer intent on/off. Returns True if now active."""
+    buyer = get_buyer(telegram_id)
+    if not buyer:
+        buyer = upsert_buyer(telegram_id, None, None)
+
+    # Check if intent exists
+    existing = get_client().table("suq_buyer_intents").select("id, active").eq(
+        "buyer_id", buyer["id"]
+    ).eq("intent_type", intent_type).execute()
+
+    if existing.data:
+        # Toggle
+        current = existing.data[0]
+        new_active = not current["active"]
+        get_client().table("suq_buyer_intents").update(
+            {"active": new_active}
+        ).eq("id", current["id"]).execute()
+        return new_active
+    else:
+        # Create
+        get_client().table("suq_buyer_intents").insert({
+            "buyer_id": buyer["id"],
+            "intent_type": intent_type,
+            "active": True,
+        }).execute()
+        return True
+
+
+def get_buyer_intents(telegram_id: int) -> list[dict]:
+    """Get active intents for a buyer."""
+    buyer = get_buyer(telegram_id)
+    if not buyer:
+        return []
+    result = get_client().table("suq_buyer_intents").select("*").eq(
+        "buyer_id", buyer["id"]
+    ).eq("active", True).execute()
+    return result.data or []
+
+
+def get_buyers_for_category(intent_types: list[str]) -> list[dict]:
+    """Get all buyers subscribed to any of the given intent types."""
+    result = get_client().table("suq_buyer_intents").select(
+        "buyer_id, suq_buyers!inner(id, telegram_id, username)"
+    ).in_("intent_type", intent_types).eq("active", True).execute()
+
+    # Deduplicate by buyer
+    seen = set()
+    buyers = []
+    for row in (result.data or []):
+        b = row.get("suq_buyers") or {}
+        if b.get("id") and b["id"] not in seen:
+            seen.add(b["id"])
+            buyers.append(b)
+    return buyers
+
+
+def was_already_pushed(buyer_id: str, product_id: str) -> bool:
+    """Check if a product was already pushed to a buyer."""
+    result = get_client().table("suq_buyer_pushes").select("id", count="exact").eq(
+        "buyer_id", buyer_id
+    ).eq("product_id", product_id).execute()
+    return (result.count or 0) > 0
+
+
+def record_buyer_push(buyer_id: str, product_id: str) -> None:
+    """Record that a product was pushed to a buyer."""
+    get_client().table("suq_buyer_pushes").upsert({
+        "buyer_id": buyer_id,
+        "product_id": product_id,
+    }, on_conflict="buyer_id,product_id").execute()
+
+
+def search_products_by_categories(categories: list[str], limit: int = 10) -> list[dict]:
+    """Search active products from shops in given categories."""
+    result = get_client().table("suq_products").select(
+        "id, name, price, price_type, photo_file_id, suq_shops!inner(shop_name, shop_slug, category)"
+    ).eq("is_active", True).in_(
+        "suq_shops.category", categories
+    ).order("created_at", desc=True).limit(limit).execute()
+    return result.data or []
+
+
+def get_existing_captions(shop_id: str) -> list[str]:
+    """Get all product descriptions for a shop (for dedup)."""
+    result = get_client().table("suq_products").select("name, description").eq(
+        "shop_id", shop_id
+    ).eq("is_active", True).execute()
+    captions = []
+    for p in (result.data or []):
+        parts = [p.get("name", "")]
+        if p.get("description"):
+            parts.append(p["description"])
+        captions.append(" ".join(parts))
+    return captions

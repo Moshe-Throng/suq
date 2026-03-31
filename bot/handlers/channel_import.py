@@ -11,13 +11,15 @@ from telegram.ext import ContextTypes
 
 from bot.db.supabase_client import (
     run_sync, get_shop, create_product, get_product_count,
-    update_shop_source_channel, catalog_link,
+    update_shop_source_channel, catalog_link, get_existing_captions,
 )
+from bot.services.dedup import is_duplicate
 from bot.services.channel_scraper import (
     parse_channel_identifier, scrape_channel_posts, upload_photo_to_bot,
 )
 from bot.services.caption_parser import parse_caption
 from bot.services.category_channels import repost_to_category_channel
+from bot.services.buyer_push import push_product_to_buyers
 from bot.strings.lang import s, seed_lang
 
 logger = logging.getLogger("suq.channel_import")
@@ -94,9 +96,13 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
                 "No product posts found in @{channel}.").format(channel=channel))
         return True
 
+    # Get existing captions for dedup
+    existing_captions = await run_sync(get_existing_captions, shop["id"])
+
     # Parse captions and create products
     bot_token = os.getenv("BOT_TOKEN")
     imported = 0
+    skipped_dupes = 0
     errors = 0
 
     await progress_msg.edit_text(
@@ -110,6 +116,13 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
             if not info.get("name"):
                 errors += 1
                 continue
+
+            # Dedup check
+            caption_text = f"{info['name']} {info.get('description') or ''}"
+            if is_duplicate(caption_text, existing_captions):
+                skipped_dupes += 1
+                continue
+            existing_captions.append(caption_text)
 
             # Upload main photo to get PTB file_id
             file_id, file_url = await upload_photo_to_bot(
@@ -141,11 +154,12 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
 
             imported += 1
 
-            # Auto-repost to category channel (fire-and-forget)
+            # Auto-repost + push to buyers (fire-and-forget)
             if product:
                 asyncio.create_task(
-                    repost_to_category_channel(
-                        context.bot, product, shop))
+                    repost_to_category_channel(context.bot, product, shop))
+                asyncio.create_task(
+                    push_product_to_buyers(context.bot, product, shop))
 
         except Exception as e:
             logger.warning(f"Failed to import post {post['message_id']}: {e}")
@@ -162,9 +176,13 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
         "Add @SoukEtBot as admin to your channel for auto-sync.").format(
         count=imported, channel=channel, link=link)
 
+    skipped_info = []
+    if skipped_dupes > 0:
+        skipped_info.append(f"{skipped_dupes} duplicates")
     if errors > 0:
-        completion += getattr(t, "CHANNEL_IMPORT_ERRORS",
-            "\n({errors} posts skipped — no product info found)").format(errors=errors)
+        skipped_info.append(f"{errors} unreadable")
+    if skipped_info:
+        completion += f"\n(Skipped: {', '.join(skipped_info)})"
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("View Shop", url=link)],

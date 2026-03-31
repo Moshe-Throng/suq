@@ -26,6 +26,7 @@ from bot.handlers.settings import (
     settings_ask_tiktok, tiktok_bio_link,
 )
 from bot.handlers.channel_import import import_ask_channel
+from bot.handlers.buyer import buyer_start, buyer_toggle_intent, buyer_intents_done
 from bot.db.supabase_client import run_sync, get_shop, catalog_link
 from bot.strings.lang import s, seed_lang
 
@@ -58,6 +59,16 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     # Location selection (onboarding)
     elif data.startswith("loc_"):
         await location_callback(update, context)
+
+    # Buyer intents
+    elif data.startswith("buyer_intent_"):
+        await buyer_toggle_intent(update, context)
+
+    elif data == "buyer_intents_done":
+        await buyer_intents_done(update, context)
+
+    elif data == "buyer_start":
+        await buyer_start(update, context)
 
     # Role selection (legacy)
     elif data.startswith("role_"):
@@ -169,6 +180,20 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     elif data.startswith("order_"):
         await order_action_callback(update, context)
+
+    # ── Stock check responses ───────────────────────────────
+    elif data.startswith("stock_yes_"):
+        await query.answer("✅ Marked as available")
+
+    elif data.startswith("stock_no_"):
+        product_id = data.replace("stock_no_", "")
+        from bot.db.supabase_client import update_product_stock
+        await run_sync(update_product_stock, product_id, 0)
+        await query.answer("Marked as sold out")
+        try:
+            await query.edit_message_text("Updated! Sold-out products won't show to buyers.")
+        except Exception:
+            pass
 
     else:
         await query.answer("Unknown action")

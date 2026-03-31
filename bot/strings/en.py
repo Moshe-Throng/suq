@@ -369,3 +369,9 @@ DIGEST_TAPS = "Contact taps: {taps}"
 DIGEST_BEST = "Best: {name} ({views} views)"
 DIGEST_TIP_NO_TAPS = "Tip: Try better photos or descriptions to convert views to contacts."
 DIGEST_TIP_NO_VIEWS = "Tip: Share your shop link on social media to get more views."
+
+# ══════════════════════════════════════════════════════════════
+# STOCK CHECK
+# ══════════════════════════════════════════════════════════════
+
+STOCK_CHECK_HEADER = "Are these still available?"

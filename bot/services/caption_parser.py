@@ -120,9 +120,26 @@ def parse_caption(caption: str) -> dict:
 
     description = "\n".join(desc_lines).strip()[:500] if desc_lines else None
 
+    # --- Extract phone number ---
+    phone = None
+    phone_match = re.search(r'(0[97]\d{8}|\+251\d{9})', text)
+    if phone_match:
+        phone = phone_match.group(1)
+
+    # --- Extract stock status ---
+    stock_status = "in_stock"
+    out_patterns = [r'sold\s*out', r'out\s*of\s*stock', r'finished', r'not\s*available',
+                    r'አልቋል', r'የለም', r'ተሸጧል', r'stock\s*out']
+    for pat in out_patterns:
+        if re.search(pat, text, re.IGNORECASE):
+            stock_status = "out_of_stock"
+            break
+
     return {
         "name": name,
         "price": price,
         "price_type": price_type,
         "description": description,
+        "phone": phone,
+        "stock_status": stock_status,
     }
