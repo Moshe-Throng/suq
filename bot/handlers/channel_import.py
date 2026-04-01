@@ -11,13 +11,15 @@ from telegram.ext import ContextTypes
 
 from bot.db.supabase_client import (
     run_sync, get_shop, create_product, get_product_count,
-    update_shop_source_channel, update_shop_logo, catalog_link, get_existing_captions,
+    update_shop_source_channel, update_shop_logo, update_shop_category,
+    catalog_link, get_existing_captions,
 )
 from bot.services.dedup import is_duplicate
 from bot.services.channel_scraper import (
     parse_channel_identifier, scrape_channel_posts, upload_photo_to_bot,
 )
 from bot.services.caption_parser import parse_caption
+from bot.services.ai_classifier import classify_product
 from bot.services.category_channels import repost_to_category_channel
 from bot.services.buyer_push import push_product_to_buyers
 from bot.strings.lang import s, seed_lang
@@ -122,8 +124,10 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     for post in posts:
         try:
-            # Parse caption
-            info = parse_caption(post["caption"])
+            # AI classification (with regex fallback)
+            info = await classify_product(post["caption"])
+            if not info or not info.get("name"):
+                info = parse_caption(post["caption"])
             if not info.get("name"):
                 errors += 1
                 continue
@@ -148,6 +152,12 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
                 except Exception:
                     pass
 
+            # Pick best tag from AI tags list
+            tag = None
+            ai_tags = info.get("tags")
+            if isinstance(ai_tags, list) and ai_tags:
+                tag = ai_tags[0]
+
             # Create product
             product = await run_sync(
                 create_product,
@@ -158,10 +168,16 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
                 photo_url=file_url,
                 description=info.get("description"),
                 price_type=info.get("price_type", "fixed"),
+                tag=tag,
                 source_channel_msg_id=post["message_id"],
                 imported_from="channel_import",
                 extra_photos=extra_file_ids if extra_file_ids else None,
             )
+
+            # Update shop category if AI detected a specific one (e.g. "kids") and shop has none
+            ai_category = info.get("category")
+            if ai_category and ai_category != "other" and not shop.get("category"):
+                await run_sync(update_shop_category, shop["id"], ai_category)
 
             imported += 1
 

@@ -15,6 +15,7 @@ from bot.db.supabase_client import (
     get_product_count, product_exists_by_channel_msg,
 )
 from bot.services.caption_parser import parse_caption
+from bot.services.ai_classifier import classify_product
 from bot.services.category_channels import repost_to_category_channel
 from bot.services.buyer_push import push_product_to_buyers
 from bot.strings.lang import s, seed_lang
@@ -52,8 +53,10 @@ async def channel_post_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     if not caption.strip():
         return
 
-    # Parse caption
-    info = parse_caption(caption)
+    # AI classification with regex fallback
+    info = await classify_product(caption)
+    if not info or not info.get("name"):
+        info = parse_caption(caption)
     if not info.get("name"):
         return
 
