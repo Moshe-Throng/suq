@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
     query = query.in("suq_shops.category", categories);
   }
 
-  if (q.length >= 3) {
+  if (q.length >= 2) {
     query = query.or(`name.ilike.%${q}%,tag.ilike.%${q}%`);
   }
 

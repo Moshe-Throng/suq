@@ -622,7 +622,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
             <input type="text" value={searchInput}
-              onChange={(e) => { setSearchInput(e.target.value); handleSearch(e.target.value); }}
+              onChange={(e) => { setSearchInput(e.target.value); if (!browseMode) setBrowseMode(true); handleSearch(e.target.value); }}
               onFocus={() => { if (!browseMode) openBrowse(); }}
               placeholder={t.searchPlaceholderHero}
               style={{ width: "100%", padding: "15px 16px 15px 46px", borderRadius: "14px",
