@@ -11,7 +11,7 @@ from telegram.ext import ContextTypes
 
 from bot.db.supabase_client import (
     run_sync, get_shop, create_product, get_product_count,
-    update_shop_source_channel, catalog_link, get_existing_captions,
+    update_shop_source_channel, update_shop_logo, catalog_link, get_existing_captions,
 )
 from bot.services.dedup import is_duplicate
 from bot.services.channel_scraper import (
@@ -79,7 +79,9 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
             "Importing from @{channel}...").format(channel=channel))
 
     try:
-        posts = await scrape_channel_posts(channel, limit=50)
+        result = await scrape_channel_posts(channel, limit=50)
+        posts = result["posts"]
+        channel_photo_bytes = result.get("channel_photo_bytes")
     except ValueError as e:
         await progress_msg.edit_text(str(e))
         return True
@@ -95,6 +97,15 @@ async def import_recv_channel(update: Update, context: ContextTypes.DEFAULT_TYPE
             getattr(t, "CHANNEL_NO_PRODUCTS",
                 "No product posts found in @{channel}.").format(channel=channel))
         return True
+
+    # Set channel photo as shop logo if shop doesn't have one
+    if channel_photo_bytes and not shop.get("logo_file_id"):
+        try:
+            logo_fid, logo_url = await upload_photo_to_bot(
+                channel_photo_bytes, bot_token, user.id)
+            await run_sync(update_shop_logo, shop["id"], logo_fid, logo_url)
+        except Exception as e:
+            logger.warning(f"Failed to set channel photo as logo: {e}")
 
     # Get existing captions for dedup
     existing_captions = await run_sync(get_existing_captions, shop["id"])

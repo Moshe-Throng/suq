@@ -63,10 +63,24 @@ async def scrape_channel_posts(channel_username: str, limit: int = 50) -> list[d
     )
 
     posts = []
+    channel_photo_bytes = None
+    channel_title = None
     async with app:
         try:
             chat = await app.get_chat(channel_username)
+            channel_title = chat.title
             logger.info(f"Scraping channel: {chat.title} (@{channel_username})")
+
+            # Download channel photo for shop logo
+            if chat.photo:
+                try:
+                    photo_data = await app.download_media(chat.photo.big_file_id, in_memory=True)
+                    if isinstance(photo_data, io.BytesIO):
+                        channel_photo_bytes = photo_data.getvalue()
+                    elif photo_data:
+                        channel_photo_bytes = photo_data
+                except Exception as e:
+                    logger.warning(f"Failed to download channel photo: {e}")
         except Exception as e:
             logger.error(f"Cannot access channel @{channel_username}: {e}")
             raise ValueError(f"Cannot access channel @{channel_username}. Make sure it's a public channel.")
@@ -150,7 +164,11 @@ async def scrape_channel_posts(channel_username: str, limit: int = 50) -> list[d
         posts.sort(key=lambda p: p["date"], reverse=True)
 
     logger.info(f"Scraped {len(posts)} products ({sum(1 + len(p['extra_photos']) for p in posts)} total photos) from @{channel_username}")
-    return posts
+    return {
+        "posts": posts,
+        "channel_photo_bytes": channel_photo_bytes,
+        "channel_title": channel_title,
+    }
 
 
 async def upload_photo_to_bot(photo_bytes: bytes, bot_token: str, chat_id: int) -> tuple[str, str | None]:
