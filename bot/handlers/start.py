@@ -145,6 +145,13 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await _handle_contact_deeplink(update, product_id)
         return
 
+    # Shop claim deep link: /start claim_SHOPSLUG
+    if args and args[0].startswith("claim_"):
+        shop_slug = args[0][len("claim_"):]
+        from bot.handlers.claim import start_claim
+        await start_claim(update, context, shop_slug)
+        return
+
     shop = await run_sync(get_shop, user.id)
     if shop:
         lang = shop.get("language", "am")

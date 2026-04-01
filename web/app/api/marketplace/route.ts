@@ -5,6 +5,7 @@ export async function GET(req: NextRequest) {
   const url = req.nextUrl;
   const q = url.searchParams.get("q")?.trim() || "";
   const category = url.searchParams.get("category")?.trim() || "";
+  const categories = url.searchParams.get("categories")?.split(",").filter(Boolean) || [];
   const sort = url.searchParams.get("sort") || "newest";
   const offset = parseInt(url.searchParams.get("offset") || "0", 10);
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "20", 10), 50);
@@ -83,6 +84,8 @@ export async function GET(req: NextRequest) {
 
   if (category) {
     query = query.eq("suq_shops.category", category);
+  } else if (categories.length > 0) {
+    query = query.in("suq_shops.category", categories);
   }
 
   if (q.length >= 3) {

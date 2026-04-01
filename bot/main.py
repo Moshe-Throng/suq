@@ -36,6 +36,7 @@ from bot.handlers.feedback import feedback_command, feedback_text_handler
 from bot.handlers.channel_import import import_recv_channel
 from bot.handlers.channel_sync import channel_post_handler
 from bot.handlers.buyer import buyer_start, buyer_browse
+from bot.handlers.claim import verify_forwarded_message
 
 # ── Config ────────────────────────────────────────────────────
 
@@ -136,6 +137,11 @@ def main():
     # ── Text handler (feedback → description → logo skip → shop name) ──
     async def _text_handler(update, context):
         text = update.message.text.strip() if update.message.text else ""
+
+        # Check claim verification (forwarded messages)
+        if update.message.forward_origin:
+            if await verify_forwarded_message(update, context):
+                return
 
         # Check feedback input
         if await feedback_text_handler(update, context):

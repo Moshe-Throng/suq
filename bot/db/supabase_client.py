@@ -410,6 +410,14 @@ def format_price(price: int | None, price_type: str = "fixed") -> str:
 # ── Channel import operations ───────────────────────────────
 
 
+def update_shop_owner(shop_id: str, telegram_id: int, username: str | None) -> None:
+    """Transfer shop ownership to a new Telegram user."""
+    data = {"telegram_id": telegram_id}
+    if username:
+        data["telegram_username"] = username
+    get_client().table("suq_shops").update(data).eq("id", shop_id).execute()
+
+
 def update_shop_source_channel(shop_id: str, channel_username: str | None,
                                 sync_enabled: bool = False) -> None:
     """Link a Telegram channel to a shop."""

@@ -27,6 +27,7 @@ from bot.handlers.settings import (
 )
 from bot.handlers.channel_import import import_ask_channel
 from bot.handlers.buyer import buyer_start, buyer_toggle_intent, buyer_intents_done
+from bot.handlers.claim import confirm_claim_callback, cancel_claim_callback
 from bot.db.supabase_client import run_sync, get_shop, catalog_link
 from bot.strings.lang import s, seed_lang
 
@@ -69,6 +70,13 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     elif data == "buyer_start":
         await buyer_start(update, context)
+
+    # Claim flow
+    elif data.startswith("confirm_claim_"):
+        await confirm_claim_callback(update, context)
+
+    elif data == "cancel_claim":
+        await cancel_claim_callback(update, context)
 
     # Role selection (legacy)
     elif data.startswith("role_"):
