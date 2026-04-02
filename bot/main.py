@@ -35,8 +35,9 @@ from bot.handlers.settings import (
 from bot.handlers.feedback import feedback_command, feedback_text_handler
 from bot.handlers.channel_import import import_recv_channel
 from bot.handlers.channel_sync import channel_post_handler
-from bot.handlers.buyer import buyer_start, buyer_browse
+from bot.handlers.buyer import buyer_start, buyer_browse, buyer_search
 from bot.handlers.claim import verify_forwarded_message
+from bot.handlers.admin_import import admin_import_command
 
 # ── Config ────────────────────────────────────────────────────
 
@@ -118,6 +119,8 @@ def main():
     app.add_handler(CommandHandler("catalog", catalog_command))
     app.add_handler(CommandHandler("feedback", feedback_command))
     app.add_handler(CommandHandler("browse", buyer_browse))
+    app.add_handler(CommandHandler("admin_import", admin_import_command))
+    app.add_handler(CommandHandler("search", buyer_search))
 
     # ── Photo handler for logo upload (settings) ──
     async def _photo_handler(update, context):

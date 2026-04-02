@@ -106,6 +106,10 @@ const T = {
     priceAsc: "Price ↑",
     priceDesc: "Price ↓",
     all: "All",
+    comparePrices: "Compare Prices",
+    compareOff: "Grid View",
+    seller: "Seller",
+    location: "Location",
   },
   am: {
     marketplaceBadge: "የኢትዮጵያ ገበያ",
@@ -151,6 +155,10 @@ const T = {
     priceAsc: "ዋጋ ↑",
     priceDesc: "ዋጋ ↓",
     all: "ሁሉም",
+    comparePrices: "ዋጋ ያወዳድሩ",
+    compareOff: "ፍርግርግ",
+    seller: "ሻጭ",
+    location: "ቦታ",
   },
 };
 
@@ -325,6 +333,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const browseRef = useRef<HTMLDivElement>(null);
 
@@ -979,26 +988,51 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               </div>
             </div>
 
-            {/* Sort */}
-            <div style={{ display: "flex", gap: "8px", marginBottom: "14px", justifyContent: "flex-end" }}>
-              {(["newest", "price_asc", "price_desc"] as const).map(s => {
-                const labels = { newest: t.newest, price_asc: t.priceAsc, price_desc: t.priceDesc };
-                return (
-                  <button key={s} onClick={() => {
-                    setSortBy(s);
-                    fetchBrowse(searchQuery, selectedCategory, s, 0);
-                  }}
-                    style={{
-                      padding: "6px 12px", borderRadius: "8px", fontSize: "12px",
-                      fontWeight: 600, border: "none", cursor: "pointer",
-                      background: sortBy === s ? `${C.terra}18` : "transparent",
-                      color: sortBy === s ? C.terra : C.muted,
-                      fontFamily: "inherit",
-                    }}>
-                    {labels[s]}
-                  </button>
-                );
-              })}
+            {/* Sort + Compare toggle */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "14px", justifyContent: "space-between", alignItems: "center" }}>
+              {/* Compare toggle */}
+              <button onClick={() => {
+                const next = !compareMode;
+                setCompareMode(next);
+                if (next) {
+                  setSortBy("price_asc");
+                  fetchBrowse(searchQuery, selectedCategory, "price_asc", 0);
+                }
+              }}
+                style={{
+                  padding: "6px 14px", borderRadius: "8px", fontSize: "12px",
+                  fontWeight: 700, border: "none", cursor: "pointer",
+                  background: compareMode ? `${C.sage}18` : "transparent",
+                  color: compareMode ? C.sage : C.muted,
+                  fontFamily: "inherit",
+                  display: "flex", alignItems: "center", gap: "4px",
+                }}>
+                <span style={{ fontSize: "14px" }}>{compareMode ? "📊" : "💰"}</span>
+                {compareMode ? t.compareOff : t.comparePrices}
+              </button>
+
+              {/* Sort buttons */}
+              <div style={{ display: "flex", gap: "8px" }}>
+                {(["newest", "price_asc", "price_desc"] as const).map(s => {
+                  const labels = { newest: t.newest, price_asc: t.priceAsc, price_desc: t.priceDesc };
+                  return (
+                    <button key={s} onClick={() => {
+                      setSortBy(s);
+                      setCompareMode(s === "price_asc" || s === "price_desc");
+                      fetchBrowse(searchQuery, selectedCategory, s, 0);
+                    }}
+                      style={{
+                        padding: "6px 12px", borderRadius: "8px", fontSize: "12px",
+                        fontWeight: 600, border: "none", cursor: "pointer",
+                        background: sortBy === s ? `${C.terra}18` : "transparent",
+                        color: sortBy === s ? C.terra : C.muted,
+                        fontFamily: "inherit",
+                      }}>
+                      {labels[s]}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Product grid */}
@@ -1019,65 +1053,125 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               </div>
             ) : (
               <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
-                  {browseProducts.map((p) => {
-                    const isSoldOut = p.stock === 0;
-                    const src = imgUrl(p.photo_file_id, p.photo_url);
-                    return (
-                      <Link key={p.id} href={`/${p.shop_slug}/${p.id}`}
-                        style={{ textDecoration: "none", color: "inherit" }}>
-                        <div className="browse-card" style={{
-                          background: C.white, borderRadius: "12px", overflow: "hidden",
-                          border: `1px solid ${C.border}`,
-                        }}>
-                          <div style={{ position: "relative", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
-                            {src ? (
-                              <img src={src} alt={p.name} loading="lazy"
-                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                                style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            ) : null}
-                            {!src && (
-                              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
-                                justifyContent: "center" }}>
-                                <span style={{ fontSize: "22px", opacity: 0.3 }}>📦</span>
-                              </div>
-                            )}
-                            {isSoldOut && (
-                              <div style={{ position: "absolute", inset: 0, background: "rgba(26,16,8,.5)",
-                                display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <span style={{ color: "white", fontSize: "10px", fontWeight: 700,
-                                  background: "rgba(0,0,0,.4)", padding: "3px 8px", borderRadius: "20px" }}>
-                                  {t.soldOut}
-                                </span>
-                              </div>
-                            )}
-                            {p.tag && (
-                              <div style={{ position: "absolute", bottom: "6px", left: "6px", fontSize: "10px",
-                                fontWeight: 600, padding: "2px 6px", borderRadius: "6px",
-                                background: "rgba(255,255,255,0.9)", color: C.text, backdropFilter: "blur(4px)" }}>
-                                {TAG_LABELS[p.tag] || p.tag}
-                              </div>
-                            )}
+                {compareMode ? (
+                  /* ── COMPARISON LIST VIEW ── */
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {browseProducts.map((p, idx) => {
+                      const src = imgUrl(p.photo_file_id, p.photo_url);
+                      const isSoldOut = p.stock === 0;
+                      return (
+                        <Link key={p.id} href={`/${p.shop_slug}/${p.id}`}
+                          style={{ textDecoration: "none", color: "inherit" }}>
+                          <div className="browse-card" style={{
+                            background: C.white, borderRadius: "14px", overflow: "hidden",
+                            border: `1px solid ${C.border}`,
+                            display: "flex", alignItems: "center", gap: "12px",
+                            padding: "10px 14px 10px 10px",
+                          }}>
+                            {/* Rank number */}
+                            <span style={{ fontSize: "13px", fontWeight: 800, color: C.muted,
+                              minWidth: "20px", textAlign: "center", flexShrink: 0 }}>
+                              {idx + 1}
+                            </span>
+                            {/* Thumbnail */}
+                            <div style={{ width: "52px", height: "52px", borderRadius: "10px",
+                              overflow: "hidden", flexShrink: 0, background: C.sand }}>
+                              {src ? (
+                                <img src={src} alt={p.name} loading="lazy"
+                                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              ) : (
+                                <div style={{ width: "100%", height: "100%", display: "flex",
+                                  alignItems: "center", justifyContent: "center" }}>
+                                  <span style={{ fontSize: "18px", opacity: 0.3 }}>📦</span>
+                                </div>
+                              )}
+                            </div>
+                            {/* Info */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: "13px", fontWeight: 700, color: C.dark,
+                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {p.name}
+                              </p>
+                              <p style={{ fontSize: "11px", color: C.muted, marginTop: "2px",
+                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                🏪 {p.shop_name}
+                              </p>
+                            </div>
+                            {/* Price — prominent */}
+                            <div style={{ textAlign: "right", flexShrink: 0 }}>
+                              <p style={{ fontSize: "15px", fontWeight: 800,
+                                color: isSoldOut ? C.muted : C.terra }}>
+                                {isSoldOut ? t.soldOut : fmtPrice(p.price, p.price_type)}
+                              </p>
+                            </div>
                           </div>
-                          <div style={{ padding: "6px 8px 8px" }}>
-                            <p style={{ fontSize: "11px", fontWeight: 700, color: C.dark, lineHeight: 1.3,
-                              marginBottom: "2px", display: "-webkit-box", WebkitLineClamp: 1,
-                              WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                              {p.name}
-                            </p>
-                            <p style={{ fontSize: "11px", fontWeight: 800, color: C.terra }}>
-                              {fmtPrice(p.price, p.price_type)}
-                            </p>
-                            <p style={{ fontSize: "9px", color: C.muted, marginTop: "1px",
-                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {p.shop_name}
-                            </p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* ── GRID VIEW ── */
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                    {browseProducts.map((p) => {
+                      const isSoldOut = p.stock === 0;
+                      const src = imgUrl(p.photo_file_id, p.photo_url);
+                      return (
+                        <Link key={p.id} href={`/${p.shop_slug}/${p.id}`}
+                          style={{ textDecoration: "none", color: "inherit" }}>
+                          <div className="browse-card" style={{
+                            background: C.white, borderRadius: "12px", overflow: "hidden",
+                            border: `1px solid ${C.border}`,
+                          }}>
+                            <div style={{ position: "relative", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
+                              {src ? (
+                                <img src={src} alt={p.name} loading="lazy"
+                                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              ) : null}
+                              {!src && (
+                                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
+                                  justifyContent: "center" }}>
+                                  <span style={{ fontSize: "22px", opacity: 0.3 }}>📦</span>
+                                </div>
+                              )}
+                              {isSoldOut && (
+                                <div style={{ position: "absolute", inset: 0, background: "rgba(26,16,8,.5)",
+                                  display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  <span style={{ color: "white", fontSize: "10px", fontWeight: 700,
+                                    background: "rgba(0,0,0,.4)", padding: "3px 8px", borderRadius: "20px" }}>
+                                    {t.soldOut}
+                                  </span>
+                                </div>
+                              )}
+                              {p.tag && (
+                                <div style={{ position: "absolute", bottom: "6px", left: "6px", fontSize: "10px",
+                                  fontWeight: 600, padding: "2px 6px", borderRadius: "6px",
+                                  background: "rgba(255,255,255,0.9)", color: C.text, backdropFilter: "blur(4px)" }}>
+                                  {TAG_LABELS[p.tag] || p.tag}
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ padding: "6px 8px 8px" }}>
+                              <p style={{ fontSize: "11px", fontWeight: 700, color: C.dark, lineHeight: 1.3,
+                                marginBottom: "2px", display: "-webkit-box", WebkitLineClamp: 1,
+                                WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                                {p.name}
+                              </p>
+                              <p style={{ fontSize: "11px", fontWeight: 800, color: C.terra }}>
+                                {fmtPrice(p.price, p.price_type)}
+                              </p>
+                              <p style={{ fontSize: "9px", color: C.muted, marginTop: "1px",
+                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {p.shop_name}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
                 {hasMore && (
                   <div style={{ textAlign: "center", marginTop: "20px" }}>
                     <button onClick={() => fetchBrowse(searchQuery, selectedCategory, sortBy, offset, true)}

@@ -611,6 +611,76 @@ def search_products_by_categories(categories: list[str], limit: int = 10) -> lis
     return result.data or []
 
 
+def search_products_by_text(query: str, limit: int = 20) -> list[dict]:
+    """Search active products by name/description text match across all shops."""
+    result = get_client().table("suq_products").select(
+        "id, name, price, price_type, description, photo_file_id, photo_url, tag, "
+        "created_at, shop_id, "
+        "suq_shops!inner(shop_name, shop_slug, category)"
+    ).eq("is_active", True).or_(
+        f"name.ilike.%{query}%,description.ilike.%{query}%,tag.ilike.%{query}%"
+    ).order("created_at", desc=True).limit(limit).execute()
+    return result.data or []
+
+
+def get_products_by_category(category: str, limit: int = 20) -> list[dict]:
+    """Get active products from shops in a specific category."""
+    result = get_client().table("suq_products").select(
+        "id, name, price, price_type, description, photo_file_id, photo_url, tag, "
+        "created_at, shop_id, "
+        "suq_shops!inner(shop_name, shop_slug, category)"
+    ).eq("is_active", True).eq(
+        "suq_shops.category", category
+    ).order("created_at", desc=True).limit(limit).execute()
+    return result.data or []
+
+
+def get_price_comparison(query: str, limit: int = 10) -> list[dict]:
+    """Find products matching a query, sorted by price for comparison.
+    Returns products from multiple sellers with prices."""
+    result = get_client().table("suq_products").select(
+        "id, name, price, price_type, description, photo_file_id, photo_url, tag, "
+        "created_at, shop_id, "
+        "suq_shops!inner(shop_name, shop_slug, category)"
+    ).eq("is_active", True).or_(
+        f"name.ilike.%{query}%,description.ilike.%{query}%,tag.ilike.%{query}%"
+    ).not_.is_("price", "null").order(
+        "price", desc=False
+    ).limit(limit).execute()
+    return result.data or []
+
+
+def get_personalized_feed(intent_types: list[str], limit: int = 15) -> list[dict]:
+    """Get products matching buyer intent types, newest first."""
+    # Map intents to shop categories
+    intent_to_cats = {
+        "kids": ["fashion", "handmade"],
+        "fashion": ["fashion"],
+        "electronics": ["electronics"],
+        "home": ["home"],
+        "pets": ["other"],
+        "gifts": ["handmade", "coffee", "other"],
+        "wholesale": ["fashion", "electronics", "beauty", "coffee"],
+        "beauty": ["beauty", "salon"],
+        "food": ["food", "coffee"],
+    }
+    categories = set()
+    for it in intent_types:
+        categories.update(intent_to_cats.get(it, []))
+
+    if not categories:
+        return []
+
+    result = get_client().table("suq_products").select(
+        "id, name, price, price_type, description, photo_file_id, photo_url, tag, "
+        "created_at, shop_id, "
+        "suq_shops!inner(shop_name, shop_slug, category)"
+    ).eq("is_active", True).in_(
+        "suq_shops.category", list(categories)
+    ).order("created_at", desc=True).limit(limit).execute()
+    return result.data or []
+
+
 def get_existing_captions(shop_id: str) -> list[str]:
     """Get all product descriptions for a shop (for dedup)."""
     result = get_client().table("suq_products").select("name, description").eq(

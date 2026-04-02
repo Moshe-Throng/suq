@@ -26,7 +26,11 @@ from bot.handlers.settings import (
     settings_ask_tiktok, tiktok_bio_link,
 )
 from bot.handlers.channel_import import import_ask_channel
-from bot.handlers.buyer import buyer_start, buyer_toggle_intent, buyer_intents_done
+from bot.handlers.buyer import (
+    buyer_start, buyer_toggle_intent, buyer_intents_done,
+    buyer_browse_category, buyer_show_categories, buyer_compare,
+    buyer_refresh_feed,
+)
 from bot.handlers.claim import confirm_claim_callback, cancel_claim_callback
 from bot.db.supabase_client import run_sync, get_shop, catalog_link
 from bot.strings.lang import s, seed_lang
@@ -70,6 +74,18 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     elif data == "buyer_start":
         await buyer_start(update, context)
+
+    elif data.startswith("buyer_cat_"):
+        await buyer_browse_category(update, context)
+
+    elif data == "buyer_categories":
+        await buyer_show_categories(update, context)
+
+    elif data.startswith("buyer_compare_"):
+        await buyer_compare(update, context)
+
+    elif data == "buyer_refresh_feed":
+        await buyer_refresh_feed(update, context)
 
     # Claim flow
     elif data.startswith("confirm_claim_"):
