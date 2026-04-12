@@ -101,6 +101,10 @@ const T = {
     footerBrowse: "Browse Products",
     footerCreate: "Create a Shop",
     footerCopyright: "© 2026 souk.et · All rights reserved",
+    activityStrip: "new products this week",
+    activityShops: "shops",
+    newBadge: "New",
+    recentlyAdded: "Recently added",
     createShopNav: "+ Create Shop",
     newest: "Newest",
     priceAsc: "Price ↑",
@@ -150,6 +154,10 @@ const T = {
     footerBrowse: "ምርቶችን ይፈልጉ",
     footerCreate: "ሱቅ ክፈቱ",
     footerCopyright: "© 2026 souk.et · መብቶች ተጠብቀዋል",
+    activityStrip: "አዲስ ምርቶች በዚህ ሳምንት",
+    activityShops: "ሱቆች",
+    newBadge: "አዲስ",
+    recentlyAdded: "በቅርቡ የተጨመሩ",
     createShopNav: "+ ሱቅ ክፈቱ",
     newest: "አዲስ",
     priceAsc: "ዋጋ ↑",
@@ -203,11 +211,17 @@ function initials(name: string) {
   return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 }
 
+function isNew(createdAt: string): boolean {
+  const diff = Date.now() - new Date(createdAt).getTime();
+  return diff < 48 * 60 * 60 * 1000;
+}
+
 /* ─── Sub-components ──────────────────────────────────────── */
 
-function ProductCard({ p, delay = 0 }: { p: MarketProduct; delay?: number }) {
+function ProductCard({ p, delay = 0, shopLogo }: { p: MarketProduct; delay?: number; shopLogo?: string | null }) {
   const isSoldOut = p.stock === 0;
   const [imgFailed, setImgFailed] = useState(false);
+  const cat = CATEGORIES.find(c => c.key === p.shop_category);
   return (
     <Link href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
       <div className="pcard" style={{
@@ -216,7 +230,7 @@ function ProductCard({ p, delay = 0 }: { p: MarketProduct; delay?: number }) {
         overflow: "hidden",
         border: `1.5px solid ${C.border}`,
         flexShrink: 0,
-        width: "180px",
+        width: "200px",
         animationDelay: `${delay}s`,
       }}>
         {/* Image */}
@@ -229,9 +243,12 @@ function ProductCard({ p, delay = 0 }: { p: MarketProduct; delay?: number }) {
             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
               justifyContent: "center", background: `linear-gradient(135deg, #FFE8D6, #FFCDB4)` }}>
               <span style={{ fontSize: "36px", opacity: 0.35 }}>
-                {CATEGORIES.find(c => c.key === p.shop_category)?.emoji || "📦"}
+                {cat?.emoji || "📦"}
               </span>
             </div>
+          )}
+          {isNew(p.created_at) && (
+            <span className="new-badge">New</span>
           )}
           {isSoldOut && (
             <div style={{ position: "absolute", inset: 0, background: "rgba(26,16,8,0.55)",
@@ -247,6 +264,14 @@ function ProductCard({ p, delay = 0 }: { p: MarketProduct; delay?: number }) {
               fontWeight: 600, padding: "2px 7px", borderRadius: "6px",
               background: "rgba(255,255,255,0.92)", color: C.text, backdropFilter: "blur(6px)" }}>
               {TAG_LABELS[p.tag] || p.tag}
+            </div>
+          )}
+          {/* Shop logo overlay */}
+          {shopLogo && (
+            <div style={{ position: "absolute", bottom: "8px", right: "8px", width: "22px", height: "22px",
+              borderRadius: "50%", overflow: "hidden", border: "1.5px solid white",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.2)", background: C.sand }}>
+              <img src={shopLogo} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           )}
         </div>
@@ -272,7 +297,7 @@ function ShopCard({ s, lang }: { s: MarketShop; lang: "en" | "am" }) {
   const cat = CATEGORIES.find(c => c.key === s.category);
   const t = T[lang];
   return (
-    <Link href={`/${s.shop_slug}`} style={{ textDecoration: "none", color: "inherit", flexShrink: 0, width: "152px" }}>
+    <Link href={`/${s.shop_slug}`} style={{ textDecoration: "none", color: "inherit", flexShrink: 0, width: "160px" }}>
       <div className="scard" style={{
         background: C.white,
         border: `1.5px solid ${C.border}`,
@@ -294,12 +319,12 @@ function ShopCard({ s, lang }: { s: MarketShop; lang: "en" | "am" }) {
             <img src={imgUrl(s.logo_file_id, s.logo_url)!} alt={s.shop_name} loading="lazy"
               style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <svg viewBox="0 0 120 120" width="30" height="30" opacity="0.7">
-              <path d="M24 52 L60 28 L96 52" stroke={cat?.color || C.terra} strokeWidth="8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M28 52 Q36 60 44 52 Q52 60 60 52 Q68 60 76 52 Q84 60 92 52" stroke={cat?.color || C.terra} strokeWidth="5" fill="none" strokeLinecap="round" />
-              <rect x="38" y="56" width="44" height="30" rx="4" fill="none" stroke={cat?.color || C.terra} strokeWidth="5" />
-              <rect x="50" y="64" width="20" height="22" rx="3" fill={cat?.color || C.gold} opacity="0.35" />
-            </svg>
+            <span style={{
+              fontSize: "22px", fontWeight: 900, color: cat?.color || C.terra,
+              lineHeight: 1, letterSpacing: "-0.02em",
+            }}>
+              {s.shop_name.charAt(0).toUpperCase()}
+            </span>
           )}
         </div>
         <p style={{ fontSize: "13px", fontWeight: 700, color: C.dark, marginBottom: "3px",
@@ -343,6 +368,13 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
 
   const featuredProducts = useMemo(() => initialProducts.filter(p => p.photo_url || p.photo_file_id).slice(0, 8), [initialProducts]);
   const featuredShops = useMemo(() => initialShops.slice(0, 10), [initialShops]);
+  const shopLogoMap = useMemo(() => {
+    const m: Record<string, string | null> = {};
+    for (const s of initialShops) {
+      m[s.shop_slug] = imgUrl(s.logo_file_id, s.logo_url);
+    }
+    return m;
+  }, [initialShops]);
   const totalShops = initialShops.length;
 
   async function fetchBrowse(q: string, cat: string | null, sort: string, off: number, append = false) {
@@ -436,6 +468,11 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         .browse-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,16,8,.08); }
 
         .lang-toggle-btn { transition: all .18s ease; cursor: pointer; border: none; font-family: inherit; }
+
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .marquee-track { display: flex; gap: 12px; animation: marquee 20s linear infinite; width: max-content; }
+
+        .new-badge { position: absolute; top: 6px; right: 6px; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 6px; background: #22c55e; color: white; z-index: 2; }
 
         /* Ethiopian cross pattern */
         .eth-pattern {
@@ -536,29 +573,15 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       ══════════════════════════════════════ */}
       <section style={{
         position: "relative",
-        padding: "64px 28px 56px",
+        padding: "36px 28px 32px",
         overflow: "hidden",
         background: "linear-gradient(160deg, #0A0A0F 0%, #140806 35%, #1E0C08 60%, #2A1009 80%, #140806 100%)",
       }}>
-        {/* Subtle grain overlay */}
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
-          backgroundSize: "180px 180px",
-          opacity: 0.6,
-        }} />
         {/* Gold radial glow — top right */}
         <div style={{
           position: "absolute", top: "-100px", right: "-80px",
           width: "420px", height: "420px",
           background: `radial-gradient(circle at 60% 40%, ${C.gold}28 0%, transparent 65%)`,
-          pointerEvents: "none",
-        }} />
-        {/* Warm amber glow — bottom left */}
-        <div style={{
-          position: "absolute", bottom: "-60px", left: "-60px",
-          width: "320px", height: "320px",
-          background: `radial-gradient(circle, #FF6B3528 0%, transparent 60%)`,
           pointerEvents: "none",
         }} />
         {/* Ethiopian cross pattern overlay */}
@@ -568,90 +591,46 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
 
         <div style={{ position: "relative", maxWidth: "640px", margin: "0 auto" }}>
 
-          {/* Wordmark in hero */}
-          <div className="hero-text" style={{ marginBottom: "28px" }}>
-            <span style={{
-              fontSize: "clamp(1rem, 3.5vw, 1.15rem)",
-              fontWeight: 800,
-              color: "rgba(255,255,255,0.22)",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-            }}>
-              souk<span style={{ color: C.gold }}>.</span>et
-            </span>
-          </div>
-
-          {/* Eyebrow badge */}
-          <div className="hero-text" style={{
-            display: "inline-flex", alignItems: "center", gap: "7px",
-            background: `${C.gold}20`, border: `1px solid ${C.gold}45`,
-            padding: "6px 14px", borderRadius: "20px", marginBottom: "18px",
-          }}>
-            <span style={{ fontSize: "14px" }}>🇪🇹</span>
-            <span style={{ fontSize: "11px", fontWeight: 700, color: C.gold, letterSpacing: "0.1em" }}>
-              {t.marketplaceBadge}
-            </span>
-          </div>
-
-          {/* Thin rule */}
-          <div style={{
-            width: "48px", height: "2px",
-            background: `linear-gradient(90deg, ${C.gold}, transparent)`,
-            marginBottom: "20px",
-            borderRadius: "2px",
-          }} />
-
-          {/* Headline — massive */}
-          <h1 className="hero-sub" style={{
-            fontSize: "clamp(2.8rem, 11vw, 4rem)",
+          {/* Headline — compact single line feel */}
+          <h1 className="hero-text" style={{
+            fontSize: "clamp(2.2rem, 9vw, 3.2rem)",
             fontWeight: 800,
             color: C.white,
             letterSpacing: "-0.04em",
-            lineHeight: 1.0,
+            lineHeight: 1.05,
             marginBottom: "20px",
           }}>
-            {t.heroHeadline1}
-            <br />
-            <span style={{ color: C.gold }}>{t.heroHeadline2}</span>
+            {t.heroHeadline1} <span style={{ color: C.gold }}>{t.heroHeadline2}</span>
           </h1>
 
-          {/* Sub */}
-          <p className="hero-cta" style={{
-            fontSize: "16px", color: "rgba(255,255,255,0.55)", fontWeight: 400,
-            lineHeight: 1.6, marginBottom: "36px", maxWidth: "380px",
-            letterSpacing: "0.01em",
-          }}>
-            {t.heroSub}
-          </p>
-
-          {/* Search bar — for buyers */}
-          <div className="hero-cta" style={{ position: "relative", marginBottom: "20px", maxWidth: "420px" }}>
-            <svg style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)",
-              width: "18px", height: "18px", color: "rgba(255,255,255,0.35)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          {/* Search bar — THE hero element, bigger */}
+          <div className="hero-sub" style={{ position: "relative", marginBottom: "20px", maxWidth: "480px" }}>
+            <svg style={{ position: "absolute", left: "18px", top: "50%", transform: "translateY(-50%)",
+              width: "20px", height: "20px", color: "rgba(255,255,255,0.4)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
             <input type="text" value={searchInput}
               onChange={(e) => { setSearchInput(e.target.value); if (!browseMode) setBrowseMode(true); handleSearch(e.target.value); }}
               onFocus={() => { if (!browseMode) openBrowse(); }}
               placeholder={t.searchPlaceholderHero}
-              style={{ width: "100%", padding: "15px 16px 15px 46px", borderRadius: "14px",
-                border: "1.5px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.07)",
-                color: "white", fontSize: "15px", fontWeight: 500, fontFamily: "inherit",
+              style={{ width: "100%", padding: "18px 18px 18px 50px", borderRadius: "16px",
+                border: "2px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.09)",
+                color: "white", fontSize: "16px", fontWeight: 500, fontFamily: "inherit",
                 outline: "none", backdropFilter: "blur(8px)",
                 transition: "all 0.2s" }}
-              onMouseEnter={(e) => { (e.target as HTMLInputElement).style.borderColor = "rgba(255,255,255,0.3)"; }}
-              onMouseLeave={(e) => { if (document.activeElement !== e.target) (e.target as HTMLInputElement).style.borderColor = "rgba(255,255,255,0.15)"; }}
+              onMouseEnter={(e) => { (e.target as HTMLInputElement).style.borderColor = "rgba(255,255,255,0.35)"; }}
+              onMouseLeave={(e) => { if (document.activeElement !== e.target) (e.target as HTMLInputElement).style.borderColor = "rgba(255,255,255,0.18)"; }}
             />
           </div>
 
           {/* CTAs — buyer + seller pair */}
-          <div className="hero-cta" style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "44px" }}>
+          <div className="hero-cta" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <button
               onClick={() => openBrowse()}
               className="cta-btn"
               style={{
                 display: "inline-flex", alignItems: "center", gap: "8px",
-                padding: "15px 28px", borderRadius: "14px",
+                padding: "14px 26px", borderRadius: "14px",
                 background: C.white,
                 color: C.dark, fontWeight: 800, fontSize: "15px",
                 textDecoration: "none", border: "none", cursor: "pointer",
@@ -669,7 +648,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               rel="noopener noreferrer"
               style={{
                 display: "inline-flex", alignItems: "center", gap: "7px",
-                padding: "15px 24px", borderRadius: "14px",
+                padding: "14px 22px", borderRadius: "14px",
                 background: "rgba(255,255,255,0.08)",
                 color: "rgba(255,255,255,0.85)", fontWeight: 700, fontSize: "15px",
                 border: `1.5px solid rgba(255,255,255,0.2)`,
@@ -683,44 +662,49 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               {t.ctaSell}
             </a>
           </div>
-
-          {/* Stats row with visual separators */}
-          <div className="hero-stats" style={{
-            display: "flex", alignItems: "center", gap: "0",
-          }}>
-            {[
-              { n: `${totalShops}+`, label: t.statsShops },
-              { n: `${totalProducts}+`, label: t.statsProducts },
-              { n: CATEGORIES.length.toString(), label: t.statsCategories },
-            ].map(({ n, label }, i) => (
-              <div key={label} style={{ display: "flex", alignItems: "center" }}>
-                {i > 0 && (
-                  <span style={{
-                    color: "rgba(255,255,255,0.2)",
-                    fontSize: "18px",
-                    fontWeight: 300,
-                    margin: "0 16px",
-                    lineHeight: 1,
-                  }}>|</span>
-                )}
-                <div>
-                  <span style={{ fontSize: "21px", fontWeight: 800, color: C.white }}>{n}</span>
-                  <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", fontWeight: 500, marginLeft: "5px" }}>{label}</span>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════
-          CATEGORIES — compact elegant pills
+          STATS STRIP — thin banner between hero and content
+      ══════════════════════════════════════ */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: "0",
+        padding: "10px 24px",
+        background: `linear-gradient(90deg, ${C.dark}, #1A0C08)`,
+        borderBottom: `1px solid ${C.gold}25`,
+      }}>
+        {[
+          { n: `${totalShops}+`, label: t.statsShops },
+          { n: `${totalProducts}+`, label: t.statsProducts },
+          { n: CATEGORIES.length.toString(), label: t.statsCategories },
+        ].map(({ n, label }, i) => (
+          <div key={label} style={{ display: "flex", alignItems: "center" }}>
+            {i > 0 && (
+              <span style={{
+                color: "rgba(255,255,255,0.2)",
+                fontSize: "14px",
+                fontWeight: 300,
+                margin: "0 14px",
+                lineHeight: 1,
+              }}>|</span>
+            )}
+            <div>
+              <span style={{ fontSize: "15px", fontWeight: 800, color: C.white }}>{n}</span>
+              <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", fontWeight: 500, marginLeft: "4px" }}>{label}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ══════════════════════════════════════
+          CATEGORIES — taller cards with preview
       ══════════════════════════════════════ */}
       <section style={{ padding: "20px 0 4px" }}>
         <div className="hide-scrollbar" style={{
-          display: "flex", gap: "8px", overflowX: "auto",
+          display: "flex", gap: "10px", overflowX: "auto",
           padding: "0 24px 8px",
-          alignItems: "center",
+          alignItems: "stretch",
         }}>
           {CATEGORIES.map((c) => {
             const count = categoryCounts[c.key] || 0;
@@ -732,23 +716,46 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                 className="catpill"
                 style={{
                   flexShrink: 0,
-                  display: "inline-flex", alignItems: "center",
-                  gap: "5px",
-                  padding: "7px 13px",
-                  borderRadius: "100px",
-                  background: `${c.color}14`,
+                  width: "120px",
+                  height: "80px",
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center",
+                  gap: "4px",
+                  padding: "10px 8px",
+                  borderRadius: "16px",
+                  background: `linear-gradient(145deg, ${c.color}12, ${c.color}06)`,
                   border: `1.5px solid ${c.color}30`,
                   whiteSpace: "nowrap",
+                  cursor: "pointer",
                 }}>
-                <span style={{ fontSize: "14px", lineHeight: 1 }}>{c.emoji}</span>
+                <span style={{ fontSize: "24px", lineHeight: 1 }}>{c.emoji}</span>
                 <span style={{ fontSize: "12px", fontWeight: 700, color: c.color }}>
                   {lang === "am" ? c.am : c.label}
+                </span>
+                <span style={{ fontSize: "10px", fontWeight: 600, color: C.muted }}>
+                  {count} {count === 1 ? t.item : t.items}
                 </span>
               </button>
             );
           })}
         </div>
       </section>
+
+      {/* ══════════════════════════════════════
+          ACTIVITY STRIP — live ticker feel
+      ══════════════════════════════════════ */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+        padding: "8px 24px",
+        background: `${C.gold}08`,
+        borderTop: `1px solid ${C.gold}15`,
+        borderBottom: `1px solid ${C.gold}15`,
+      }}>
+        <span style={{ fontSize: "13px" }}>🔥</span>
+        <span style={{ fontSize: "12px", fontWeight: 600, color: C.muted }}>
+          {initialProducts.filter(p => isNew(p.created_at)).length} {t.activityStrip} · {totalShops} {t.activityShops}
+        </span>
+      </div>
 
       {/* ══════════════════════════════════════
           FEATURED PRODUCTS
@@ -795,7 +802,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
             padding: "4px 24px 16px",
           }}>
             {featuredProducts.map((p, i) => (
-              <ProductCard key={p.id} p={p} delay={i * 0.04} />
+              <ProductCard key={p.id} p={p} delay={i * 0.04} shopLogo={shopLogoMap[p.shop_slug]} />
             ))}
           </div>
         </section>
@@ -1199,11 +1206,37 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       ══════════════════════════════════════ */}
       <footer style={{
         background: C.dark,
-        padding: "44px 24px 36px",
+        padding: "0 0 36px",
         position: "relative",
       }}>
         <div className="eth-pattern" style={{ position: "absolute", opacity: 0.15, inset: 0, pointerEvents: "none" }} />
-        <div style={{ position: "relative", maxWidth: "400px" }}>
+
+        {/* Recently added marquee */}
+        {featuredProducts.length > 0 && (
+          <div style={{ overflow: "hidden", padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,0.08)", position: "relative" }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em",
+              textTransform: "uppercase", textAlign: "center", marginBottom: "10px", position: "relative" }}>
+              {t.recentlyAdded}
+            </p>
+            <div style={{ overflow: "hidden", position: "relative" }}>
+              <div className="marquee-track">
+                {[...featuredProducts.slice(0, 6), ...featuredProducts.slice(0, 6)].map((p, i) => {
+                  const src = imgUrl(p.photo_file_id, p.photo_url);
+                  return (
+                    <div key={`mq-${i}`} style={{
+                      width: "40px", height: "40px", borderRadius: "50%", overflow: "hidden",
+                      flexShrink: 0, background: C.sand, border: "1.5px solid rgba(255,255,255,0.1)",
+                    }}>
+                      {src && <img src={src} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ position: "relative", maxWidth: "400px", padding: "28px 24px 0" }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
             <svg viewBox="0 0 120 120" width="34" height="34" style={{ flexShrink: 0 }}>
