@@ -481,6 +481,37 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
           )}");
           background-size: 32px 32px;
         }
+
+        /* ── Responsive layout ── */
+        .mkt-container { max-width: 100%; margin: 0 auto; padding: 0 16px; }
+        .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .browse-grid  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .welcome-block { padding: 20px 16px 12px; }
+        .welcome-headline { font-size: 22px; }
+        .welcome-sub { font-size: 13px; max-width: 320px; }
+        .nav-inner { max-width: 100%; margin: 0 auto; }
+        .featured-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 4px 16px 16px; }
+        .featured-scroll .pcard { width: 170px; }
+        .seller-cta-card { margin: 16px 16px 0; }
+
+        @media (min-width: 640px) {
+          .mkt-container { max-width: 1100px; padding: 0 32px; }
+          .product-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+          .browse-grid  { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+          .welcome-block { padding: 40px 32px 24px; text-align: center; }
+          .welcome-headline { font-size: 32px; }
+          .welcome-sub { font-size: 15px; max-width: 440px; margin: 0 auto; }
+          .nav-inner { max-width: 1100px; }
+          .featured-scroll { padding: 4px 32px 16px; }
+          .featured-scroll .pcard { width: 200px; }
+          .seller-cta-card { margin: 24px 32px 0; max-width: 1100px; margin-left: auto; margin-right: auto; }
+        }
+
+        @media (min-width: 960px) {
+          .product-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+          .browse-grid  { grid-template-columns: repeat(5, 1fr); gap: 12px; }
+          .welcome-headline { font-size: 38px; }
+        }
       `}</style>
 
       {/* ══════════════════════════════════════
@@ -491,10 +522,11 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         background: "rgba(250,248,242,0.95)",
         backdropFilter: "blur(16px)",
         borderBottom: `1px solid ${C.border}`,
-        padding: "10px 16px",
+        padding: "10px 0",
         opacity: mounted ? 1 : 0,
         transition: "opacity .5s ease .1s",
       }}>
+       <div className="nav-inner" style={{ margin: "0 auto", padding: "0 16px" }}>
         {/* Top row: logo + lang + sell */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
@@ -541,15 +573,30 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
               color: C.dark, fontSize: "14px", fontWeight: 500, fontFamily: "inherit" }}
           />
         </div>
+       </div>
       </nav>
+
+      {/* ══════════════════════════════════════
+          WELCOME BLOCK — warm intro (not a hero)
+      ══════════════════════════════════════ */}
+      {!browseMode && (
+        <div className="welcome-block mkt-container hero-text">
+          <h1 className="welcome-headline" style={{ fontWeight: 800, color: C.dark, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "8px" }}>
+            🇪🇹 {lang === "am" ? "የኢትዮጵያ የቴሌግራም ገበያ" : "Ethiopia's Telegram Marketplace"}
+          </h1>
+          <p className="welcome-sub" style={{ color: C.muted, lineHeight: 1.5, marginBottom: "0" }}>
+            {t.heroSub}
+          </p>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════
           CATEGORIES — icon row (Depop-style)
       ══════════════════════════════════════ */}
       <section style={{ padding: "12px 0 6px", borderBottom: `1px solid ${C.border}` }}>
-        <div className="hide-scrollbar" style={{
+        <div className="hide-scrollbar nav-inner" style={{
           display: "flex", gap: "4px", overflowX: "auto",
-          padding: "0 16px",
+          padding: "0 16px", margin: "0 auto",
           alignItems: "center",
         }}>
           {/* All button */}
@@ -583,17 +630,35 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
           PRODUCT FEED — 2-column grid (the main content)
       ══════════════════════════════════════ */}
       {featuredProducts.length > 0 && !browseMode && (
-        <section style={{ padding: "12px 12px 8px" }}>
-          {/* Activity line */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "0 4px 10px" }}>
-            <span style={{ fontSize: "12px" }}>🔥</span>
-            <span style={{ fontSize: "11px", fontWeight: 600, color: C.muted }}>
-              {totalProducts}+ {t.statsProducts} · {totalShops} {t.statsShops}
-            </span>
+        <section className="mkt-container" style={{ paddingTop: "16px", paddingBottom: "8px" }}>
+          {/* New Arrivals — horizontal scroll */}
+          <div style={{ marginBottom: "20px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: 800, color: C.dark }}>{t.newArrivals}</h2>
+              <span style={{ fontSize: "11px", fontWeight: 600, color: C.muted }}>
+                🔥 {totalProducts}+ {t.statsProducts} · {totalShops} {t.statsShops}
+              </span>
+            </div>
+            <div className="hide-scrollbar featured-scroll" style={{ marginLeft: "-16px", marginRight: "-16px" }}>
+              {featuredProducts.map((p, i) => (
+                <ProductCard key={p.id} p={p} delay={i * 0.04} shopLogo={shopLogoMap[p.shop_slug]} />
+              ))}
+            </div>
           </div>
 
-          {/* 2-column product grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+          {/* All Products — responsive grid */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+            <h2 style={{ fontSize: "16px", fontWeight: 800, color: C.dark }}>{t.allProducts}</h2>
+            <button onClick={() => openBrowse()} style={{ fontSize: "12px", fontWeight: 700, color: C.terra,
+              background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+              display: "flex", alignItems: "center", gap: "3px" }}>
+              {t.seeAll}
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </div>
+          <div className="product-grid">
             {initialProducts.filter(p => p.photo_url || p.photo_file_id).slice(0, 12).map((p) => {
               const isSoldOut = p.stock === 0;
               const [imgFailed, setImgFailed] = useState(false);
@@ -644,28 +709,19 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
             })}
           </div>
 
-          {/* See all button */}
-          <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
-            <button onClick={() => openBrowse()} className="cta-btn"
-              style={{ padding: "12px 32px", borderRadius: "12px", background: C.dark, color: "white",
-                border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                boxShadow: "0 2px 12px rgba(0,0,0,0.15)" }}>
-              {t.seeAll} →
-            </button>
-          </div>
         </section>
       )}
 
       {/* ══════════════════════════════════════
-          SHOPS — slim horizontal strip
+          SHOPS — horizontal strip
       ══════════════════════════════════════ */}
       {featuredShops.length > 0 && !browseMode && (
-        <section style={{ padding: "16px 0 12px", borderTop: `1px solid ${C.border}` }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px 10px" }}>
-            <p style={{ fontSize: "14px", fontWeight: 800, color: C.dark }}>{t.shops}</p>
+        <section className="mkt-container" style={{ paddingTop: "20px", paddingBottom: "12px", borderTop: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+            <h2 style={{ fontSize: "16px", fontWeight: 800, color: C.dark }}>{t.shops}</h2>
             <span style={{ fontSize: "11px", color: C.muted }}>{totalShops} {t.statsShops}</span>
           </div>
-          <div className="hide-scrollbar" style={{ display: "flex", gap: "10px", overflowX: "auto", padding: "0 16px 4px" }}>
+          <div className="hide-scrollbar featured-scroll" style={{ marginLeft: "-16px", marginRight: "-16px" }}>
             {featuredShops.map((s) => (
               <ShopCard key={s.shop_slug} s={s} lang={lang} />
             ))}
@@ -674,35 +730,49 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       )}
 
       {/* ══════════════════════════════════════
-          SELLER CTA — floating bottom banner
+          SELLER CTA — inline card
       ══════════════════════════════════════ */}
-      <a href="https://t.me/SoukEtBot" target="_blank" rel="noopener noreferrer"
-        style={{
-          position: "fixed", bottom: "16px", left: "50%", transform: "translateX(-50%)",
-          zIndex: 40,
-          display: "flex", alignItems: "center", gap: "8px",
-          padding: "12px 20px", borderRadius: "50px",
-          background: C.dark,
-          color: "white", fontWeight: 700, fontSize: "13px",
-          textDecoration: "none",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08)",
-          backdropFilter: "blur(8px)",
-          whiteSpace: "nowrap",
-          opacity: mounted ? 1 : 0,
-          transition: "opacity .5s ease 1s, transform .2s ease",
-        }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill={C.terra}>
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.07-.18c-.08-.05-.19-.03-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.46-.01.06.01.24 0 .37z" />
-        </svg>
-        {t.createShopFree}
-      </a>
+      {!browseMode && (
+        <div className="seller-cta-card">
+          <div style={{
+            background: `linear-gradient(135deg, ${C.dark} 0%, #1A0C06 100%)`,
+            borderRadius: "20px", padding: "28px 24px",
+            position: "relative", overflow: "hidden",
+          }}>
+            <div className="eth-pattern" style={{ position: "absolute", inset: 0, opacity: 0.2, pointerEvents: "none" }} />
+            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: "200px" }}>
+                <p style={{ fontSize: "11px", fontWeight: 700, color: C.gold, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px" }}>{t.forSellers}</p>
+                <p style={{ fontSize: "18px", fontWeight: 800, color: "white", lineHeight: 1.2, marginBottom: "6px" }}>
+                  {t.openIn3} <span style={{ color: C.gold }}>{t.openIn3Bold}</span>{lang === "am" ? " ክፈቱ" : ""}
+                </p>
+                <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>{t.step1Desc}</p>
+              </div>
+              <a href="https://t.me/SoukEtBot" target="_blank" rel="noopener noreferrer" className="cta-btn"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "8px",
+                  padding: "14px 24px", borderRadius: "14px",
+                  background: `linear-gradient(135deg, ${C.terra}, #E85D2A)`,
+                  color: "white", fontWeight: 700, fontSize: "14px",
+                  textDecoration: "none", whiteSpace: "nowrap",
+                  boxShadow: `0 4px 16px ${C.terra}40`,
+                }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.07-.18c-.08-.05-.19-.03-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.46-.01.06.01.24 0 .37z" />
+                </svg>
+                {t.createShopFree}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════
           BROWSE MODE (triggered by "Browse all" / category click)
       ══════════════════════════════════════ */}
       <div ref={browseRef}>
         {browseMode && (
-          <section style={{ padding: "8px 20px 32px" }}>
+          <section className="mkt-container" style={{ paddingTop: "8px", paddingBottom: "32px" }}>
             {/* Browse header */}
             <div style={{
               background: C.white, borderRadius: "24px",
@@ -895,7 +965,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                   </div>
                 ) : (
                   /* ── GRID VIEW ── */
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                  <div className="browse-grid">
                     {browseProducts.map((p) => {
                       const isSoldOut = p.stock === 0;
                       const src = imgUrl(p.photo_file_id, p.photo_url);
@@ -982,11 +1052,12 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       ══════════════════════════════════════ */}
       <footer style={{
         background: C.dark,
-        padding: "32px 24px 80px",
+        padding: "32px 0",
         position: "relative",
+        marginTop: "24px",
       }}>
         <div className="eth-pattern" style={{ position: "absolute", opacity: 0.15, inset: 0, pointerEvents: "none" }} />
-        <div style={{ position: "relative", maxWidth: "400px" }}>
+        <div className="mkt-container" style={{ position: "relative" }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
             <svg viewBox="0 0 120 120" width="34" height="34" style={{ flexShrink: 0 }}>
