@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerClient } from "@/lib/supabase";
 
-async function resolveTelegramUrl(
-  fileId: string | null,
-  botToken: string | null
-): Promise<string | null> {
-  if (!fileId || !botToken) return null;
-  try {
-    const res = await fetch(
-      `https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`
-    );
-    const data = await res.json();
-    if (data.ok && data.result?.file_path) {
-      return `https://api.telegram.org/file/bot${botToken}/${data.result.file_path}`;
-    }
-  } catch { /* silent */ }
-  return null;
+/** Return a stable proxy URL for a Telegram file_id, or the existing photo_url. */
+function stableImgUrl(fileId: string | null, photoUrl: string | null): string | null {
+  if (fileId) return `/api/img/${fileId}`;
+  return photoUrl;
 }
 
 export async function GET(
@@ -24,28 +13,37 @@ export async function GET(
 ) {
   const { id } = await params;
   const supabase = getServerClient();
-  const botToken = process.env.BOT_TOKEN;
 
-  // ── Fetch product ──
-  const { data: product, error: prodErr } = await supabase
-    .from("suq_products")
-    .select("id, name, description, price, price_type, listing_type, photo_url, photo_file_id, stock, tag, created_at, shop_id")
-    .eq("id", id)
-    .eq("is_active", true)
-    .single();
+  // ── Fetch product (support both full UUID and 8-char short ID) ──
+  let product: Record<string, unknown> | null = null;
 
-  if (prodErr || !product) {
+  if (id.length >= 32) {
+    // Full UUID
+    const { data } = await supabase
+      .from("suq_products")
+      .select("id, name, description, price, price_type, listing_type, photo_url, photo_file_id, stock, tag, created_at, shop_id")
+      .eq("id", id)
+      .eq("is_active", true)
+      .single();
+    product = data;
+  } else {
+    // Short ID prefix match
+    const { data } = await supabase
+      .from("suq_products")
+      .select("id, name, description, price, price_type, listing_type, photo_url, photo_file_id, stock, tag, created_at, shop_id")
+      .like("id", `${id}%`)
+      .eq("is_active", true)
+      .limit(1)
+      .single();
+    product = data;
+  }
+
+  if (!product) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 
-  // Resolve product photo
-  if (!product.photo_url && product.photo_file_id) {
-    const url = await resolveTelegramUrl(product.photo_file_id, botToken ?? null);
-    if (url) {
-      product.photo_url = url;
-      supabase.from("suq_products").update({ photo_url: url }).eq("id", id).then(() => {});
-    }
-  }
+  // Use proxy URL instead of raw Telegram URL
+  product.photo_url = stableImgUrl(product.photo_file_id as string | null, product.photo_url as string | null);
 
   // ── Fetch shop ──
   const { data: shop } = await supabase
@@ -58,13 +56,9 @@ export async function GET(
     return NextResponse.json({ error: "Shop not found" }, { status: 404 });
   }
 
-  // Resolve shop logo
-  if (shop.logo_file_id && !shop.logo_url) {
-    const url = await resolveTelegramUrl(shop.logo_file_id, botToken ?? null);
-    if (url) {
-      shop.logo_url = url;
-      supabase.from("suq_shops").update({ logo_url: url }).eq("id", shop.id).then(() => {});
-    }
+  // Use proxy URL for logo too
+  if (shop.logo_file_id) {
+    shop.logo_url = `/api/img/${shop.logo_file_id}`;
   }
 
   // ── More from this shop (4 other products) ──
@@ -77,18 +71,10 @@ export async function GET(
     .order("created_at", { ascending: false })
     .limit(4);
 
-  const resolvedMore = await Promise.all(
-    (moreFromShop || []).map(async (p) => {
-      if (!p.photo_url && p.photo_file_id) {
-        const url = await resolveTelegramUrl(p.photo_file_id, botToken ?? null);
-        if (url) {
-          p.photo_url = url;
-          supabase.from("suq_products").update({ photo_url: url }).eq("id", p.id).then(() => {});
-        }
-      }
-      return p;
-    })
-  );
+  const resolvedMore = (moreFromShop || []).map((p) => ({
+    ...p,
+    photo_url: stableImgUrl(p.photo_file_id, p.photo_url),
+  }));
 
   // ── Similar products from other shops (same category, 4 items) ──
   let similarProducts: Record<string, unknown>[] = [];
@@ -102,29 +88,20 @@ export async function GET(
       .order("created_at", { ascending: false })
       .limit(4);
 
-    similarProducts = await Promise.all(
-      (similar || []).map(async (p) => {
-        if (!p.photo_url && p.photo_file_id) {
-          const url = await resolveTelegramUrl(p.photo_file_id, botToken ?? null);
-          if (url) {
-            p.photo_url = url;
-            supabase.from("suq_products").update({ photo_url: url }).eq("id", p.id).then(() => {});
-          }
-        }
-        const s = p.suq_shops as unknown as Record<string, unknown> | null;
-        return {
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          price_type: p.price_type,
-          photo_url: p.photo_url,
-          stock: p.stock,
-          tag: p.tag,
-          shop_name: s?.shop_name,
-          shop_slug: s?.shop_slug,
-        };
-      })
-    );
+    similarProducts = (similar || []).map((p) => {
+      const s = p.suq_shops as unknown as Record<string, unknown> | null;
+      return {
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        price_type: p.price_type,
+        photo_url: stableImgUrl(p.photo_file_id, p.photo_url),
+        stock: p.stock,
+        tag: p.tag,
+        shop_name: s?.shop_name,
+        shop_slug: s?.shop_slug,
+      };
+    });
   }
 
   return NextResponse.json({

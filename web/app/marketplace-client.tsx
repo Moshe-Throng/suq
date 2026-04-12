@@ -223,7 +223,7 @@ function ProductCard({ p, delay = 0, shopLogo }: { p: MarketProduct; delay?: num
   const [imgFailed, setImgFailed] = useState(false);
   const cat = CATEGORIES.find(c => c.key === p.shop_category);
   return (
-    <Link href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+    <Link href={`/${p.shop_slug}/${p.id.slice(0, 8)}`} style={{ textDecoration: "none", color: "inherit" }}>
       <div className="pcard" style={{
         background: C.white,
         borderRadius: "18px",
@@ -355,7 +355,7 @@ function GridCard({ p, shopLogo }: { p: MarketProduct; shopLogo?: string | null 
   const [imgFailed, setImgFailed] = useState(false);
   const src = imgUrl(p.photo_file_id, p.photo_url);
   return (
-    <Link href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+    <Link href={`/${p.shop_slug}/${p.id.slice(0, 8)}`} style={{ textDecoration: "none", color: "inherit" }}>
       <div className="pcard" style={{ background: C.white, borderRadius: "14px", overflow: "hidden", border: `1px solid ${C.border}` }}>
         <div style={{ position: "relative", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
           {src && !imgFailed ? (
@@ -635,14 +635,20 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       ══════════════════════════════════════ */}
       {!browseMode && (
         <div className="hero-text" style={{
-          background: `linear-gradient(180deg, ${C.sand} 0%, ${C.bg} 100%)`,
-          borderBottom: `1px solid ${C.border}`,
+          background: `linear-gradient(170deg, #2A1608 0%, #1C0E04 50%, ${C.dark} 100%)`,
+          borderBottom: `2px solid ${C.gold}30`,
+          position: "relative",
+          overflow: "hidden",
         }}>
-          <div className="welcome-block mkt-container" style={{ textAlign: "center" }}>
-            <h1 className="welcome-headline" style={{ fontWeight: 800, color: C.dark, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "8px" }}>
+          {/* Subtle glow */}
+          <div style={{ position: "absolute", top: "-50px", right: "-40px", width: "260px", height: "260px",
+            background: `radial-gradient(circle, ${C.gold}18 0%, transparent 70%)`, pointerEvents: "none" }} />
+          <div className="eth-pattern" style={{ position: "absolute", inset: 0, opacity: 0.08, pointerEvents: "none" }} />
+          <div className="welcome-block mkt-container" style={{ textAlign: "center", position: "relative" }}>
+            <h1 className="welcome-headline" style={{ fontWeight: 800, color: C.white, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "8px" }}>
               {lang === "am" ? "የኢትዮጵያ የቴሌግራም ገበያ" : "Ethiopia's Telegram Marketplace"}
             </h1>
-            <p className="welcome-sub" style={{ color: C.muted, lineHeight: 1.5, marginBottom: "0", marginLeft: "auto", marginRight: "auto" }}>
+            <p className="welcome-sub" style={{ color: "rgba(255,255,255,0.55)", lineHeight: 1.5, marginBottom: "0", marginLeft: "auto", marginRight: "auto" }}>
               {t.heroSub}
             </p>
 
@@ -654,10 +660,10 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
             }}>
               <button onClick={() => { setSelectedCategory(null); openBrowse(); }} className="catpill"
                 style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
-                  padding: "6px 12px", borderRadius: "12px", background: !selectedCategory && browseMode ? `${C.terra}12` : "transparent",
+                  padding: "6px 12px", borderRadius: "12px", background: !selectedCategory && browseMode ? "rgba(255,255,255,0.12)" : "transparent",
                   border: "none", minWidth: "56px" }}>
                 <span style={{ fontSize: "20px", lineHeight: 1 }}>🏪</span>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: !selectedCategory && browseMode ? C.terra : C.muted }}>{t.all}</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: !selectedCategory && browseMode ? C.gold : "rgba(255,255,255,0.5)" }}>{t.all}</span>
               </button>
               {CATEGORIES.map((c) => {
                 const count = categoryCounts[c.key] || 0;
@@ -666,10 +672,10 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                 return (
                   <button key={c.key} onClick={() => openBrowse(c.key)} className="catpill"
                     style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
-                      padding: "6px 12px", borderRadius: "12px", background: isActive ? `${c.color}12` : "transparent",
+                      padding: "6px 12px", borderRadius: "12px", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
                       border: "none", minWidth: "56px" }}>
                     <span style={{ fontSize: "20px", lineHeight: 1 }}>{c.emoji}</span>
-                    <span style={{ fontSize: "10px", fontWeight: 700, color: isActive ? c.color : C.muted }}>
+                    <span style={{ fontSize: "10px", fontWeight: 700, color: isActive ? C.gold : "rgba(255,255,255,0.5)" }}>
                       {lang === "am" ? c.am : c.label}
                     </span>
                   </button>
@@ -922,7 +928,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                       const src = imgUrl(p.photo_file_id, p.photo_url);
                       const isSoldOut = p.stock === 0;
                       return (
-                        <Link key={p.id} href={`/${p.shop_slug}/${p.id}`}
+                        <Link key={p.id} href={`/${p.shop_slug}/${p.id.slice(0, 8)}`}
                           style={{ textDecoration: "none", color: "inherit" }}>
                           <div className="browse-card" style={{
                             background: C.white, borderRadius: "14px", overflow: "hidden",
@@ -979,7 +985,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                       const isSoldOut = p.stock === 0;
                       const src = imgUrl(p.photo_file_id, p.photo_url);
                       return (
-                        <Link key={p.id} href={`/${p.shop_slug}/${p.id}`}
+                        <Link key={p.id} href={`/${p.shop_slug}/${p.id.slice(0, 8)}`}
                           style={{ textDecoration: "none", color: "inherit" }}>
                           <div className="browse-card" style={{
                             background: C.white, borderRadius: "12px", overflow: "hidden",
