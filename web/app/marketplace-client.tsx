@@ -226,11 +226,10 @@ function ProductCard({ p, delay = 0, shopLogo }: { p: MarketProduct; delay?: num
     <Link href={`/${p.shop_slug}/${p.id.slice(0, 8)}`} style={{ textDecoration: "none", color: "inherit" }}>
       <div className="pcard" style={{
         background: C.white,
-        borderRadius: "18px",
+        borderRadius: "14px",
         overflow: "hidden",
-        border: `1.5px solid ${C.border}`,
+        border: `1px solid ${C.border}`,
         flexShrink: 0,
-        width: "200px",
         animationDelay: `${delay}s`,
       }}>
         {/* Image */}
@@ -349,11 +348,11 @@ function GridCard({ p, shopLogo }: { p: MarketProduct; shopLogo?: string | null 
   const src = imgUrl(p.photo_file_id, p.photo_url);
   return (
     <Link href={`/${p.shop_slug}/${p.id.slice(0, 8)}`} style={{ textDecoration: "none", color: "inherit" }}>
-      <div className="pcard" style={{ background: C.white, borderRadius: "14px", overflow: "hidden", border: `1px solid ${C.border}` }}>
-        <div style={{ position: "relative", width: "100%", paddingBottom: "100%", background: C.sand, overflow: "hidden" }}>
+      <div className="pcard" style={{ background: C.white, borderRadius: "14px", overflow: "hidden", border: `1px solid ${C.border}`, width: "100%" }}>
+        <div style={{ position: "relative", width: "100%", height: 0, paddingBottom: "100%", background: C.sand, overflow: "hidden" }}>
           {src && !imgFailed ? (
             <img src={src} alt={p.name} loading="lazy" decoding="async" onError={() => setImgFailed(true)}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           ) : (
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
               background: `linear-gradient(135deg, ${C.sand}, ${C.border})` }}>
@@ -538,7 +537,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         .welcome-sub { font-size: 13px; max-width: 320px; }
         .nav-inner { max-width: 100%; margin: 0 auto; }
         .featured-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 4px 16px 16px; }
-        .featured-scroll .pcard { width: 170px; }
+        .featured-scroll .pcard { width: 160px !important; min-width: 160px; }
         .seller-cta-card { margin: 16px 16px 0; }
 
         @media (min-width: 640px) {
@@ -550,7 +549,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
           .welcome-sub { font-size: 15px; max-width: 440px; margin: 0 auto; }
           .nav-inner { max-width: 1100px; }
           .featured-scroll { padding: 4px 32px 16px; }
-          .featured-scroll .pcard { width: 200px; }
+          .featured-scroll .pcard { width: 180px !important; min-width: 180px; }
           .seller-cta-card { margin: 24px 32px 0; max-width: 1100px; margin-left: auto; margin-right: auto; }
         }
 
