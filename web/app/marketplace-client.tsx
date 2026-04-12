@@ -234,13 +234,13 @@ function ProductCard({ p, delay = 0, shopLogo }: { p: MarketProduct; delay?: num
         animationDelay: `${delay}s`,
       }}>
         {/* Image */}
-        <div style={{ position: "relative", width: "100%", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
+        <div style={{ position: "relative", width: "100%", paddingBottom: "100%", background: C.sand, overflow: "hidden" }}>
           {imgUrl(p.photo_file_id, p.photo_url) && !imgFailed ? (
             <img src={imgUrl(p.photo_file_id, p.photo_url)!} alt={p.name} loading="lazy" decoding="async"
               onError={() => setImgFailed(true)}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center",
               justifyContent: "center", background: `linear-gradient(135deg, #FFE8D6, #FFCDB4)` }}>
               <span style={{ fontSize: "36px", opacity: 0.35 }}>
                 {cat?.emoji || "📦"}
@@ -350,12 +350,12 @@ function GridCard({ p, shopLogo }: { p: MarketProduct; shopLogo?: string | null 
   return (
     <Link href={`/${p.shop_slug}/${p.id.slice(0, 8)}`} style={{ textDecoration: "none", color: "inherit" }}>
       <div className="pcard" style={{ background: C.white, borderRadius: "14px", overflow: "hidden", border: `1px solid ${C.border}` }}>
-        <div style={{ position: "relative", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
+        <div style={{ position: "relative", width: "100%", paddingBottom: "100%", background: C.sand, overflow: "hidden" }}>
           {src && !imgFailed ? (
             <img src={src} alt={p.name} loading="lazy" decoding="async" onError={() => setImgFailed(true)}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
               background: `linear-gradient(135deg, ${C.sand}, ${C.border})` }}>
               <span style={{ fontSize: "28px", opacity: 0.3 }}>{CATEGORIES.find(c => c.key === p.shop_category)?.emoji || "📦"}</span>
             </div>
@@ -531,8 +531,8 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
 
         /* ── Responsive layout ── */
         .mkt-container { max-width: 100%; margin: 0 auto; padding: 0 16px; }
-        .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .browse-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+        .browse-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
         .welcome-block { padding: 20px 16px 12px; }
         .welcome-headline { font-size: 22px; }
         .welcome-sub { font-size: 13px; max-width: 320px; }
@@ -984,14 +984,14 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                             background: C.white, borderRadius: "12px", overflow: "hidden",
                             border: `1px solid ${C.border}`,
                           }}>
-                            <div style={{ position: "relative", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
+                            <div style={{ position: "relative", width: "100%", paddingBottom: "100%", background: C.sand, overflow: "hidden" }}>
                               {src ? (
                                 <img src={src} alt={p.name} loading="lazy"
                                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                                  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
                               ) : null}
                               {!src && (
-                                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
+                                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center",
                                   justifyContent: "center" }}>
                                   <span style={{ fontSize: "22px", opacity: 0.3 }}>📦</span>
                                 </div>
