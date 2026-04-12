@@ -522,30 +522,52 @@ export default function ShopPage() {
       `}</style>
 
       {/* ═══ Header ═══ */}
-      <header className="relative overflow-hidden" style={{ background: theme.primary }}>
-        <div className="max-w-2xl mx-auto px-5 pt-4 pb-6">
-          {/* Top row: back + share */}
-          <div className="flex items-center justify-between mb-5">
-            <Link href="/" className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.4)", textDecoration: "none" }}>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <header className="relative overflow-hidden" style={{
+        background: `linear-gradient(160deg, ${theme.primaryDark} 0%, ${theme.primary} 40%, ${theme.accent}33 100%)`,
+        minHeight: 200,
+      }}>
+        {/* Decorative background layers */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(ellipse 80% 50% at 80% 20%, ${theme.accent}30 0%, transparent 70%), radial-gradient(ellipse 60% 40% at 10% 80%, ${theme.primaryDark}80 0%, transparent 60%)`,
+        }} />
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+        {/* Grain overlay */}
+        <div className="absolute inset-0 opacity-[0.12]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+          mixBlendMode: "overlay",
+        }} />
+        {/* Soft glow behind logo area */}
+        <div className="absolute" style={{
+          width: 200, height: 200, left: 20, bottom: -40,
+          background: `radial-gradient(circle, ${theme.accent}20 0%, transparent 70%)`,
+          filter: "blur(40px)",
+        }} />
+
+        <div className="relative max-w-2xl mx-auto px-5 pt-4 pb-7">
+          {/* Top row: back + actions */}
+          <div className="flex items-center justify-between mb-6">
+            <Link href="/" className="flex items-center justify-center w-8 h-8 rounded-full transition-all active:scale-90" style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(8px)", textDecoration: "none" }}>
+              <svg className="w-4 h-4" style={{ color: "rgba(255,255,255,0.7)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
             </Link>
             <div className="flex items-center gap-2">
               {!isAdmin && !adminLoading && (
                 <button onClick={startWebLogin}
-                  className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition-all active:scale-95"
-                  style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}>
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  className="flex items-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-full transition-all active:scale-95"
+                  style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(12px)", color: "rgba(255,255,255,0.9)", border: "1px solid rgba(255,255,255,0.15)" }}>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" />
                   </svg>
                   {t.login}
                 </button>
               )}
               <button onClick={shareShop}
-                className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition-all active:scale-95"
-                style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}>
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                className="flex items-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-full transition-all active:scale-95"
+                style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(12px)", color: "rgba(255,255,255,0.9)", border: "1px solid rgba(255,255,255,0.15)" }}>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
                 </svg>
                 {t.share}
@@ -553,35 +575,65 @@ export default function ShopPage() {
             </div>
           </div>
 
-          {/* Shop info */}
-          <div className="flex items-center gap-4">
-            {/* Logo */}
-            <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center"
-              style={{ background: showLogo ? "white" : "rgba(255,255,255,0.2)", boxShadow: "0 2px 12px rgba(0,0,0,0.15)" }}>
-              {showLogo ? (
-                <img src={logoSrc!} alt={shop.shop_name} className="w-full h-full object-cover"
-                  onError={() => setLogoFailed(true)} />
-              ) : (
-                <span className="text-2xl font-bold text-white">{shop.shop_name.charAt(0).toUpperCase()}</span>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-bold text-white tracking-tight leading-tight truncate">{shop.shop_name}</h1>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                {shop.category && (
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.9)" }}>
-                    {shop.category.charAt(0).toUpperCase() + shop.category.slice(1)}
-                  </span>
+          {/* Shop info — centered layout */}
+          <div className="flex flex-col items-center text-center">
+            {/* Logo with ring */}
+            <div className="relative mb-3">
+              <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center"
+                style={{
+                  background: showLogo ? "white" : "rgba(255,255,255,0.15)",
+                  boxShadow: `0 4px 20px rgba(0,0,0,0.2), 0 0 0 3px rgba(255,255,255,0.25)`,
+                }}>
+                {showLogo ? (
+                  <img src={logoSrc!} alt={shop.shop_name} className="w-full h-full object-cover"
+                    onError={() => setLogoFailed(true)} />
+                ) : (
+                  <span className="text-3xl font-bold text-white" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>{shop.shop_name.charAt(0).toUpperCase()}</span>
                 )}
-                {shop.location_text && <span className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>📍 {shop.location_text}</span>}
-                <span className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>{itemCount} {itemLabel}</span>
               </div>
-              {shop.description && (
-                <p className="text-xs mt-1.5 leading-relaxed line-clamp-2" style={{ color: "rgba(255,255,255,0.65)" }}>{shop.description}</p>
+              {/* Verified-style dot */}
+              <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center"
+                style={{ background: theme.accent, boxShadow: `0 2px 8px ${theme.accent}60`, border: "2.5px solid white" }}>
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Shop name */}
+            <h1 className="text-xl font-bold text-white tracking-tight leading-tight" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.15)" }}>{shop.shop_name}</h1>
+
+            {/* Meta badges */}
+            <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
+              {shop.category && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                  style={{ background: "rgba(255,255,255,0.18)", color: "white", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                  {shop.category.charAt(0).toUpperCase() + shop.category.slice(1)}
+                </span>
+              )}
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full"
+                style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}>
+                {itemCount} {itemLabel}
+              </span>
+              {shop.location_text && (
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full"
+                  style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}>
+                  📍 {shop.location_text}
+                </span>
               )}
             </div>
+
+            {/* Description */}
+            {shop.description && (
+              <p className="text-xs mt-3 leading-relaxed line-clamp-2 max-w-md" style={{ color: "rgba(255,255,255,0.7)" }}>{shop.description}</p>
+            )}
           </div>
         </div>
+
+        {/* Bottom edge fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-6" style={{
+          background: "linear-gradient(to top, rgba(255,255,255,0.06), transparent)",
+        }} />
 
         {copiedId === "shop" && (
           <span className="absolute top-3 right-20 text-xs font-medium px-2.5 py-1 rounded-lg bg-white text-gray-900 shadow-md"
