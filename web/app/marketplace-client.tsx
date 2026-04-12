@@ -276,14 +276,13 @@ function ProductCard({ p, delay = 0, shopLogo }: { p: MarketProduct; delay?: num
           )}
         </div>
         {/* Info */}
-        <div style={{ padding: "10px 12px 13px" }}>
-          <p style={{ fontSize: "13px", fontWeight: 700, color: C.dark, lineHeight: 1.3,
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-            marginBottom: "4px" }}>
+        <div style={{ padding: "8px 10px 10px", height: "68px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <p style={{ fontSize: "12px", fontWeight: 700, color: C.dark, lineHeight: 1.3,
+            display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
             {p.name}
           </p>
-          <p style={{ fontSize: "14px", fontWeight: 800, color: C.terra }}>{fmtPrice(p.price, p.price_type)}</p>
-          <p style={{ fontSize: "11px", color: C.muted, marginTop: "2px",
+          <p style={{ fontSize: "13px", fontWeight: 800, color: C.terra }}>{fmtPrice(p.price, p.price_type)}</p>
+          <p style={{ fontSize: "10px", color: C.muted,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {p.shop_name}
           </p>
@@ -381,11 +380,11 @@ function GridCard({ p, shopLogo }: { p: MarketProduct; shopLogo?: string | null 
             </div>
           )}
         </div>
-        <div style={{ padding: "8px 10px 10px" }}>
-          <p style={{ fontSize: "12px", fontWeight: 700, color: C.dark, lineHeight: 1.3, marginBottom: "3px",
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.name}</p>
+        <div style={{ padding: "8px 10px 10px", height: "68px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <p style={{ fontSize: "12px", fontWeight: 700, color: C.dark, lineHeight: 1.3,
+            display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.name}</p>
           <p style={{ fontSize: "13px", fontWeight: 800, color: C.terra }}>{fmtPrice(p.price, p.price_type)}</p>
-          <p style={{ fontSize: "10px", color: C.muted, marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.shop_name}</p>
+          <p style={{ fontSize: "10px", color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.shop_name}</p>
         </div>
       </div>
     </Link>
@@ -1014,16 +1013,16 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                                 </div>
                               )}
                             </div>
-                            <div style={{ padding: "6px 8px 8px" }}>
+                            <div style={{ padding: "6px 8px 8px", height: "58px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                               <p style={{ fontSize: "11px", fontWeight: 700, color: C.dark, lineHeight: 1.3,
-                                marginBottom: "2px", display: "-webkit-box", WebkitLineClamp: 1,
+                                display: "-webkit-box", WebkitLineClamp: 1,
                                 WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                                 {p.name}
                               </p>
                               <p style={{ fontSize: "11px", fontWeight: 800, color: C.terra }}>
                                 {fmtPrice(p.price, p.price_type)}
                               </p>
-                              <p style={{ fontSize: "9px", color: C.muted, marginTop: "1px",
+                              <p style={{ fontSize: "9px", color: C.muted,
                                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                 {p.shop_name}
                               </p>
