@@ -297,20 +297,22 @@ function ShopCard({ s, lang }: { s: MarketShop; lang: "en" | "am" }) {
   const cat = CATEGORIES.find(c => c.key === s.category);
   const t = T[lang];
   return (
-    <Link href={`/${s.shop_slug}`} style={{ textDecoration: "none", color: "inherit", flexShrink: 0, width: "160px" }}>
+    <Link href={`/${s.shop_slug}`} style={{ textDecoration: "none", color: "inherit", flexShrink: 0, width: "130px" }}>
       <div className="scard" style={{
         background: C.white,
         border: `1px solid ${C.border}50`,
         borderRadius: "16px",
-        padding: "16px 12px",
+        padding: "14px 10px",
         textAlign: "center",
-        height: "140px",
+        height: "150px",
+        width: "130px",
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         boxShadow: "0 1px 4px rgba(26,16,8,0.06)",
+        overflow: "hidden",
       }}>
         {/* Avatar */}
         <div style={{
-          width: "52px", height: "52px", borderRadius: "16px", margin: "0 auto 10px",
+          width: "48px", height: "48px", borderRadius: "14px", marginBottom: "8px",
           overflow: "hidden", flexShrink: 0,
           background: (s.logo_file_id || s.logo_url) ? "transparent" : `linear-gradient(135deg, ${cat?.color || C.terra}18, ${cat?.color || C.terra}30)`,
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -320,29 +322,21 @@ function ShopCard({ s, lang }: { s: MarketShop; lang: "en" | "am" }) {
             <img src={imgUrl(s.logo_file_id, s.logo_url)!} alt={s.shop_name} loading="lazy"
               style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <span style={{
-              fontSize: "22px", fontWeight: 900, color: cat?.color || C.terra,
-              lineHeight: 1, letterSpacing: "-0.02em",
-            }}>
+            <span style={{ fontSize: "20px", fontWeight: 900, color: cat?.color || C.terra, lineHeight: 1 }}>
               {s.shop_name.charAt(0).toUpperCase()}
             </span>
           )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "3px" }}>
-          <p style={{ fontSize: "13px", fontWeight: 700, color: C.dark,
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {s.shop_name}
-          </p>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="#22c55e" style={{ flexShrink: 0 }}>
-            <path d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
-          </svg>
-        </div>
+        <p style={{ fontSize: "11px", fontWeight: 700, color: C.dark, marginBottom: "2px",
+          width: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {s.shop_name}
+        </p>
         {cat && (
-          <p style={{ fontSize: "11px", color: cat.color, fontWeight: 600, marginBottom: "2px" }}>
+          <p style={{ fontSize: "10px", color: cat.color, fontWeight: 600, marginBottom: "1px" }}>
             {cat.emoji} {lang === "am" ? cat.am : cat.label}
           </p>
         )}
-        <p style={{ fontSize: "11px", color: C.muted }}>
+        <p style={{ fontSize: "10px", color: C.muted }}>
           {s.product_count} {s.product_count === 1 ? t.item : t.items}
         </p>
       </div>
@@ -637,7 +631,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         <div className="hero-text" style={{
           background: `linear-gradient(170deg, #2A1608 0%, #1C0E04 50%, ${C.dark} 100%)`,
           borderBottom: `2px solid ${C.gold}30`,
-          position: "relative",
+          position: "sticky", top: "73px", zIndex: 40,
           overflow: "hidden",
         }}>
           {/* Subtle glow */}
