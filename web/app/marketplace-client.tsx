@@ -484,256 +484,94 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       `}</style>
 
       {/* ══════════════════════════════════════
-          NAV
+          NAV — compact with integrated search
       ══════════════════════════════════════ */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 50,
-        background: "rgba(250,248,242,0.92)",
-        backdropFilter: "blur(12px)",
+        background: "rgba(250,248,242,0.95)",
+        backdropFilter: "blur(16px)",
         borderBottom: `1px solid ${C.border}`,
-        padding: "0 20px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        height: "58px",
+        padding: "10px 16px",
         opacity: mounted ? 1 : 0,
         transition: "opacity .5s ease .1s",
       }}>
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <svg viewBox="0 0 120 120" width="34" height="34" style={{ flexShrink: 0 }}>
-            <circle cx="60" cy="60" r="58" fill="#FF6B35" />
-            <path d="M24 52 L60 28 L96 52" stroke="#fff" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M28 52 Q36 60 44 52 Q52 60 60 52 Q68 60 76 52 Q84 60 92 52" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" />
-            <rect x="38" y="56" width="44" height="30" rx="3" fill="none" stroke="#fff" strokeWidth="3" />
-            <rect x="50" y="64" width="20" height="22" rx="2" fill="#FFB800" opacity="0.3" />
-            <circle cx="44" cy="62" r="2.5" fill="#FFB800" />
-            <circle cx="76" cy="62" r="2.5" fill="#FFB800" />
-            <path d="M88 36 L90 32 L92 36 L96 38 L92 40 L90 44 L88 40 L84 38Z" fill="#FFB800" opacity="0.9" />
-          </svg>
-          <span style={{ fontSize: "19px", fontWeight: 800, color: C.dark, letterSpacing: "-0.03em" }}>
-            souk<span style={{ color: C.terra }}>.</span>et
-          </span>
-        </div>
-
-        {/* Right side: lang toggle + CTA */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {/* Language toggle pill */}
-          <div style={{
-            display: "flex", alignItems: "center",
-            background: C.sand,
-            borderRadius: "10px",
-            padding: "3px",
-            border: `1px solid ${C.border}`,
-            gap: "2px",
-          }}>
-            <button
-              onClick={() => setLang("en")}
-              className="lang-toggle-btn"
-              style={{
-                padding: "4px 10px",
-                borderRadius: "7px",
-                fontSize: "12px",
-                fontWeight: 700,
-                background: lang === "en" ? C.terra : "transparent",
-                color: lang === "en" ? "white" : C.muted,
-                letterSpacing: "0.02em",
-              }}>
-              EN
-            </button>
-            <button
-              onClick={() => setLang("am")}
-              className="lang-toggle-btn"
-              style={{
-                padding: "4px 10px",
-                borderRadius: "7px",
-                fontSize: "12px",
-                fontWeight: 700,
-                background: lang === "am" ? C.terra : "transparent",
-                color: lang === "am" ? "white" : C.muted,
-                letterSpacing: "0.01em",
-              }}>
-              አማ
-            </button>
-          </div>
-
-          {/* Nav CTA */}
-          <a href="https://t.me/SoukEtBot" target="_blank" rel="noopener noreferrer"
-            className="ghost-btn"
-            style={{
-              padding: "8px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: 700,
-              color: C.terra, background: `${C.terra}10`, textDecoration: "none",
-              border: `1.5px solid ${C.terra}30`,
-            }}>
-            {t.createShopNav}
-          </a>
-        </div>
-      </nav>
-
-      {/* ══════════════════════════════════════
-          HERO — Bold & Elegant
-      ══════════════════════════════════════ */}
-      <section style={{
-        position: "relative",
-        padding: "36px 28px 32px",
-        overflow: "hidden",
-        background: "linear-gradient(160deg, #0A0A0F 0%, #140806 35%, #1E0C08 60%, #2A1009 80%, #140806 100%)",
-      }}>
-        {/* Gold radial glow — top right */}
-        <div style={{
-          position: "absolute", top: "-100px", right: "-80px",
-          width: "420px", height: "420px",
-          background: `radial-gradient(circle at 60% 40%, ${C.gold}28 0%, transparent 65%)`,
-          pointerEvents: "none",
-        }} />
-        {/* Ethiopian cross pattern overlay */}
-        <div className="eth-pattern" style={{
-          position: "absolute", inset: 0, opacity: 0.12, pointerEvents: "none",
-        }} />
-
-        <div style={{ position: "relative", maxWidth: "640px", margin: "0 auto" }}>
-
-          {/* Headline — compact single line feel */}
-          <h1 className="hero-text" style={{
-            fontSize: "clamp(2.2rem, 9vw, 3.2rem)",
-            fontWeight: 800,
-            color: C.white,
-            letterSpacing: "-0.04em",
-            lineHeight: 1.05,
-            marginBottom: "20px",
-          }}>
-            {t.heroHeadline1} <span style={{ color: C.gold }}>{t.heroHeadline2}</span>
-          </h1>
-
-          {/* Search bar — THE hero element, bigger */}
-          <div className="hero-sub" style={{ position: "relative", marginBottom: "20px", maxWidth: "480px" }}>
-            <svg style={{ position: "absolute", left: "18px", top: "50%", transform: "translateY(-50%)",
-              width: "20px", height: "20px", color: "rgba(255,255,255,0.4)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        {/* Top row: logo + lang + sell */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+            <svg viewBox="0 0 120 120" width="30" height="30" style={{ flexShrink: 0 }}>
+              <circle cx="60" cy="60" r="58" fill="#FF6B35" />
+              <path d="M24 52 L60 28 L96 52" stroke="#fff" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M28 52 Q36 60 44 52 Q52 60 60 52 Q68 60 76 52 Q84 60 92 52" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" />
+              <rect x="38" y="56" width="44" height="30" rx="3" fill="none" stroke="#fff" strokeWidth="3" />
+              <rect x="50" y="64" width="20" height="22" rx="2" fill="#FFB800" opacity="0.3" />
             </svg>
-            <input type="text" value={searchInput}
-              onChange={(e) => { setSearchInput(e.target.value); if (!browseMode) setBrowseMode(true); handleSearch(e.target.value); }}
-              onFocus={() => { if (!browseMode) openBrowse(); }}
-              placeholder={t.searchPlaceholderHero}
-              style={{ width: "100%", padding: "18px 18px 18px 50px", borderRadius: "16px",
-                border: "2px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.09)",
-                color: "white", fontSize: "16px", fontWeight: 500, fontFamily: "inherit",
-                outline: "none", backdropFilter: "blur(8px)",
-                transition: "all 0.2s" }}
-              onMouseEnter={(e) => { (e.target as HTMLInputElement).style.borderColor = "rgba(255,255,255,0.35)"; }}
-              onMouseLeave={(e) => { if (document.activeElement !== e.target) (e.target as HTMLInputElement).style.borderColor = "rgba(255,255,255,0.18)"; }}
-            />
+            <span style={{ fontSize: "18px", fontWeight: 800, color: C.dark, letterSpacing: "-0.03em" }}>
+              souk<span style={{ color: C.terra }}>.</span>et
+            </span>
           </div>
-
-          {/* CTAs — buyer + seller pair */}
-          <div className="hero-cta" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <button
-              onClick={() => openBrowse()}
-              className="cta-btn"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: "8px",
-                padding: "14px 26px", borderRadius: "14px",
-                background: C.white,
-                color: C.dark, fontWeight: 800, fontSize: "15px",
-                textDecoration: "none", border: "none", cursor: "pointer",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
-                letterSpacing: "-0.01em", fontFamily: "inherit",
-              }}>
-              {t.ctaBrowse}
-              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-              </svg>
-            </button>
-            <a
-              href="https://t.me/SoukEtBot"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: "7px",
-                padding: "14px 22px", borderRadius: "14px",
-                background: "rgba(255,255,255,0.08)",
-                color: "rgba(255,255,255,0.85)", fontWeight: 700, fontSize: "15px",
-                border: `1.5px solid rgba(255,255,255,0.2)`,
-                letterSpacing: "-0.01em",
-                transition: "all .2s ease",
-                textDecoration: "none",
-              }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill={C.terra}>
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.07-.18c-.08-.05-.19-.03-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.46-.01.06.01.24 0 .37z" />
-              </svg>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{ display: "flex", background: C.sand, borderRadius: "8px", padding: "2px", border: `1px solid ${C.border}`, gap: "1px" }}>
+              <button onClick={() => setLang("en")} className="lang-toggle-btn"
+                style={{ padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700,
+                  background: lang === "en" ? C.terra : "transparent", color: lang === "en" ? "white" : C.muted }}>EN</button>
+              <button onClick={() => setLang("am")} className="lang-toggle-btn"
+                style={{ padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700,
+                  background: lang === "am" ? C.terra : "transparent", color: lang === "am" ? "white" : C.muted }}>አማ</button>
+            </div>
+            <a href="https://t.me/SoukEtBot" target="_blank" rel="noopener noreferrer"
+              style={{ padding: "6px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: 700,
+                color: C.terra, background: `${C.terra}08`, textDecoration: "none", border: `1px solid ${C.terra}20` }}>
               {t.ctaSell}
             </a>
           </div>
         </div>
-      </section>
+        {/* Search bar — always visible in nav */}
+        <div style={{ position: "relative" }}>
+          <svg style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)",
+            width: "16px", height: "16px", color: C.muted, pointerEvents: "none" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+          </svg>
+          <input type="text" value={searchInput}
+            onChange={(e) => { setSearchInput(e.target.value); if (!browseMode) setBrowseMode(true); handleSearch(e.target.value); }}
+            onFocus={() => { if (!browseMode) openBrowse(); }}
+            placeholder={t.searchPlaceholderHero}
+            className="search-input"
+            style={{ width: "100%", padding: "10px 12px 10px 36px", borderRadius: "10px",
+              border: `1.5px solid ${C.border}`, background: C.white,
+              color: C.dark, fontSize: "14px", fontWeight: 500, fontFamily: "inherit" }}
+          />
+        </div>
+      </nav>
 
       {/* ══════════════════════════════════════
-          STATS STRIP — thin banner between hero and content
+          CATEGORIES — icon row (Depop-style)
       ══════════════════════════════════════ */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "center", gap: "0",
-        padding: "10px 24px",
-        background: `linear-gradient(90deg, ${C.dark}, #1A0C08)`,
-        borderBottom: `1px solid ${C.gold}25`,
-      }}>
-        {[
-          { n: `${totalShops}+`, label: t.statsShops },
-          { n: `${totalProducts}+`, label: t.statsProducts },
-          { n: CATEGORIES.length.toString(), label: t.statsCategories },
-        ].map(({ n, label }, i) => (
-          <div key={label} style={{ display: "flex", alignItems: "center" }}>
-            {i > 0 && (
-              <span style={{
-                color: "rgba(255,255,255,0.2)",
-                fontSize: "14px",
-                fontWeight: 300,
-                margin: "0 14px",
-                lineHeight: 1,
-              }}>|</span>
-            )}
-            <div>
-              <span style={{ fontSize: "15px", fontWeight: 800, color: C.white }}>{n}</span>
-              <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", fontWeight: 500, marginLeft: "4px" }}>{label}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ══════════════════════════════════════
-          CATEGORIES — taller cards with preview
-      ══════════════════════════════════════ */}
-      <section style={{ padding: "20px 0 4px" }}>
+      <section style={{ padding: "12px 0 6px", borderBottom: `1px solid ${C.border}` }}>
         <div className="hide-scrollbar" style={{
-          display: "flex", gap: "10px", overflowX: "auto",
-          padding: "0 24px 8px",
-          alignItems: "stretch",
+          display: "flex", gap: "4px", overflowX: "auto",
+          padding: "0 16px",
+          alignItems: "center",
         }}>
+          {/* All button */}
+          <button onClick={() => { setSelectedCategory(null); openBrowse(); }} className="catpill"
+            style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
+              padding: "6px 12px", borderRadius: "12px", background: !selectedCategory && browseMode ? `${C.terra}12` : "transparent",
+              border: "none", minWidth: "56px" }}>
+            <span style={{ fontSize: "20px", lineHeight: 1 }}>🏪</span>
+            <span style={{ fontSize: "10px", fontWeight: 700, color: !selectedCategory && browseMode ? C.terra : C.muted }}>{t.all}</span>
+          </button>
           {CATEGORIES.map((c) => {
             const count = categoryCounts[c.key] || 0;
             if (!count) return null;
+            const isActive = selectedCategory === c.key;
             return (
-              <button
-                key={c.key}
-                onClick={() => openBrowse(c.key)}
-                className="catpill"
-                style={{
-                  flexShrink: 0,
-                  width: "120px",
-                  height: "80px",
-                  display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center",
-                  gap: "4px",
-                  padding: "10px 8px",
-                  borderRadius: "16px",
-                  background: `linear-gradient(145deg, ${c.color}12, ${c.color}06)`,
-                  border: `1.5px solid ${c.color}30`,
-                  whiteSpace: "nowrap",
-                  cursor: "pointer",
-                }}>
-                <span style={{ fontSize: "24px", lineHeight: 1 }}>{c.emoji}</span>
-                <span style={{ fontSize: "12px", fontWeight: 700, color: c.color }}>
+              <button key={c.key} onClick={() => openBrowse(c.key)} className="catpill"
+                style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
+                  padding: "6px 12px", borderRadius: "12px", background: isActive ? `${c.color}12` : "transparent",
+                  border: "none", minWidth: "56px" }}>
+                <span style={{ fontSize: "20px", lineHeight: 1 }}>{c.emoji}</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: isActive ? c.color : C.muted }}>
                   {lang === "am" ? c.am : c.label}
-                </span>
-                <span style={{ fontSize: "10px", fontWeight: 600, color: C.muted }}>
-                  {count} {count === 1 ? t.item : t.items}
                 </span>
               </button>
             );
@@ -742,95 +580,92 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       </section>
 
       {/* ══════════════════════════════════════
-          ACTIVITY STRIP — live ticker feel
+          PRODUCT FEED — 2-column grid (the main content)
       ══════════════════════════════════════ */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-        padding: "8px 24px",
-        background: `${C.gold}08`,
-        borderTop: `1px solid ${C.gold}15`,
-        borderBottom: `1px solid ${C.gold}15`,
-      }}>
-        <span style={{ fontSize: "13px" }}>🔥</span>
-        <span style={{ fontSize: "12px", fontWeight: 600, color: C.muted }}>
-          {initialProducts.filter(p => isNew(p.created_at)).length} {t.activityStrip} · {totalShops} {t.activityShops}
-        </span>
-      </div>
-
-      {/* ══════════════════════════════════════
-          FEATURED PRODUCTS
-      ══════════════════════════════════════ */}
-      {featuredProducts.length > 0 && (
-        <section style={{
-          padding: "0 0 8px",
-          borderTop: `2px solid ${C.gold}40`,
-          marginTop: "8px",
-        }}>
-          {/* Header */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "20px 24px 16px",
-          }}>
-            <div>
-              <h2 style={{ fontSize: "20px", fontWeight: 800, color: C.dark, letterSpacing: "-0.02em" }}>
-                {t.newArrivals}
-              </h2>
-              <p style={{ fontSize: "13px", color: C.muted, marginTop: "2px" }}>
-                {t.newArrivalsSub}
-              </p>
-            </div>
-            <button
-              onClick={() => openBrowse()}
-              style={{
-                fontSize: "13px", fontWeight: 700, color: C.terra,
-                background: "none", border: "none", cursor: "pointer",
-                padding: "4px 0",
-                textDecoration: "none",
-                display: "flex", alignItems: "center", gap: "3px",
-                fontFamily: "inherit",
-              }}>
-              {t.seeAll}
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </button>
+      {featuredProducts.length > 0 && !browseMode && (
+        <section style={{ padding: "12px 12px 8px" }}>
+          {/* Activity line */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "0 4px 10px" }}>
+            <span style={{ fontSize: "12px" }}>🔥</span>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: C.muted }}>
+              {totalProducts}+ {t.statsProducts} · {totalShops} {t.statsShops}
+            </span>
           </div>
 
-          {/* Horizontal scroll */}
-          <div className="hide-scrollbar" style={{
-            display: "flex", gap: "12px", overflowX: "auto",
-            padding: "4px 24px 16px",
-          }}>
-            {featuredProducts.map((p, i) => (
-              <ProductCard key={p.id} p={p} delay={i * 0.04} shopLogo={shopLogoMap[p.shop_slug]} />
-            ))}
+          {/* 2-column product grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            {initialProducts.filter(p => p.photo_url || p.photo_file_id).slice(0, 12).map((p) => {
+              const isSoldOut = p.stock === 0;
+              const [imgFailed, setImgFailed] = useState(false);
+              const src = imgUrl(p.photo_file_id, p.photo_url);
+              const logo = shopLogoMap[p.shop_slug];
+              return (
+                <Link key={p.id} href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className="pcard" style={{ background: C.white, borderRadius: "14px", overflow: "hidden", border: `1px solid ${C.border}` }}>
+                    <div style={{ position: "relative", aspectRatio: "0.85", background: C.sand, overflow: "hidden" }}>
+                      {src && !imgFailed ? (
+                        <img src={src} alt={p.name} loading="lazy" decoding="async" onError={() => setImgFailed(true)}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+                          background: `linear-gradient(135deg, ${C.sand}, ${C.border})` }}>
+                          <span style={{ fontSize: "28px", opacity: 0.3 }}>{CATEGORIES.find(c => c.key === p.shop_category)?.emoji || "📦"}</span>
+                        </div>
+                      )}
+                      {isNew(p.created_at) && <span className="new-badge">New</span>}
+                      {isSoldOut && (
+                        <div style={{ position: "absolute", inset: 0, background: "rgba(26,16,8,0.5)",
+                          display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ color: "white", fontSize: "10px", fontWeight: 700, background: "rgba(0,0,0,.4)", padding: "3px 8px", borderRadius: "20px" }}>{t.soldOut}</span>
+                        </div>
+                      )}
+                      {p.tag && (
+                        <div style={{ position: "absolute", bottom: "6px", left: "6px", fontSize: "9px", fontWeight: 600,
+                          padding: "2px 6px", borderRadius: "5px", background: "rgba(255,255,255,0.9)", color: C.text, backdropFilter: "blur(4px)" }}>
+                          {TAG_LABELS[p.tag] || p.tag}
+                        </div>
+                      )}
+                      {logo && (
+                        <div style={{ position: "absolute", bottom: "6px", right: "6px", width: "20px", height: "20px",
+                          borderRadius: "50%", overflow: "hidden", border: "1.5px solid white", boxShadow: "0 1px 3px rgba(0,0,0,.2)", background: C.sand }}>
+                          <img src={logo} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ padding: "8px 10px 10px" }}>
+                      <p style={{ fontSize: "12px", fontWeight: 700, color: C.dark, lineHeight: 1.3, marginBottom: "3px",
+                        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.name}</p>
+                      <p style={{ fontSize: "13px", fontWeight: 800, color: C.terra }}>{fmtPrice(p.price, p.price_type)}</p>
+                      <p style={{ fontSize: "10px", color: C.muted, marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.shop_name}</p>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* See all button */}
+          <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
+            <button onClick={() => openBrowse()} className="cta-btn"
+              style={{ padding: "12px 32px", borderRadius: "12px", background: C.dark, color: "white",
+                border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.15)" }}>
+              {t.seeAll} →
+            </button>
           </div>
         </section>
       )}
 
       {/* ══════════════════════════════════════
-          SHOPS
+          SHOPS — slim horizontal strip
       ══════════════════════════════════════ */}
-      {featuredShops.length > 0 && (
-        <section style={{ padding: "24px 0 8px" }}>
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 24px", marginBottom: "16px",
-          }}>
-            <div>
-              <h2 style={{ fontSize: "20px", fontWeight: 800, color: C.dark, letterSpacing: "-0.02em" }}>
-                {t.shops}
-              </h2>
-              <p style={{ fontSize: "13px", color: C.muted, marginTop: "2px" }}>
-                {t.shopsSub}
-              </p>
-            </div>
+      {featuredShops.length > 0 && !browseMode && (
+        <section style={{ padding: "16px 0 12px", borderTop: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px 10px" }}>
+            <p style={{ fontSize: "14px", fontWeight: 800, color: C.dark }}>{t.shops}</p>
+            <span style={{ fontSize: "11px", color: C.muted }}>{totalShops} {t.statsShops}</span>
           </div>
-
-          <div className="hide-scrollbar" style={{
-            display: "flex", gap: "12px", overflowX: "auto",
-            padding: "4px 24px 16px",
-          }}>
+          <div className="hide-scrollbar" style={{ display: "flex", gap: "10px", overflowX: "auto", padding: "0 16px 4px" }}>
             {featuredShops.map((s) => (
               <ShopCard key={s.shop_slug} s={s} lang={lang} />
             ))}
@@ -839,87 +674,28 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       )}
 
       {/* ══════════════════════════════════════
-          HOW IT WORKS
+          SELLER CTA — floating bottom banner
       ══════════════════════════════════════ */}
-      <section style={{
-        margin: "24px 20px",
-        background: `linear-gradient(135deg, ${C.dark} 0%, #160909 100%)`,
-        borderRadius: "28px",
-        padding: "40px 28px",
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        <div className="eth-pattern" style={{
-          position: "absolute", inset: 0, opacity: 0.35, pointerEvents: "none",
-        }} />
-        <div style={{ position: "relative" }}>
-          <div style={{ textAlign: "center", marginBottom: "32px" }}>
-            <p style={{ fontSize: "11px", fontWeight: 700, color: C.gold, letterSpacing: "0.1em",
-              marginBottom: "8px", textTransform: "uppercase" }}>
-              {t.forSellers}
-            </p>
-            <h2 style={{ fontSize: "22px", fontWeight: 800, color: "white", letterSpacing: "-0.02em" }}>
-              {t.openIn3}{" "}
-              <span style={{ color: C.gold }}>{t.openIn3Bold}</span>
-              {lang === "am" ? " ክፈቱ" : ""}
-            </h2>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            {[
-              { n: "1", icon: "💬", titleKey: "step1Title" as const, descKey: "step1Desc" as const },
-              { n: "2", icon: "📦", titleKey: "step2Title" as const, descKey: "step2Desc" as const },
-              { n: "3", icon: "🔗", titleKey: "step3Title" as const, descKey: "step3Desc" as const },
-            ].map((step) => (
-              <div key={step.n} style={{
-                display: "flex", gap: "16px", alignItems: "flex-start",
-              }}>
-                <div style={{
-                  width: "44px", height: "44px", borderRadius: "14px", flexShrink: 0,
-                  background: `${C.gold}22`, border: `1.5px solid ${C.gold}44`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "20px",
-                }}>
-                  {step.icon}
-                </div>
-                <div>
-                  <p style={{ fontSize: "15px", fontWeight: 700, color: "white", marginBottom: "4px" }}>
-                    {t[step.titleKey]}
-                  </p>
-                  <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
-                    {t[step.descKey]}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <a
-            href="https://t.me/SoukEtBot"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="cta-btn"
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-              marginTop: "32px",
-              padding: "16px 28px", borderRadius: "16px",
-              background: `linear-gradient(135deg, ${C.terra}, #E85D2A)`,
-              color: "white", fontWeight: 700, fontSize: "15px",
-              textDecoration: "none",
-              boxShadow: `0 6px 24px ${C.terra}50`,
-            }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.07-.18c-.08-.05-.19-.03-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.46-.01.06.01.24 0 .37z" />
-            </svg>
-            {shopCount >= 50 ? (lang === "am" ? "ቦታ ተሞልቷል — ተመዝገቡ" : "All spots taken — join waitlist") : t.createShopFree}
-          </a>
-          {shopCount > 0 && shopCount < 50 && (
-            <p style={{ textAlign: "center", fontSize: "12px", color: C.muted, marginTop: "8px" }}>
-              {50 - shopCount} / 50 {lang === "am" ? "ነፃ ቦታዎች ይቀራሉ" : "free spots remaining"}
-            </p>
-          )}
-        </div>
-      </section>
+      <a href="https://t.me/SoukEtBot" target="_blank" rel="noopener noreferrer"
+        style={{
+          position: "fixed", bottom: "16px", left: "50%", transform: "translateX(-50%)",
+          zIndex: 40,
+          display: "flex", alignItems: "center", gap: "8px",
+          padding: "12px 20px", borderRadius: "50px",
+          background: C.dark,
+          color: "white", fontWeight: 700, fontSize: "13px",
+          textDecoration: "none",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08)",
+          backdropFilter: "blur(8px)",
+          whiteSpace: "nowrap",
+          opacity: mounted ? 1 : 0,
+          transition: "opacity .5s ease 1s, transform .2s ease",
+        }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill={C.terra}>
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.07-.18c-.08-.05-.19-.03-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.46-.01.06.01.24 0 .37z" />
+        </svg>
+        {t.createShopFree}
+      </a>
 
       {/* ══════════════════════════════════════
           BROWSE MODE (triggered by "Browse all" / category click)
@@ -1206,37 +982,11 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
       ══════════════════════════════════════ */}
       <footer style={{
         background: C.dark,
-        padding: "0 0 36px",
+        padding: "32px 24px 80px",
         position: "relative",
       }}>
         <div className="eth-pattern" style={{ position: "absolute", opacity: 0.15, inset: 0, pointerEvents: "none" }} />
-
-        {/* Recently added marquee */}
-        {featuredProducts.length > 0 && (
-          <div style={{ overflow: "hidden", padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,0.08)", position: "relative" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em",
-              textTransform: "uppercase", textAlign: "center", marginBottom: "10px", position: "relative" }}>
-              {t.recentlyAdded}
-            </p>
-            <div style={{ overflow: "hidden", position: "relative" }}>
-              <div className="marquee-track">
-                {[...featuredProducts.slice(0, 6), ...featuredProducts.slice(0, 6)].map((p, i) => {
-                  const src = imgUrl(p.photo_file_id, p.photo_url);
-                  return (
-                    <div key={`mq-${i}`} style={{
-                      width: "40px", height: "40px", borderRadius: "50%", overflow: "hidden",
-                      flexShrink: 0, background: C.sand, border: "1.5px solid rgba(255,255,255,0.1)",
-                    }}>
-                      {src && <img src={src} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div style={{ position: "relative", maxWidth: "400px", padding: "28px 24px 0" }}>
+        <div style={{ position: "relative", maxWidth: "400px" }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
             <svg viewBox="0 0 120 120" width="34" height="34" style={{ flexShrink: 0 }}>
