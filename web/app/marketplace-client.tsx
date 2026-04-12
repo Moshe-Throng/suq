@@ -300,12 +300,13 @@ function ShopCard({ s, lang }: { s: MarketShop; lang: "en" | "am" }) {
     <Link href={`/${s.shop_slug}`} style={{ textDecoration: "none", color: "inherit", flexShrink: 0, width: "160px" }}>
       <div className="scard" style={{
         background: C.white,
-        border: `1.5px solid ${C.border}`,
-        borderRadius: "20px",
+        border: `1px solid ${C.border}50`,
+        borderRadius: "16px",
         padding: "16px 12px",
         textAlign: "center",
         height: "140px",
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 1px 4px rgba(26,16,8,0.06)",
       }}>
         {/* Avatar */}
         <div style={{
@@ -339,6 +340,54 @@ function ShopCard({ s, lang }: { s: MarketShop; lang: "en" | "am" }) {
         <p style={{ fontSize: "11px", color: C.muted }}>
           {s.product_count} {s.product_count === 1 ? t.item : t.items}
         </p>
+      </div>
+    </Link>
+  );
+}
+
+function GridCard({ p, shopLogo }: { p: MarketProduct; shopLogo?: string | null }) {
+  const isSoldOut = p.stock === 0;
+  const [imgFailed, setImgFailed] = useState(false);
+  const src = imgUrl(p.photo_file_id, p.photo_url);
+  return (
+    <Link href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+      <div className="pcard" style={{ background: C.white, borderRadius: "14px", overflow: "hidden", border: `1px solid ${C.border}` }}>
+        <div style={{ position: "relative", aspectRatio: "0.85", background: C.sand, overflow: "hidden" }}>
+          {src && !imgFailed ? (
+            <img src={src} alt={p.name} loading="lazy" decoding="async" onError={() => setImgFailed(true)}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+              background: `linear-gradient(135deg, ${C.sand}, ${C.border})` }}>
+              <span style={{ fontSize: "28px", opacity: 0.3 }}>{CATEGORIES.find(c => c.key === p.shop_category)?.emoji || "📦"}</span>
+            </div>
+          )}
+          {isNew(p.created_at) && <span className="new-badge">New</span>}
+          {isSoldOut && (
+            <div style={{ position: "absolute", inset: 0, background: "rgba(26,16,8,0.5)",
+              display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ color: "white", fontSize: "10px", fontWeight: 700, background: "rgba(0,0,0,.4)", padding: "3px 8px", borderRadius: "20px" }}>Sold out</span>
+            </div>
+          )}
+          {p.tag && (
+            <div style={{ position: "absolute", bottom: "6px", left: "6px", fontSize: "9px", fontWeight: 600,
+              padding: "2px 6px", borderRadius: "5px", background: "rgba(255,255,255,0.9)", color: C.text, backdropFilter: "blur(4px)" }}>
+              {TAG_LABELS[p.tag] || p.tag}
+            </div>
+          )}
+          {shopLogo && (
+            <div style={{ position: "absolute", bottom: "6px", right: "6px", width: "20px", height: "20px",
+              borderRadius: "50%", overflow: "hidden", border: "1.5px solid white", boxShadow: "0 1px 3px rgba(0,0,0,.2)", background: C.sand }}>
+              <img src={shopLogo} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          )}
+        </div>
+        <div style={{ padding: "8px 10px 10px" }}>
+          <p style={{ fontSize: "12px", fontWeight: 700, color: C.dark, lineHeight: 1.3, marginBottom: "3px",
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.name}</p>
+          <p style={{ fontSize: "13px", fontWeight: 800, color: C.terra }}>{fmtPrice(p.price, p.price_type)}</p>
+          <p style={{ fontSize: "10px", color: C.muted, marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.shop_name}</p>
+        </div>
       </div>
     </Link>
   );
@@ -580,51 +629,51 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
           WELCOME BLOCK — warm intro (not a hero)
       ══════════════════════════════════════ */}
       {!browseMode && (
-        <div className="welcome-block mkt-container hero-text">
-          <h1 className="welcome-headline" style={{ fontWeight: 800, color: C.dark, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "8px" }}>
-            🇪🇹 {lang === "am" ? "የኢትዮጵያ የቴሌግራም ገበያ" : "Ethiopia's Telegram Marketplace"}
-          </h1>
-          <p className="welcome-sub" style={{ color: C.muted, lineHeight: 1.5, marginBottom: "0" }}>
-            {t.heroSub}
-          </p>
+        <div className="hero-text" style={{
+          background: `linear-gradient(180deg, ${C.sand} 0%, ${C.bg} 100%)`,
+          borderBottom: `1px solid ${C.border}`,
+        }}>
+          <div className="welcome-block mkt-container" style={{ textAlign: "center" }}>
+            <h1 className="welcome-headline" style={{ fontWeight: 800, color: C.dark, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "8px" }}>
+              {lang === "am" ? "የኢትዮጵያ የቴሌግራም ገበያ" : "Ethiopia's Telegram Marketplace"}
+            </h1>
+            <p className="welcome-sub" style={{ color: C.muted, lineHeight: 1.5, marginBottom: "0", marginLeft: "auto", marginRight: "auto" }}>
+              {t.heroSub}
+            </p>
+
+            {/* Categories — inside welcome block, centered */}
+            <div className="hide-scrollbar" style={{
+              display: "flex", gap: "4px", overflowX: "auto",
+              justifyContent: "center",
+              padding: "16px 0 0",
+            }}>
+              <button onClick={() => { setSelectedCategory(null); openBrowse(); }} className="catpill"
+                style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
+                  padding: "6px 12px", borderRadius: "12px", background: !selectedCategory && browseMode ? `${C.terra}12` : "transparent",
+                  border: "none", minWidth: "56px" }}>
+                <span style={{ fontSize: "20px", lineHeight: 1 }}>🏪</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: !selectedCategory && browseMode ? C.terra : C.muted }}>{t.all}</span>
+              </button>
+              {CATEGORIES.map((c) => {
+                const count = categoryCounts[c.key] || 0;
+                if (!count) return null;
+                const isActive = selectedCategory === c.key;
+                return (
+                  <button key={c.key} onClick={() => openBrowse(c.key)} className="catpill"
+                    style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
+                      padding: "6px 12px", borderRadius: "12px", background: isActive ? `${c.color}12` : "transparent",
+                      border: "none", minWidth: "56px" }}>
+                    <span style={{ fontSize: "20px", lineHeight: 1 }}>{c.emoji}</span>
+                    <span style={{ fontSize: "10px", fontWeight: 700, color: isActive ? c.color : C.muted }}>
+                      {lang === "am" ? c.am : c.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
-
-      {/* ══════════════════════════════════════
-          CATEGORIES — icon row (Depop-style)
-      ══════════════════════════════════════ */}
-      <section style={{ padding: "12px 0 6px", borderBottom: `1px solid ${C.border}` }}>
-        <div className="hide-scrollbar nav-inner" style={{
-          display: "flex", gap: "4px", overflowX: "auto",
-          padding: "0 16px", margin: "0 auto",
-          alignItems: "center",
-        }}>
-          {/* All button */}
-          <button onClick={() => { setSelectedCategory(null); openBrowse(); }} className="catpill"
-            style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
-              padding: "6px 12px", borderRadius: "12px", background: !selectedCategory && browseMode ? `${C.terra}12` : "transparent",
-              border: "none", minWidth: "56px" }}>
-            <span style={{ fontSize: "20px", lineHeight: 1 }}>🏪</span>
-            <span style={{ fontSize: "10px", fontWeight: 700, color: !selectedCategory && browseMode ? C.terra : C.muted }}>{t.all}</span>
-          </button>
-          {CATEGORIES.map((c) => {
-            const count = categoryCounts[c.key] || 0;
-            if (!count) return null;
-            const isActive = selectedCategory === c.key;
-            return (
-              <button key={c.key} onClick={() => openBrowse(c.key)} className="catpill"
-                style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
-                  padding: "6px 12px", borderRadius: "12px", background: isActive ? `${c.color}12` : "transparent",
-                  border: "none", minWidth: "56px" }}>
-                <span style={{ fontSize: "20px", lineHeight: 1 }}>{c.emoji}</span>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: isActive ? c.color : C.muted }}>
-                  {lang === "am" ? c.am : c.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
 
       {/* ══════════════════════════════════════
           PRODUCT FEED — 2-column grid (the main content)
@@ -659,54 +708,9 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
             </button>
           </div>
           <div className="product-grid">
-            {initialProducts.filter(p => p.photo_url || p.photo_file_id).slice(0, 12).map((p) => {
-              const isSoldOut = p.stock === 0;
-              const [imgFailed, setImgFailed] = useState(false);
-              const src = imgUrl(p.photo_file_id, p.photo_url);
-              const logo = shopLogoMap[p.shop_slug];
-              return (
-                <Link key={p.id} href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                  <div className="pcard" style={{ background: C.white, borderRadius: "14px", overflow: "hidden", border: `1px solid ${C.border}` }}>
-                    <div style={{ position: "relative", aspectRatio: "0.85", background: C.sand, overflow: "hidden" }}>
-                      {src && !imgFailed ? (
-                        <img src={src} alt={p.name} loading="lazy" decoding="async" onError={() => setImgFailed(true)}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
-                          background: `linear-gradient(135deg, ${C.sand}, ${C.border})` }}>
-                          <span style={{ fontSize: "28px", opacity: 0.3 }}>{CATEGORIES.find(c => c.key === p.shop_category)?.emoji || "📦"}</span>
-                        </div>
-                      )}
-                      {isNew(p.created_at) && <span className="new-badge">New</span>}
-                      {isSoldOut && (
-                        <div style={{ position: "absolute", inset: 0, background: "rgba(26,16,8,0.5)",
-                          display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ color: "white", fontSize: "10px", fontWeight: 700, background: "rgba(0,0,0,.4)", padding: "3px 8px", borderRadius: "20px" }}>{t.soldOut}</span>
-                        </div>
-                      )}
-                      {p.tag && (
-                        <div style={{ position: "absolute", bottom: "6px", left: "6px", fontSize: "9px", fontWeight: 600,
-                          padding: "2px 6px", borderRadius: "5px", background: "rgba(255,255,255,0.9)", color: C.text, backdropFilter: "blur(4px)" }}>
-                          {TAG_LABELS[p.tag] || p.tag}
-                        </div>
-                      )}
-                      {logo && (
-                        <div style={{ position: "absolute", bottom: "6px", right: "6px", width: "20px", height: "20px",
-                          borderRadius: "50%", overflow: "hidden", border: "1.5px solid white", boxShadow: "0 1px 3px rgba(0,0,0,.2)", background: C.sand }}>
-                          <img src={logo} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ padding: "8px 10px 10px" }}>
-                      <p style={{ fontSize: "12px", fontWeight: 700, color: C.dark, lineHeight: 1.3, marginBottom: "3px",
-                        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.name}</p>
-                      <p style={{ fontSize: "13px", fontWeight: 800, color: C.terra }}>{fmtPrice(p.price, p.price_type)}</p>
-                      <p style={{ fontSize: "10px", color: C.muted, marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.shop_name}</p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+            {initialProducts.filter(p => p.photo_url || p.photo_file_id).slice(0, 12).map((p) => (
+              <GridCard key={p.id} p={p} shopLogo={shopLogoMap[p.shop_slug]} />
+            ))}
           </div>
 
         </section>
