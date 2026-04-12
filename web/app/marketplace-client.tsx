@@ -357,7 +357,7 @@ function GridCard({ p, shopLogo }: { p: MarketProduct; shopLogo?: string | null 
   return (
     <Link href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
       <div className="pcard" style={{ background: C.white, borderRadius: "14px", overflow: "hidden", border: `1px solid ${C.border}` }}>
-        <div style={{ position: "relative", aspectRatio: "0.85", background: C.sand, overflow: "hidden" }}>
+        <div style={{ position: "relative", aspectRatio: "1", background: C.sand, overflow: "hidden" }}>
           {src && !imgFailed ? (
             <img src={src} alt={p.name} loading="lazy" decoding="async" onError={() => setImgFailed(true)}
               style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -539,7 +539,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         /* ── Responsive layout ── */
         .mkt-container { max-width: 100%; margin: 0 auto; padding: 0 16px; }
         .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .browse-grid  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .browse-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .welcome-block { padding: 20px 16px 12px; }
         .welcome-headline { font-size: 22px; }
         .welcome-sub { font-size: 13px; max-width: 320px; }
@@ -551,7 +551,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
         @media (min-width: 640px) {
           .mkt-container { max-width: 1100px; padding: 0 32px; }
           .product-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
-          .browse-grid  { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+          .browse-grid  { grid-template-columns: repeat(3, 1fr); gap: 10px; }
           .welcome-block { padding: 40px 32px 24px; text-align: center; }
           .welcome-headline { font-size: 32px; }
           .welcome-sub { font-size: 15px; max-width: 440px; margin: 0 auto; }
@@ -563,7 +563,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
 
         @media (min-width: 960px) {
           .product-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
-          .browse-grid  { grid-template-columns: repeat(5, 1fr); gap: 12px; }
+          .browse-grid  { grid-template-columns: repeat(4, 1fr); gap: 12px; }
           .welcome-headline { font-size: 38px; }
         }
       `}</style>
