@@ -39,7 +39,8 @@ export async function GET(req: NextRequest) {
           "id, name, price, price_type, photo_url, photo_file_id, stock, tag, created_at, shop_id, suq_shops!inner(shop_name, shop_slug, category, template_style)",
           { count: "exact" }
         )
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .not("price", "is", null);
 
       if (category) {
         query = query.eq("suq_shops.category", category);

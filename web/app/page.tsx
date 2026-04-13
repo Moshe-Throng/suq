@@ -15,6 +15,7 @@ export default async function MarketplacePage() {
         "id, name, price, price_type, photo_url, photo_file_id, stock, tag, created_at, shop_id, suq_shops!inner(shop_name, shop_slug, category, template_style)"
       )
       .eq("is_active", true)
+      .not("price", "is", null)
       .order("created_at", { ascending: false })
       .range(0, 19),
 
