@@ -16,8 +16,9 @@ export default async function MarketplacePage() {
       )
       .eq("is_active", true)
       .not("price", "is", null)
-      .order("created_at", { ascending: false })
-      .range(0, 19),
+      .not("photo_file_id", "is", null)
+      .order("price", { ascending: false })
+      .range(0, 29),
 
     // Category counts
     supabase
