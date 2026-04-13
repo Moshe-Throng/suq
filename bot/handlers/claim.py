@@ -4,18 +4,21 @@ Flow: seller clicks t.me/SoukEtBot?start=claim_SHOPSLUG
       → bot asks them to forward a message from their channel
       → bot verifies the forwarded message came from that channel
       → shop ownership transfers to the seller's Telegram account
+      → welcome sequence: celebration → tips → shop card → completion meter
 """
 
+import asyncio
 import logging
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
 from bot.db.supabase_client import (
-    run_sync, get_shop, get_shop_by_slug, catalog_link,
+    run_sync, get_shop, get_shop_by_slug, get_products, catalog_link,
     update_shop_owner,
 )
 from bot.strings.lang import s, seed_lang
+from bot.services.shop_card import generate_shop_card
 
 logger = logging.getLogger("suq.claim")
 
@@ -131,7 +134,7 @@ async def cancel_claim_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def _complete_claim(update: Update, context: ContextTypes.DEFAULT_TYPE,
                           shop_slug: str) -> None:
-    """Transfer shop ownership to the claiming user."""
+    """Transfer shop ownership to the claiming user + welcome sequence."""
     user = update.effective_user
     shop = await run_sync(get_shop_by_slug, shop_slug)
     if not shop:
@@ -144,21 +147,125 @@ async def _complete_claim(update: Update, context: ContextTypes.DEFAULT_TYPE,
     context.user_data.pop("claiming_shop_slug", None)
     context.user_data.pop("claiming_channel", None)
 
+    # Get product count
+    products = await run_sync(get_products, shop["id"])
+    product_count = len(products) if products else 0
     link = catalog_link(shop_slug)
+    source = shop.get("source_channel")
+    name = user.first_name or user.username or "there"
+
+    # ── Message 1: Celebration ──
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("View Your Shop", url=link)],
+        [InlineKeyboardButton("🏪 View Your Shop", url=link)],
     ])
     await update.message.reply_text(
-        f"🎉 You now own \"{shop['shop_name']}\"!\n\n"
-        f"Your shop: {link}\n\n"
-        f"Use /start to manage your products and settings.",
+        f"🎉 <b>Welcome to souk.et, {name}!</b>\n\n"
+        f"Your shop <b>\"{shop['shop_name']}\"</b> is now LIVE with "
+        f"<b>{product_count} products</b>.\n\n"
+        f"Here's what you can do:\n"
+        f"📸 Send me a photo → I'll add it as a new product\n"
+        f"⚙️ /settings → Customize your shop (logo, description, color)\n"
+        f"🔗 Your shop link: {link}\n\n"
+        f"Buyers are already finding shops through search — "
+        f"I'll notify you when someone sends an inquiry!",
         reply_markup=keyboard,
+        parse_mode="HTML",
     )
     logger.info(f"Shop '{shop['shop_name']}' claimed by @{user.username} (id={user.id})")
 
+    # ── Message 2 (after 8 sec): Auto-sync + share tip ──
+    await asyncio.sleep(8)
+
+    sync_msg = ""
+    if source:
+        sync_msg = (
+            f"🔄 <b>Auto-sync is ON</b> for @{source}.\n"
+            f"Every time you post a new product on your channel, "
+            f"it automatically appears on your souk.et shop. "
+            f"No extra work needed.\n\n"
+        )
+
+    await context.bot.send_message(
+        chat_id=user.id,
+        text=(
+            f"{sync_msg}"
+            f"💡 <b>Quick tip:</b> Share your shop link on WhatsApp, "
+            f"Instagram, or your Telegram channel bio. "
+            f"Sellers who do this get 3x more views.\n\n"
+            f"Your link: {link}"
+        ),
+        parse_mode="HTML",
+    )
+
+    # ── Message 3 (after 15 sec): Completion meter ──
+    await asyncio.sleep(15)
+
+    has_logo = bool(shop.get("logo_file_id") or shop.get("logo_url"))
+    has_desc = bool(shop.get("description"))
+    has_location = bool(shop.get("location_text"))
+    has_phone = bool(shop.get("phone"))
+    has_products = product_count >= 3
+
+    checks = [has_logo, has_desc, has_location, has_products]
+    score = sum(checks)
+    pct = score * 25  # 4 items = 100%
+
+    lines = [f"📊 <b>Your shop is {pct}% complete</b>\n"]
+    lines.append(f"{'✅' if has_products else '☐'} Products — {product_count} listed")
+    lines.append(f"{'✅' if has_logo else '☐'} Shop logo — {'looks great!' if has_logo else 'add via /settings'}")
+    lines.append(f"{'✅' if has_desc else '☐'} Description — {'set!' if has_desc else 'tell buyers what you sell (/settings)'}")
+    lines.append(f"{'✅' if has_location else '☐'} Location — {'set!' if has_location else 'helps local buyers find you (/settings)'}")
+
+    if pct == 100:
+        lines.append(f"\n🏆 Your shop is fully set up — you're in the top tier on souk.et!")
+    elif pct >= 50:
+        lines.append(f"\n💪 Almost there! Complete the missing items to stand out.")
+
+    await context.bot.send_message(
+        chat_id=user.id,
+        text="\n".join(lines),
+        parse_mode="HTML",
+    )
+
+    # ── Message 4 (after 10 sec): Shareable shop card image ──
+    await asyncio.sleep(10)
+
+    try:
+        # Get logo bytes if available
+        logo_bytes = None
+        logo_fid = shop.get("logo_file_id")
+        if logo_fid:
+            try:
+                f = await context.bot.get_file(logo_fid)
+                logo_ba = await f.download_as_bytearray()
+                logo_bytes = bytes(logo_ba)
+            except Exception:
+                pass
+
+        card_bytes = generate_shop_card(
+            shop_name=shop["shop_name"],
+            shop_slug=shop_slug,
+            category=shop.get("category"),
+            product_count=product_count,
+            logo_bytes=logo_bytes,
+        )
+        import io
+        await context.bot.send_photo(
+            chat_id=user.id,
+            photo=io.BytesIO(card_bytes),
+            caption=(
+                f"🎨 <b>Your shareable shop card!</b>\n\n"
+                f"Share this on WhatsApp, Instagram, or your Telegram channel "
+                f"to drive buyers to your shop."
+            ),
+            parse_mode="HTML",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send shop card: {e}")
+
 
 async def _complete_claim_from_query(query, context, shop_slug: str) -> None:
-    """Transfer shop ownership (from callback query)."""
+    """Transfer shop ownership (from callback query) + welcome sequence."""
     user = query.from_user
     shop = await run_sync(get_shop_by_slug, shop_slug)
     if not shop:
@@ -170,9 +277,40 @@ async def _complete_claim_from_query(query, context, shop_slug: str) -> None:
     context.user_data.pop("claiming_shop_slug", None)
     context.user_data.pop("claiming_channel", None)
 
+    products = await run_sync(get_products, shop["id"])
+    product_count = len(products) if products else 0
     link = catalog_link(shop_slug)
+    name = user.first_name or user.username or "there"
+
     await query.edit_message_text(
-        f"🎉 You now own \"{shop['shop_name']}\"!\n\n"
-        f"Your shop: {link}\n\nUse /start to manage your products and settings.",
+        f"🎉 <b>Welcome to souk.et, {name}!</b>\n\n"
+        f"Your shop <b>\"{shop['shop_name']}\"</b> is now LIVE with "
+        f"<b>{product_count} products</b>.\n\n"
+        f"📸 Send me a photo → new product\n"
+        f"⚙️ /settings → Customize your shop\n"
+        f"🔗 {link}\n\n"
+        f"I'll notify you when buyers send inquiries!",
+        parse_mode="HTML",
     )
     logger.info(f"Shop '{shop['shop_name']}' claimed by @{user.username} (id={user.id})")
+
+    # Follow-up messages via bot.send_message
+    await asyncio.sleep(8)
+
+    source = shop.get("source_channel")
+    sync_msg = ""
+    if source:
+        sync_msg = (
+            f"🔄 <b>Auto-sync is ON</b> for @{source}.\n"
+            f"New channel posts → auto-added to your shop.\n\n"
+        )
+
+    await context.bot.send_message(
+        chat_id=user.id,
+        text=(
+            f"{sync_msg}"
+            f"💡 <b>Share your shop link</b> on WhatsApp, Instagram, or your channel bio "
+            f"to get more views:\n{link}"
+        ),
+        parse_mode="HTML",
+    )
