@@ -201,10 +201,10 @@ async def _complete_claim(update: Update, context: ContextTypes.DEFAULT_TYPE,
     pct = score * 25  # 4 items = 100%
 
     lines = [f"📊 <b>Your shop is {pct}% complete</b>\n"]
-    lines.append(f"{'✅' if has_products else '☐'} Products — {product_count} listed")
-    lines.append(f"{'✅' if has_logo else '☐'} Shop logo — {'looks great!' if has_logo else 'add via /settings'}")
-    lines.append(f"{'✅' if has_desc else '☐'} Description — {'set!' if has_desc else 'tell buyers what you sell (/settings)'}")
-    lines.append(f"{'✅' if has_location else '☐'} Location — {'set!' if has_location else 'helps local buyers find you (/settings)'}")
+    lines.append(f"{'✅' if has_products else '⬜'} Products — {product_count} listed")
+    lines.append(f"{'✅' if has_logo else '⬜'} Shop logo — {'looks great!' if has_logo else 'add via /settings'}")
+    lines.append(f"{'✅' if has_desc else '⬜'} Description — {'set!' if has_desc else 'tell buyers what you sell (/settings)'}")
+    lines.append(f"{'✅' if has_location else '⬜'} Location — {'set!' if has_location else 'helps local buyers find you (/settings)'}")
 
     if pct == 100:
         lines.append(f"\n🏆 Your shop is fully set up — you're in the top tier on souk.et!")
