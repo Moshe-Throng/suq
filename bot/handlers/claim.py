@@ -176,19 +176,9 @@ async def _complete_claim(update: Update, context: ContextTypes.DEFAULT_TYPE,
     # ── Message 2 (after 8 sec): Auto-sync + share tip ──
     await asyncio.sleep(8)
 
-    sync_msg = ""
-    if source:
-        sync_msg = (
-            f"🔄 <b>Auto-sync is ON</b> for @{source}.\n"
-            f"Every time you post a new product on your channel, "
-            f"it automatically appears on your souk.et shop. "
-            f"No extra work needed.\n\n"
-        )
-
     await context.bot.send_message(
         chat_id=user.id,
         text=(
-            f"{sync_msg}"
             f"💡 <b>Quick tip:</b> Share your shop link on WhatsApp, "
             f"Instagram, or your Telegram channel bio. "
             f"Sellers who do this get 3x more views.\n\n"
@@ -294,21 +284,12 @@ async def _complete_claim_from_query(query, context, shop_slug: str) -> None:
     )
     logger.info(f"Shop '{shop['shop_name']}' claimed by @{user.username} (id={user.id})")
 
-    # Follow-up messages via bot.send_message
+    # Follow-up tip
     await asyncio.sleep(8)
-
-    source = shop.get("source_channel")
-    sync_msg = ""
-    if source:
-        sync_msg = (
-            f"🔄 <b>Auto-sync is ON</b> for @{source}.\n"
-            f"New channel posts → auto-added to your shop.\n\n"
-        )
 
     await context.bot.send_message(
         chat_id=user.id,
         text=(
-            f"{sync_msg}"
             f"💡 <b>Share your shop link</b> on WhatsApp, Instagram, or your channel bio "
             f"to get more views:\n{link}"
         ),
