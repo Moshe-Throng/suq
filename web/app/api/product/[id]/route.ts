@@ -27,11 +27,11 @@ export async function GET(
       .single();
     product = data;
   } else {
-    // Short ID prefix match
+    // Short ID prefix match — cast UUID to text for LIKE
     const { data } = await supabase
       .from("suq_products")
       .select("id, name, description, price, price_type, listing_type, photo_url, photo_file_id, stock, tag, created_at, shop_id")
-      .like("id", `${id}%`)
+      .filter("id::text", "like", `${id}%`)
       .eq("is_active", true)
       .limit(1)
       .single();
