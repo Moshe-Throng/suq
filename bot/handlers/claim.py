@@ -18,7 +18,6 @@ from bot.db.supabase_client import (
     update_shop_owner,
 )
 from bot.strings.lang import s, seed_lang
-from bot.services.shop_card import generate_shop_card
 
 logger = logging.getLogger("suq.claim")
 
@@ -217,39 +216,36 @@ async def _complete_claim(update: Update, context: ContextTypes.DEFAULT_TYPE,
         parse_mode="HTML",
     )
 
-    # ── Message 4 (after 10 sec): Shareable shop card image ──
+    # ── Message 4 (after 10 sec): Shareable shop screenshot ──
     await asyncio.sleep(10)
 
     try:
-        # Get logo bytes if available
-        logo_bytes = None
-        logo_fid = shop.get("logo_file_id")
-        if logo_fid:
-            try:
-                f = await context.bot.get_file(logo_fid)
-                logo_ba = await f.download_as_bytearray()
-                logo_bytes = bytes(logo_ba)
-            except Exception:
-                pass
-
-        card_bytes = generate_shop_card(
-            shop_name=shop["shop_name"],
-            shop_slug=shop_slug,
-            category=shop.get("category"),
-            product_count=product_count,
-            logo_bytes=logo_bytes,
-        )
-        import io
-        await context.bot.send_photo(
-            chat_id=user.id,
-            photo=io.BytesIO(card_bytes),
-            caption=(
-                f"🎨 <b>Your shareable shop card!</b>\n\n"
-                f"Share this on WhatsApp, Instagram, or your Telegram channel "
-                f"to drive buyers to your shop."
-            ),
-            parse_mode="HTML",
-        )
+        # Check for pre-generated screenshot file_id in shop data
+        screenshot_fid = shop.get("screenshot_file_id")
+        if screenshot_fid:
+            await context.bot.send_photo(
+                chat_id=user.id,
+                photo=screenshot_fid,
+                caption=(
+                    f"🎨 <b>Your shareable shop card!</b>\n\n"
+                    f"Share this on WhatsApp, Instagram, or your Telegram channel "
+                    f"to drive buyers to your shop.\n\n"
+                    f"{link}"
+                ),
+                parse_mode="HTML",
+            )
+        else:
+            # No screenshot — just send the link as the shareable asset
+            await context.bot.send_message(
+                chat_id=user.id,
+                text=(
+                    f"🎨 <b>Share your shop!</b>\n\n"
+                    f"Send this link to your customers on WhatsApp, "
+                    f"Instagram, or your Telegram channel:\n\n"
+                    f"👉 {link}"
+                ),
+                parse_mode="HTML",
+            )
     except Exception as e:
         logger.warning(f"Failed to send shop card: {e}")
 
