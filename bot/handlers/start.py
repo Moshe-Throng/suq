@@ -20,6 +20,40 @@ _log = logging.getLogger("suq.start")
 _ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID") or os.getenv("OWNER_CHAT_ID")
 
 
+def _find_unclaimed_shop_for_user(telegram_id: int, username: str | None) -> dict | None:
+    """Check if this user is a known channel admin with an unclaimed shadow shop."""
+    from bot.db.supabase_client import get_client
+    client = get_client()
+
+    # Check if user was pitched (exists in suq_tg_dms)
+    # Or check if their username matches a channel owner in suq_tg_channels
+    if username:
+        result = client.table("suq_tg_channels").select(
+            "username, shop_id"
+        ).eq("owner_username", username).eq("status", "shadow_imported").execute()
+        if result.data:
+            shop_id = result.data[0].get("shop_id")
+            if shop_id:
+                shop = client.table("suq_shops").select("shop_slug, telegram_id").eq("id", shop_id).single().execute()
+                if shop.data and shop.data.get("telegram_id", 0) >= 900000000:
+                    return shop.data
+
+    # Also check: any unclaimed shop whose source_channel has this user as admin
+    # by checking suq_tg_channels where owner_id matches
+    if telegram_id:
+        result = client.table("suq_tg_channels").select(
+            "username, shop_id"
+        ).eq("owner_id", telegram_id).execute()
+        for row in (result.data or []):
+            shop_id = row.get("shop_id")
+            if shop_id:
+                shop = client.table("suq_shops").select("shop_slug, telegram_id").eq("id", shop_id).single().execute()
+                if shop.data and shop.data.get("telegram_id", 0) >= 900000000:
+                    return shop.data
+
+    return None
+
+
 async def _notify_admin_new_shop(bot, shop: dict, user) -> None:
     """Send real-time notification to admin when a new shop is created."""
     if not _ADMIN_CHAT_ID:
@@ -160,6 +194,14 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await set_user_commands(context.bot, user.id, lang)
         await _send_seller_menu(update, user.id, shop)
         return
+
+    # Auto-claim: check if this user was pitched (their channel has a shadow shop)
+    if not args:
+        unclaimed = await run_sync(_find_unclaimed_shop_for_user, user.id, user.username)
+        if unclaimed:
+            from bot.handlers.claim import start_claim
+            await start_claim(update, context, unclaimed["shop_slug"])
+            return
 
     keyboard = InlineKeyboardMarkup([
         [
