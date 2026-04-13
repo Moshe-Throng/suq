@@ -406,7 +406,7 @@ export default function ShopPage() {
   const shopUrl = `${baseUrl}/${slug}`;
 
   function shareProduct(p: Product) {
-    const url = `${shopUrl}/${p.id.slice(0, 8)}`;
+    const url = `${shopUrl}/${p.id}`;
     const text = `${p.name}${p.price ? ` — ${p.price.toLocaleString()} Birr` : ""} at ${shop?.shop_name} on souk.et`;
     if (navigator?.share) { navigator.share({ title: p.name, text, url }).catch(() => {}); }
     else { setShareProductId(shareProductId === p.id ? null : p.id); }
@@ -850,7 +850,7 @@ export default function ShopPage() {
                           target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] font-medium text-gray-700 hover:bg-gray-50">
                           <span className="text-xs">💬</span> WhatsApp
                         </a>
-                        <button onClick={() => copyLink(`${shopUrl}/${p.id.slice(0, 8)}`, p.id)}
+                        <button onClick={() => copyLink(`${shopUrl}/${p.id}`, p.id)}
                           className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] font-medium text-gray-700 hover:bg-gray-50 text-left">
                           <span className="text-xs">📋</span> {copiedId === p.id ? t.copied : t.copyLink}
                         </button>
@@ -960,7 +960,7 @@ export default function ShopPage() {
               {crossSell.map((p) => {
                 const csSrc = imgUrl(p.photo_file_id, p.photo_url);
                 return (
-                <Link key={p.id} href={`/${p.shop_slug}/${p.id.slice(0, 8)}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <Link key={p.id} href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <div className="product-card rounded-xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
                     <div className="relative aspect-square overflow-hidden">
                       {csSrc ? (

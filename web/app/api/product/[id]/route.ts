@@ -14,31 +14,15 @@ export async function GET(
   const { id } = await params;
   const supabase = getServerClient();
 
-  // ── Fetch product (support both full UUID and 8-char short ID) ──
-  let product: Record<string, unknown> | null = null;
+  // ── Fetch product ──
+  const { data: product, error: prodErr } = await supabase
+    .from("suq_products")
+    .select("id, name, description, price, price_type, listing_type, photo_url, photo_file_id, stock, tag, created_at, shop_id")
+    .eq("id", id)
+    .eq("is_active", true)
+    .single();
 
-  if (id.length >= 32) {
-    // Full UUID
-    const { data } = await supabase
-      .from("suq_products")
-      .select("id, name, description, price, price_type, listing_type, photo_url, photo_file_id, stock, tag, created_at, shop_id")
-      .eq("id", id)
-      .eq("is_active", true)
-      .single();
-    product = data;
-  } else {
-    // Short ID prefix match — cast UUID to text for LIKE
-    const { data } = await supabase
-      .from("suq_products")
-      .select("id, name, description, price, price_type, listing_type, photo_url, photo_file_id, stock, tag, created_at, shop_id")
-      .filter("id::text", "like", `${id}%`)
-      .eq("is_active", true)
-      .limit(1)
-      .single();
-    product = data;
-  }
-
-  if (!product) {
+  if (prodErr || !product) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 

@@ -430,7 +430,7 @@ export default function ProductDetailPage() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
               {moreFromShop.map((p) => (
-                <Link key={p.id} href={`/${shopSlug}/${p.id.slice(0, 8)}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <Link key={p.id} href={`/${shopSlug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <div className="card-pop" style={{
                     background: "white", borderRadius: "14px", overflow: "hidden",
                     border: "1px solid #F3F4F6",
@@ -478,7 +478,7 @@ export default function ProductDetailPage() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
               {similarProducts.map((p) => (
-                <Link key={p.id} href={`/${p.shop_slug}/${p.id.slice(0, 8)}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <Link key={p.id} href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <div className="card-pop" style={{
                     background: "white", borderRadius: "14px", overflow: "hidden",
                     border: "1px solid #F3F4F6",

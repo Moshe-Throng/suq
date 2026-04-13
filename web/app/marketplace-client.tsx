@@ -223,7 +223,7 @@ function ProductCard({ p, delay = 0, shopLogo }: { p: MarketProduct; delay?: num
   const [imgFailed, setImgFailed] = useState(false);
   const cat = CATEGORIES.find(c => c.key === p.shop_category);
   return (
-    <Link href={`/${p.shop_slug}/${p.id.slice(0, 8)}`} style={{ textDecoration: "none", color: "inherit" }}>
+    <Link href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
       <div className="pcard" style={{
         background: C.white,
         borderRadius: "14px",
@@ -347,7 +347,7 @@ function GridCard({ p, shopLogo }: { p: MarketProduct; shopLogo?: string | null 
   const [imgFailed, setImgFailed] = useState(false);
   const src = imgUrl(p.photo_file_id, p.photo_url);
   return (
-    <Link href={`/${p.shop_slug}/${p.id.slice(0, 8)}`} style={{ textDecoration: "none", color: "inherit" }}>
+    <Link href={`/${p.shop_slug}/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
       <div className="pcard" style={{ background: C.white, borderRadius: "14px", overflow: "hidden", border: `1px solid ${C.border}`, width: "100%" }}>
         <div style={{ position: "relative", width: "100%", height: 0, paddingBottom: "100%", background: C.sand, overflow: "hidden" }}>
           {src && !imgFailed ? (
@@ -922,7 +922,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                       const src = imgUrl(p.photo_file_id, p.photo_url);
                       const isSoldOut = p.stock === 0;
                       return (
-                        <Link key={p.id} href={`/${p.shop_slug}/${p.id.slice(0, 8)}`}
+                        <Link key={p.id} href={`/${p.shop_slug}/${p.id}`}
                           style={{ textDecoration: "none", color: "inherit" }}>
                           <div className="browse-card" style={{
                             background: C.white, borderRadius: "14px", overflow: "hidden",
@@ -979,7 +979,7 @@ export default function MarketplaceClient({ initialProducts, initialShops, categ
                       const isSoldOut = p.stock === 0;
                       const src = imgUrl(p.photo_file_id, p.photo_url);
                       return (
-                        <Link key={p.id} href={`/${p.shop_slug}/${p.id.slice(0, 8)}`}
+                        <Link key={p.id} href={`/${p.shop_slug}/${p.id}`}
                           style={{ textDecoration: "none", color: "inherit" }}>
                           <div className="browse-card" style={{
                             background: C.white, borderRadius: "12px", overflow: "hidden",
