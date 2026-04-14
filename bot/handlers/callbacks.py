@@ -264,74 +264,78 @@ async def _handle_manage_web(query) -> None:
 async def _handle_channel_post_approve(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Approve a product for channel posting. Posts it to the target channel."""
     query = update.callback_query
-    await query.answer("Posting...")
     data = query.data  # chpost_y_{channel}_{pid8}
 
     parts = data.split("_", 3)
     if len(parts) < 4:
-        await query.edit_message_caption("❌ Invalid data")
+        await query.answer("Invalid data")
+        try:
+            await query.delete_message()
+        except Exception:
+            pass
         return
 
     channel_username = parts[2]
-    # Get the photo from the message
     photo = query.message.photo
     if not photo:
-        await query.edit_message_caption("❌ No photo found")
+        await query.answer("No photo")
+        try:
+            await query.delete_message()
+        except Exception:
+            pass
         return
 
     photo_id = photo[-1].file_id
-    # Extract the original caption (remove the "📋 For @channel:" prefix)
     original_caption = query.message.caption or ""
     lines = original_caption.split("\n")
-    # Remove first line (approval header)
-    caption = "\n".join(lines[1:]).strip()
+    # Strip the first line (approval header like "📋 For @channel:")
+    caption = "\n".join(lines[1:]).strip() if len(lines) > 1 else original_caption
 
-    import httpx
-    BOT_TOKEN = context.bot.token
     try:
-        r = httpx.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
-            json={
-                "chat_id": f"@{channel_username}",
-                "photo": photo_id,
-                "caption": caption,
-                "parse_mode": "HTML",
-            },
-            timeout=15,
+        await context.bot.send_photo(
+            chat_id=f"@{channel_username}",
+            photo=photo_id,
+            caption=caption,
+            parse_mode="HTML",
         )
-        if r.json().get("ok"):
-            await query.edit_message_caption(f"✅ Posted to @{channel_username}")
-        else:
-            await query.edit_message_caption(f"❌ Failed: {r.json().get('description', '?')}")
+        await query.answer(f"✅ Posted to @{channel_username}", show_alert=False)
     except Exception as e:
-        await query.edit_message_caption(f"❌ Error: {str(e)[:50]}")
+        await query.answer(f"Failed: {str(e)[:80]}", show_alert=True)
+
+    # Delete the approval message from admin chat either way
+    try:
+        await query.delete_message()
+    except Exception:
+        pass
 
 
 async def _handle_channel_post_reject(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Reject a product. Deducts quality points from the shop and offers a replacement."""
+    """Reject a product. Deducts quality points from the shop."""
     query = update.callback_query
-    await query.answer("Rejected — deducting shop points")
     data = query.data  # chpost_n_{channel}_{pid8}_{shopid8}
 
     parts = data.split("_", 4)
-    channel_username = parts[2] if len(parts) > 2 else "?"
     shop_id_prefix = parts[4] if len(parts) > 4 else ""
 
-    from bot.db.supabase_client import get_client
-    db = get_client()
-
-    # Deduct quality points — increment a rejection counter on the shop
     if shop_id_prefix:
         try:
-            shops = db.table("suq_shops").select("id, shop_name, posts_per_week").like(
+            from bot.db.supabase_client import get_client
+            db = get_client()
+            # Find shop and deduct points (decrement posts_per_week as quality proxy)
+            shops = db.table("suq_shops").select("id, posts_per_week").like(
                 "id", f"{shop_id_prefix}%"
-            ).execute()
-            # posts_per_week is reused as quality score (lower = worse)
-            # Actually let's just track rejections in a simple way
-        except:
+            ).execute().data or []
+            if shops:
+                current = shops[0].get("posts_per_week") or 0
+                db.table("suq_shops").update(
+                    {"posts_per_week": max(0, current - 5)}
+                ).eq("id", shops[0]["id"]).execute()
+        except Exception:
             pass
 
-    await query.edit_message_caption(
-        f"❌ Rejected for @{channel_username}. Shop quality noted.\n\n"
-        f"Next batch will exclude this product."
-    )
+    await query.answer("❌ Rejected")
+    # Delete the approval message
+    try:
+        await query.delete_message()
+    except Exception:
+        pass
