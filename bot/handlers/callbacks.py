@@ -266,16 +266,19 @@ async def _handle_channel_post_approve(update: Update, context: ContextTypes.DEF
     query = update.callback_query
     data = query.data  # chpost_y_{channel}_{pid8}
 
-    parts = data.split("_", 3)
-    if len(parts) < 4:
+    # Strip "chpost_y_" prefix, then channel is everything up to the last "_{8-char-id}"
+    rest = data[len("chpost_y_"):]
+    # The last part after final "_" is the 8-char product id prefix
+    last_underscore = rest.rfind("_")
+    if last_underscore < 0:
         await query.answer("Invalid data")
         try:
             await query.delete_message()
         except Exception:
             pass
         return
+    channel_username = rest[:last_underscore]
 
-    channel_username = parts[2]
     photo = query.message.photo
     if not photo:
         await query.answer("No photo")
@@ -314,8 +317,11 @@ async def _handle_channel_post_reject(update: Update, context: ContextTypes.DEFA
     query = update.callback_query
     data = query.data  # chpost_n_{channel}_{pid8}_{shopid8}
 
-    parts = data.split("_", 4)
-    shop_id_prefix = parts[4] if len(parts) > 4 else ""
+    # Last segment is shop_id (8 chars), so split from the right
+    rest = data[len("chpost_n_"):]
+    # Try to extract shopid — the last 8-char segment after final underscore
+    tail = rest.rsplit("_", 1)
+    shop_id_prefix = tail[1] if len(tail) > 1 else ""
 
     if shop_id_prefix:
         try:
