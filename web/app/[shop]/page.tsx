@@ -42,6 +42,9 @@ interface Shop {
   logo_file_id: string | null;
   language: string | null;
   tiktok_url: string | null;
+  member_count: number | null;
+  posts_per_week: number | null;
+  source_channel: string | null;
 }
 
 interface InquiryForm {
@@ -626,6 +629,31 @@ export default function ShopPage() {
             {/* Description */}
             {shop.description && (
               <p className="text-xs mt-3 leading-relaxed line-clamp-2 max-w-md" style={{ color: "rgba(255,255,255,0.7)" }}>{shop.description}</p>
+            )}
+
+            {/* Trust signals */}
+            {(shop.member_count || shop.posts_per_week || shop.source_channel) && (
+              <div className="flex items-center gap-3 mt-3 flex-wrap justify-center">
+                {shop.member_count && shop.member_count > 0 && (
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                    style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }}>
+                    👥 {shop.member_count.toLocaleString()} followers
+                  </span>
+                )}
+                {shop.posts_per_week != null && shop.posts_per_week > 0 && (
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                    style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }}>
+                    📊 Active seller · {shop.posts_per_week} posts/week
+                  </span>
+                )}
+                {shop.source_channel && (
+                  <a href={`https://t.me/${shop.source_channel}`} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                    style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>
+                    📱 @{shop.source_channel}
+                  </a>
+                )}
+              </div>
             )}
           </div>
         </div>

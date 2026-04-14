@@ -17,7 +17,7 @@ export async function GET(
   // Get shop
   const { data: shop, error: shopErr } = await supabase
     .from("suq_shops")
-    .select("id, shop_name, shop_slug, telegram_username, theme_color, template_style, shop_type, category, phone, location_text, description, logo_file_id, logo_url, language, tiktok_url")
+    .select("id, shop_name, shop_slug, telegram_username, theme_color, template_style, shop_type, category, phone, location_text, description, logo_file_id, logo_url, language, tiktok_url, member_count, posts_per_week, source_channel")
     .eq("shop_slug", slug)
     .single();
 
