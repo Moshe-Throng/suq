@@ -32,7 +32,7 @@ export async function GET(
   // ── Fetch shop ──
   const { data: shop } = await supabase
     .from("suq_shops")
-    .select("id, shop_name, shop_slug, telegram_username, template_style, theme_color, shop_type, category, phone, location_text, description, logo_url, logo_file_id")
+    .select("id, shop_name, shop_slug, telegram_username, template_style, theme_color, shop_type, category, phone, location_text, description, logo_url, logo_file_id, source_channel")
     .eq("id", product.shop_id)
     .single();
 

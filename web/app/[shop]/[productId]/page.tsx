@@ -30,6 +30,7 @@ interface Shop {
   location_text: string | null;
   description: string | null;
   logo_url: string | null;
+  source_channel: string | null;
 }
 
 interface RelatedProduct {
@@ -370,7 +371,7 @@ export default function ProductDetailPage() {
       <div className="fade-in" style={{ animationDelay: ".2s", padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
         {/* Primary: Telegram — seller DM if username exists, else bot deep link */}
         <a
-          href={shop.telegram_username ? `https://t.me/${shop.telegram_username}` : `https://t.me/SoukEtBot?start=contact_${product.id}`}
+          href={shop.telegram_username ? `https://t.me/${shop.telegram_username}` : shop.source_channel ? `https://t.me/${shop.source_channel}` : `https://t.me/SoukEtBot?start=contact_${product.id}`}
           target="_blank"
           rel="noopener noreferrer"
           style={{

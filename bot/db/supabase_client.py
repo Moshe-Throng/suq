@@ -91,7 +91,7 @@ def get_shop_by_slug(slug: str) -> dict | None:
     return result.data[0] if result.data else None
 
 
-MAX_SHOPS = 50
+MAX_SHOPS = 500
 
 
 def create_shop(telegram_id: int, username: str | None, shop_name: str,
